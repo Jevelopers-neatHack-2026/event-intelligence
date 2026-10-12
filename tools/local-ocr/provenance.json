@@ -1,0 +1,127 @@
+{
+  "schema": 1,
+  "scope": "exact reviewed public development dependencies for private local OCR; no provider, package publication or canonical acceptance",
+  "sourceIntakes": [
+    {
+      "url": "https://archive.ubuntu.com/ubuntu/pool/universe/t/tesseract/tesseract_5.3.4.orig.tar.gz",
+      "expectedSha256": "141afc12b34a14bb691a939b4b122db0d51bd38feda7f41696822bacea7710c7",
+      "httpStatus": 200,
+      "bytes": 1918319,
+      "sha256": "141afc12b34a14bb691a939b4b122db0d51bd38feda7f41696822bacea7710c7"
+    },
+    {
+      "url": "https://archive.ubuntu.com/ubuntu/pool/universe/t/tesseract/tesseract_5.3.4-1build5.debian.tar.xz",
+      "expectedSha256": "e3c0593232c670f68ccde48058c6fe51eb72d32da5f645e9355a74e28bb1bc09",
+      "httpStatus": 200,
+      "bytes": 54488,
+      "sha256": "e3c0593232c670f68ccde48058c6fe51eb72d32da5f645e9355a74e28bb1bc09"
+    },
+    {
+      "url": "https://archive.ubuntu.com/ubuntu/pool/universe/l/leptonlib/leptonlib_1.82.0-3build4.debian.tar.xz",
+      "expectedSha256": "8996a609ec44dd0506a8cb2d945950bd10f403f071aaa1298c382d3d248aed6a",
+      "httpStatus": 200,
+      "bytes": 7324,
+      "sha256": "8996a609ec44dd0506a8cb2d945950bd10f403f071aaa1298c382d3d248aed6a"
+    },
+    {
+      "url": "https://archive.ubuntu.com/ubuntu/pool/universe/t/tesseract-lang/tesseract-lang_4.1.0-2.debian.tar.xz",
+      "expectedSha256": "3b594206c687d63396e3449b57ce57e5ea6857c7a38473c90fcb654656b0334e",
+      "httpStatus": 200,
+      "bytes": 12000,
+      "sha256": "3b594206c687d63396e3449b57ce57e5ea6857c7a38473c90fcb654656b0334e"
+    },
+    {
+      "url": "https://archive.ubuntu.com/ubuntu/pool/universe/l/leptonlib/leptonlib_1.82.0.orig.tar.gz",
+      "expectedSha256": "155302ee914668c27b6fe3ca9ff2da63b245f6d62f3061c8f27563774b8ae2d6",
+      "httpStatus": 200,
+      "bytes": 14041481,
+      "sha256": "155302ee914668c27b6fe3ca9ff2da63b245f6d62f3061c8f27563774b8ae2d6",
+      "licenseMembers": [
+        "leptonica-1.82.0/leptonica-license.txt",
+        "leptonica-1.82.0/prog/leptonica-license.txt",
+        "leptonica-1.82.0/src/leptonica-license.txt"
+      ]
+    }
+  ],
+  "modelUpstream": {
+    "repository": "https://github.com/tesseract-ocr/tessdata_fast",
+    "tag": "4.1.0",
+    "tagObject": "a8ba5063ab8013372a20e300da0c97ee46b92b07",
+    "commit": "65727574dfcd264acbb0c3e07860e4e9e9b22185",
+    "tagSignature": "GitHub API reports verified:true; no independent local signature verification claimed",
+    "artifacts": [
+      {
+        "url": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/65727574dfcd264acbb0c3e07860e4e9e9b22185/eng.traineddata",
+        "commit": "65727574dfcd264acbb0c3e07860e4e9e9b22185",
+        "httpStatus": 200,
+        "bytes": 4113088,
+        "sha256": "7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2"
+      },
+      {
+        "url": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/65727574dfcd264acbb0c3e07860e4e9e9b22185/LICENSE",
+        "commit": "65727574dfcd264acbb0c3e07860e4e9e9b22185",
+        "httpStatus": 200,
+        "bytes": 11358,
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      }
+    ],
+    "modelMatchesPinnedUbuntuMember": true
+  },
+  "notices": [
+    {
+      "path": "notices/leptonica-source-leptonica-license.txt",
+      "bytes": 1520,
+      "sha256": "4d3065116f182e29760af0c901d5dbb2e1e16c42765dfc24e69b26805e2acb1e",
+      "originalSourceSha256": "87829abb5bbb00b55a107365da89e9a33f86c4250169e5a1e5588505be7d5806",
+      "normalization": "Removed the extra blank line at EOF only; original bytes are in the retained source archive."
+    },
+    {
+      "path": "notices/liblept5-copyright.txt",
+      "bytes": 1766,
+      "sha256": "cff4f0cb5db14528a8b84f4a3389012d5c6e0f5a75a882509367b2147c05a83e"
+    },
+    {
+      "path": "notices/libtesseract5-copyright.txt",
+      "bytes": 1231,
+      "sha256": "2442a6ad56b34fc1e0ec4b13509e22d4e428c856e488b2a709456ce4e9f0ab4e"
+    },
+    {
+      "path": "notices/tessdata-fast-LICENSE",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "path": "notices/tesseract-LICENSE",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "path": "notices/tesseract-ocr-eng-copyright.txt",
+      "bytes": 1245,
+      "sha256": "33fb8161898e34fcf5c6b8585d6be97642d7e8f34a922e783c6c5c970d0b09ad"
+    }
+  ],
+  "buildRecipeReadbacks": [
+    {
+      "name": "tesseract-debian-rules",
+      "sha256": "f8669ec073f70e2608fdbbb6fdd4614b40c81bff833619b0a57010879e73fae6",
+      "bytes": 1580,
+      "contents": "#!/usr/bin/make -f\n#export DH_VERBOSE=1\n\nexport DEB_BUILD_MAINT_OPTIONS = hardening=+all\n\nCFLAGS:=$(shell dpkg-buildflags --get CFLAGS)\nLDFLAGS:=$(shell dpkg-buildflags --get LDFLAGS)\nCFLAGS += -Wall -g -fPIC -DTESSDATA_PREFIX='\\\"/usr/share/tesseract-ocr/5\\\"'\n\nifneq (,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))\n\tNUMJOBS = $(patsubst parallel=%,%,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))\nendif\n\nifeq (,$(NUMJOBS))\n\tNUMJOBS = 1\nendif\n\n%:\n\tdh $@ --with autoreconf\n\noverride_dh_auto_build:\n\tmake -j$(NUMJOBS)\n\tmake -j$(NUMJOBS) training\n\noverride_dh_auto_install:\n\t$(MAKE) DESTDIR=$$(pwd)/debian/tmp prefix=/usr install\n\t$(MAKE) DESTDIR=$$(pwd)/debian/tmp prefix=/usr training-install\n\noverride_dh_auto_test:\nifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))\n\t./tesseract -v\n\t./tesseract ./test/testing/phototest.tif -\nendif\n\noverride_dh_auto_clean:\n\tdh_auto_clean\n\tdh_clean java/com/Makefile java/com/google/Makefile java/com/google/scrollview/Makefile java/com/google/scrollview/events/Makefile java/com/google/scrollview/ui/Makefile\n\ttest ! -f configure.ac.orig || mv configure.ac.orig configure.ac\n\noverride_dh_auto_configure:\nifeq ($(DEB_BUILD_GNU_TYPE),arm-linux-gnueabi)\n\tcp configure.ac configure.ac.orig\n\tpatch -p1 < debian/patches/disable_NEON.diff\nelse\n\techo \"no patch\"\nendif\n\t./autogen.sh\n\t./configure --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) --disable-tessdata-prefix --prefix=/usr --libdir=\\$${prefix}/lib/$(DEB_HOST_MULTIARCH) --mandir=\\$${prefix}/share/man --infodir=\\$${prefix}/share/info CXXFLAGS=\"$(CFLAGS)\" LDFLAGS=\"-llept -Wl,-z,defs $(LDFLAGS)\"\n"
+    },
+    {
+      "name": "leptonlib-debian-rules",
+      "sha256": "11a36ae876b1271a369d0b102e653104116bf8dd2652053b1b7799ede21edc4d",
+      "bytes": 108,
+      "contents": "#!/usr/bin/make -f\n\n%:\n\tdh $@\n\noverride_dh_installman:\n\tdh_installman -p leptonica-progs debian/leptonica.3\n"
+    },
+    {
+      "name": "tesseract-lang-debian-rules",
+      "sha256": "87669c165294f6711ae4ec50c99989c3bc683876e6dbcfdd9553b0eb8cfb9a94",
+      "bytes": 398,
+      "contents": "#!/usr/bin/make -f\n#export DH_VERBOSE=1\n\nDEBIAN_CODENAME = $(shell echo $$DIST)\nifeq \"$(DEBIAN_CODENAME)\" \"\"\n\tDEBIAN_CODENAME = $(shell dpkg-parsechangelog | awk '/^Distribution: / {print $$2}')\nendif\nifneq (,$(filter $(DEBIAN_CODENAME),lucid karmic))\n\tBUILDDEBFLAGS= -- -Zlzma -z9\nelse\n\tBUILDDEBFLAGS= -- -Zxz -z9\nendif\n\n%:\n\tdh $@ --parallel\n\n#override_dh_builddeb:\n#\tdh_builddeb $(BUILDDEBFLAGS)\n"
+    }
+  ],
+  "observedInstalledNativeFeatures": "DT_NEEDED includes libarchive, libcurl, liblept, libgomp, C/C++ runtime libraries. Actual native restriction tests, not absent networking symbols, define the supported execution boundary.",
+  "hostClosure": "The trusted per-host manifest independently hashes CPython and every loaded mapped support file before source input. Distro metadata/notices or explicit runtime-owned file-digest-only provenance are retained. No portable or source-reproducible full-OS build is asserted.",
+  "sourceArchiveCaveat": "Tesseract and Leptonica original source archives and their distribution recipes were acquired and hash-checked. The 352215003-byte all-language distribution source tar was not acquired; its dsc is retained, and the actually used English model was separately retrieved from its exact upstream commit and compared byte-for-byte by SHA-256."
+}

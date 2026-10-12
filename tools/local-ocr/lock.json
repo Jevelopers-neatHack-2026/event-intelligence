@@ -1,0 +1,328 @@
+{
+  "schema": 1,
+  "profile": "ubuntu-24.04-amd64-english-fast-ocr-v1",
+  "pythonVersion": "3.12.14",
+  "tesseractVersion": "5.3.4",
+  "leptonicaVersion": "1.82.0",
+  "language": "eng",
+  "modelSha256": "7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2",
+  "archiveSignatureVerification": "not performed; exact reviewed HTTPS source archives and file digests are pinned",
+  "hostClosure": "Platform-provided native/CPython support files are individually bound by the trusted installation receipt and checked before every source read. This is not a portable byte-identical OS image.",
+  "packages": [
+    {
+      "archive": "liblept5_1.82.0-3build4_amd64.deb",
+      "url": "https://archive.ubuntu.com/ubuntu/pool/universe/l/leptonlib/liblept5_1.82.0-3build4_amd64.deb",
+      "bytes": 1099276,
+      "sha256": "c2bb81d58f032b09917c0d50994cce905287a1596304a4e99681a03601456ea8",
+      "sourceDescriptor": {
+        "url": "https://archive.ubuntu.com/ubuntu/pool/universe/l/leptonlib/leptonlib_1.82.0-3build4.dsc",
+        "status": 200,
+        "bytes": 2129,
+        "sha256": "e579dfd19b5fc1807d0ef9c292c76b136daf9e002312d3f271e52e1c1cf66caf"
+      },
+      "files": [
+        {
+          "path": "usr/lib/x86_64-linux-gnu/liblept.so.5.0.4",
+          "bytes": 2710232,
+          "sha256": "b31a50179665871ddb6bdbcfeefc8673febaa29a006e78136024d4083b6ee5e5"
+        },
+        {
+          "path": "usr/share/doc/liblept5/changelog.Debian.gz",
+          "bytes": 1037,
+          "sha256": "cb90c588f5ee19ceb3534e36a197facc796a0d602951b672d073282ec9fbbc45"
+        },
+        {
+          "path": "usr/share/doc/liblept5/copyright",
+          "bytes": 1766,
+          "sha256": "cff4f0cb5db14528a8b84f4a3389012d5c6e0f5a75a882509367b2147c05a83e"
+        }
+      ],
+      "notices": [
+        "usr/share/doc/liblept5/copyright"
+      ],
+      "dataMemberCount": 11,
+      "controlFiles": [
+        {
+          "path": "./control",
+          "bytes": 1388,
+          "sha256": "04984fd051e10e8a269f434f3e89e6cdb8468e193dbd2084c3a40cc63f91f6a0"
+        },
+        {
+          "path": "./md5sums",
+          "bytes": 220,
+          "sha256": "57358b7d96d04e873e6805e544d596fbe5ac2bec8a87d217491981ea1eeb7a68"
+        },
+        {
+          "path": "./shlibs",
+          "bytes": 19,
+          "sha256": "ae3e6877b5a1f53c17cb6318af63d0a418db2fea47c471e160c529e216bc18e4"
+        },
+        {
+          "path": "./triggers",
+          "bytes": 75,
+          "sha256": "0f1eda96d7595190cc2d40a06fafff8def651d19ceb635292ae6104de50de218"
+        }
+      ]
+    },
+    {
+      "archive": "libtesseract5_5.3.4-1build5_amd64.deb",
+      "url": "https://archive.ubuntu.com/ubuntu/pool/universe/t/tesseract/libtesseract5_5.3.4-1build5_amd64.deb",
+      "bytes": 1291308,
+      "sha256": "a38438115dc203b5abc1e6a6b24eb5273ba82161a11faa2f619bf5f7622efb14",
+      "sourceDescriptor": {
+        "url": "https://archive.ubuntu.com/ubuntu/pool/universe/t/tesseract/tesseract_5.3.4-1build5.dsc",
+        "status": 200,
+        "bytes": 2629,
+        "sha256": "640ec02111bbe73ab984110b567970f8160b469be4a558e8a0ec9c40666687cd"
+      },
+      "files": [
+        {
+          "path": "usr/lib/x86_64-linux-gnu/libtesseract.so.5.0.3",
+          "bytes": 3164808,
+          "sha256": "0d3b71cd757860c6639918c1b2d9407c8652ee22babc8d5c5f18cc35dde6334b"
+        },
+        {
+          "path": "usr/share/doc/libtesseract5/changelog.Debian.gz",
+          "bytes": 21422,
+          "sha256": "e97b6231c83190bd3c680ab4c29a48ebb7f8cdabfee7c1d7660486f0a1a675a1"
+        },
+        {
+          "path": "usr/share/doc/libtesseract5/copyright",
+          "bytes": 1231,
+          "sha256": "2442a6ad56b34fc1e0ec4b13509e22d4e428c856e488b2a709456ce4e9f0ab4e"
+        },
+        {
+          "path": "usr/share/tesseract-ocr/5/tessdata/configs/alto",
+          "bytes": 23,
+          "sha256": "23a038ff290c7471a1a8aa4b5d23e310b0bf49f718480dad6b619a7d06eca330"
+        },
+        {
+          "path": "usr/share/tesseract-ocr/5/tessdata/configs/ambigs.train",
+          "bytes": 146,
+          "sha256": "717e534fd4330ed3f9bdb006f0465aa2633cca866786a8f8d469dbd4b01c10c2"
+        },
+        {
+          "path": "usr/share/tesseract-ocr/5/tessdata/configs/api_config",
+          "bytes": 26,
+          "sha256": "2929bc0f1d2ba77f28cfc230f7b835b2b54038c0f9d2e8e4c5ada43803c999fd"
+        },
+        {
+          "path": "usr/share/tesseract-ocr/5/tessdata/configs/bigram",
+          "bytes": 129,
+          "sha256": "65e6583abc617a34d4091285181f2493d312c296a85629ac3c092d3b93b6e554"
+        },
+        {
+          "path": "usr/share/tesseract-ocr/5/tessdata/configs/box.train",
+          "bytes": 311,
+          "sha256": "a421355e3488bf3fdfc14a1bdcca08c6f6414ec92c53f0eea22317c868c1a623"
+        },
+        {
+          "path": "usr/share/tesseract-ocr/5/tessdata/configs/box.train.stderr",
+          "bytes": 311,
+          "sha256": "3e62cd37d2383abf0c6dfa5ba39fd1187fcff6856c4f4f27ea1554cb4c1874d2"
+        },
+        {
+          "path": "usr/share/tesseract-ocr/5/tessdata/configs/digits",
+          "bytes": 37,
+          "sha256": "e757d95bb1e51444860ea10d7f2c8bb8a0c9c4ccc58a0e8c67e8dc2933a56e2e"
+        },
+        {
+          "path": "usr/share/tesseract-ocr/5/tessdata/configs/get.images",
+          "bytes": 24,
+          "sha256": "28c774c157a2f48d835a1d58f5a35dd70106c136e176572ee43bbf46f3d65c92"
+        },
+        {
+          "path": "usr/share/tesseract-ocr/5/tessdata/configs/hocr",
+          "bytes": 40,
+          "sha256": "d6a7ec7c5143317a59fce2393054f6b7a8261824b934e7426fdd24febc929ad6"
+        },
+        {
+          "path": "usr/share/tesseract-ocr/5/tessdata/configs/inter",
+          "bytes": 59,
+          "sha256": "46303bf83668e446f4966d1ebf7418ad9f0c5e08836bc59d98cae3bbfc3aee9d"
+        },
+        {
+          "path": "usr/share/tesseract-ocr/5/tessdata/configs/kannada",
+          "bytes": 101,
+          "sha256": "7d34fec99283142a3a22d157dc5cc8824b93ee923e576e6bfd1b026039c2e8f0"
+        },
+        {
+          "path": "usr/share/tesseract-ocr/5/tessdata/configs/linebox",
+          "bytes": 70,
+          "sha256": "eb0279527b009a53432a9e1dde85bf42814901393546bc365bb61837f83355c9"
+        },
+        {
+          "path": "usr/share/tesseract-ocr/5/tessdata/configs/logfile",
+          "bytes": 25,
+          "sha256": "5eed5e41e5fbbf0862836c0e4cda7821f8e08441645858ec6821ab41d926e195"
+        },
+        {
+          "path": "usr/share/tesseract-ocr/5/tessdata/configs/lstm.train",
+          "bytes": 282,
+          "sha256": "3d1f8e5ab4e41467fdd938dc4d266eea081b477f8d74ab6b198dd1d854b5301c"
+        },
+        {
+          "path": "usr/share/tesseract-ocr/5/tessdata/configs/lstmbox",
+          "bytes": 26,
+          "sha256": "61255d1b7c9df76b673ff43d2d91cda7f4c3c2e7d7f0643a71b212739833017e"
+        },
+        {
+          "path": "usr/share/tesseract-ocr/5/tessdata/configs/lstmdebug",
+          "bytes": 98,
+          "sha256": "62d40d7a7d80315e10cdca2561d2ddf2981f53dfdbd567513b04d36f3add7f4e"
+        },
+        {
+          "path": "usr/share/tesseract-ocr/5/tessdata/configs/makebox",
+          "bytes": 26,
+          "sha256": "a8fe20a2bc9ff1e9e8ed06d56845336c978627b8e965600abd63f1f412c18ffe"
+        },
+        {
+          "path": "usr/share/tesseract-ocr/5/tessdata/configs/pdf",
+          "bytes": 22,
+          "sha256": "54d56e81dfefe289b0d2e4c7bc9bbe662711f5b8255c128b73bcd66efb6bba1a"
+        },
+        {
+          "path": "usr/share/tesseract-ocr/5/tessdata/configs/quiet",
+          "bytes": 21,
+          "sha256": "8a93fad8251f61b5f17b8628203a0e068c71e0907cd63012ab22afb7b560fce3"
+        },
+        {
+          "path": "usr/share/tesseract-ocr/5/tessdata/configs/rebox",
+          "bytes": 65,
+          "sha256": "73ca35d7d71084fb88e2eb9a5c53ad91682754b3aecb918dece7591ec22a0b26"
+        },
+        {
+          "path": "usr/share/tesseract-ocr/5/tessdata/configs/strokewidth",
+          "bytes": 377,
+          "sha256": "ffb140aadd3e26d0d9b3b355d592b50cff8b2c3ce0394b4a6de4fabc1c0942c9"
+        },
+        {
+          "path": "usr/share/tesseract-ocr/5/tessdata/configs/tsv",
+          "bytes": 22,
+          "sha256": "59d079bb75d8b3d7c839a3564580cb559e362c93a9d70f234e421c0c3e767e04"
+        },
+        {
+          "path": "usr/share/tesseract-ocr/5/tessdata/configs/txt",
+          "bytes": 166,
+          "sha256": "9bcbdbe285fd3a024be563cb237751ceb3435d86610e231f08894023321af5d7"
+        },
+        {
+          "path": "usr/share/tesseract-ocr/5/tessdata/configs/unlv",
+          "bytes": 45,
+          "sha256": "1b02e7801de71f0757a26ba6d749e9182a0d9971929966bebb67f99db8733f40"
+        },
+        {
+          "path": "usr/share/tesseract-ocr/5/tessdata/configs/wordstrbox",
+          "bytes": 29,
+          "sha256": "9d1787cdce085ad36dc9d6ba6b2702ac262beaf06a0bb4a0b84355f6458261e5"
+        },
+        {
+          "path": "usr/share/tesseract-ocr/5/tessdata/pdf.ttf",
+          "bytes": 572,
+          "sha256": "c7845420925a23d88ed830a63957b8af85a66a8daf8d9fc90e843673b2ef1a59"
+        },
+        {
+          "path": "usr/share/tesseract-ocr/5/tessdata/tessconfigs/batch",
+          "bytes": 49,
+          "sha256": "d91107c3a8c1c311b00c64aee56cbce4d48894c6e5762165f1ec7871c7b7bf4e"
+        },
+        {
+          "path": "usr/share/tesseract-ocr/5/tessdata/tessconfigs/batch.nochop",
+          "bytes": 37,
+          "sha256": "5acabb534cfd4fd8fe111c854955e1ffa9390619ef43775b1a5fbaf5283f68bb"
+        },
+        {
+          "path": "usr/share/tesseract-ocr/5/tessdata/tessconfigs/matdemo",
+          "bytes": 243,
+          "sha256": "d098cdf6ffe691ccc9dfa4490603f6ae33cdd313010cedfa50007ebde3ddd2d0"
+        },
+        {
+          "path": "usr/share/tesseract-ocr/5/tessdata/tessconfigs/msdemo",
+          "bytes": 368,
+          "sha256": "0ed753a05ea60766f4269d81873b6390e937ea2df1758de91c57db7e92429555"
+        },
+        {
+          "path": "usr/share/tesseract-ocr/5/tessdata/tessconfigs/nobatch",
+          "bytes": 1,
+          "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+        },
+        {
+          "path": "usr/share/tesseract-ocr/5/tessdata/tessconfigs/segdemo",
+          "bytes": 295,
+          "sha256": "7ec19f77f8c76b4dfb33ec8b13e11d7685ae5c9cf6eca4e7333cce0513ddac56"
+        }
+      ],
+      "notices": [
+        "usr/share/doc/libtesseract5/copyright"
+      ],
+      "dataMemberCount": 48,
+      "controlFiles": [
+        {
+          "path": "./control",
+          "bytes": 870,
+          "sha256": "c0cbdcb0b8e243a29067eec005025a9a8ef816919073f7e8c38d2582e82ee215"
+        },
+        {
+          "path": "./md5sums",
+          "bytes": 2978,
+          "sha256": "b5bbf55a554df6d63028e7f1eec791899835c637c0e809195b962a284edceb3d"
+        },
+        {
+          "path": "./shlibs",
+          "bytes": 40,
+          "sha256": "548e1efb2aa0d76f072fe5cc6d95e0e9d0643d7460fbc9879fa95a4c5af66acf"
+        },
+        {
+          "path": "./triggers",
+          "bytes": 75,
+          "sha256": "0f1eda96d7595190cc2d40a06fafff8def651d19ceb635292ae6104de50de218"
+        }
+      ]
+    },
+    {
+      "archive": "tesseract-ocr-eng_4.1.0-2_all.deb",
+      "url": "https://archive.ubuntu.com/ubuntu/pool/universe/t/tesseract-lang/tesseract-ocr-eng_4.1.0-2_all.deb",
+      "bytes": 1818236,
+      "sha256": "b1996b3113c78663f4dd16cf18aa1f288b07e9624f8d4a0ddbd7d9b52a234ba7",
+      "sourceDescriptor": {
+        "url": "https://archive.ubuntu.com/ubuntu/pool/universe/t/tesseract-lang/tesseract-lang_4.1.0-2.dsc",
+        "status": 200,
+        "bytes": 13569,
+        "sha256": "d256be7e8005c695abb354aa1f2e7f70eb031abb83f4bed2a6aaea6b345b1b42"
+      },
+      "files": [
+        {
+          "path": "usr/share/doc/tesseract-ocr-eng/changelog.Debian.gz",
+          "bytes": 1688,
+          "sha256": "70d819dffbd6bc2b3534d2fe810e93c027a2771d3207bb46ba19f42141af7639"
+        },
+        {
+          "path": "usr/share/doc/tesseract-ocr-eng/copyright",
+          "bytes": 1245,
+          "sha256": "33fb8161898e34fcf5c6b8585d6be97642d7e8f34a922e783c6c5c970d0b09ad"
+        },
+        {
+          "path": "usr/share/tesseract-ocr/5/tessdata/eng.traineddata",
+          "bytes": 4113088,
+          "sha256": "7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2"
+        }
+      ],
+      "notices": [
+        "usr/share/doc/tesseract-ocr-eng/copyright"
+      ],
+      "dataMemberCount": 11,
+      "controlFiles": [
+        {
+          "path": "./control",
+          "bytes": 804,
+          "sha256": "89181331af15cc8d7661440ae0ec013deb1b210a0686964eb7e52a3ab874c202"
+        },
+        {
+          "path": "./md5sums",
+          "bytes": 247,
+          "sha256": "7093f320ebdc53dc522c665d5280a3f236e0fbc7c2aebdcdea1fe88258534452"
+        }
+      ]
+    }
+  ]
+}

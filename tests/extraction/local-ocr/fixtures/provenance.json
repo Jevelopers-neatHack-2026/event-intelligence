@@ -1,0 +1,24 @@
+{
+  "label": "synthetic local test fixture, no customer or public event data",
+  "width": 1000,
+  "height": 220,
+  "format": "gray8",
+  "bytes": 220000,
+  "sha256": "50f86c14d6b77e84ffb70a933a80ab9a0cb0226d2301f1044b024414ee43d168",
+  "fontPath": "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+  "fontSha256": "ae7b7855e115a5966d8b1b3f80f254ccc117ec86f9965e202ee2940453837280",
+  "pillowVersion": "12.3.0",
+  "text": [
+    "TICKET STUB 2026",
+    "DOORS OPEN AT 7 PM"
+  ],
+  "compressedBytes": 6470,
+  "compressedSha256": "f51c49d110080ba2cdc00ff1f9eeb86b9ac025102bacf688494396e93b3107ad",
+  "fontNotice": {
+    "sourcePath": "/usr/share/doc/fonts-dejavu-core/copyright",
+    "sourceSha256": "63d3ba759d12804c5b31a9d5940d855c1820d1f5999e6b0872eb1c7ff045fbc9",
+    "file": "font-notice.txt",
+    "sha256": "e81d9dced49fea2a7d576cbea283873de58563c5d488f954deb282843c3ea79c",
+    "normalization": "Trailing whitespace only; all legal text preserved."
+  }
+}
