@@ -11,9 +11,6 @@ jobs:
   static-jpeg-webp:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
-    env:
-      EI_JPEG_WEBP_TEST_RUNTIME: ${{ runner.temp }}/ei-static-raster-runtime
-      EI_JPEG_WEBP_TEST_WHEEL: ${{ runner.temp }}/ei-static-raster-wheels/pillow-12.3.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -36,11 +33,17 @@ jobs:
           --dest "$RUNNER_TEMP/ei-static-raster-wheels"
           -r tools/static-raster/requirements.txt
       - name: Install the verified wheel offline into a fresh private runtime
+        env:
+          EI_JPEG_WEBP_TEST_RUNTIME: ${{ runner.temp }}/ei-static-raster-runtime
+          EI_JPEG_WEBP_TEST_WHEEL: ${{ runner.temp }}/ei-static-raster-wheels/pillow-12.3.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
         run: >-
           python -I -S -B tools/static-raster/install.py
           --wheel "$EI_JPEG_WEBP_TEST_WHEEL"
           --destination "$EI_JPEG_WEBP_TEST_RUNTIME"
       - name: Execute every required decode, policy, integrity, negative and recovery case
+        env:
+          EI_JPEG_WEBP_TEST_RUNTIME: ${{ runner.temp }}/ei-static-raster-runtime
+          EI_JPEG_WEBP_TEST_WHEEL: ${{ runner.temp }}/ei-static-raster-wheels/pillow-12.3.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
         run: node tools/verify-static-jpeg-webp.mjs
       - name: Check the private JPEG WebP consumer
         run: >-
