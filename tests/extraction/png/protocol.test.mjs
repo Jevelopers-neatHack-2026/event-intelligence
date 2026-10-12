@@ -5,11 +5,14 @@ import assert from "node:assert/strict";
 import childProcess from "node:child_process";
 import { createHash } from "node:crypto";
 import { syncBuiltinESMExports } from "node:module";
+import { deflateSync } from "node:zlib";
 import { PNG_CONFIG_VERSION, PNG_NODE_VERSION, PNG_PROTOCOL, PNG_ZLIB_VERSION } from "../../../src/extraction/png/constants.mjs";
-import { png } from "./fixtures.mjs";
+import { png, referenceCrc } from "./fixtures.mjs";
 
 const originalSpawn = childProcess.spawn;
 const source = png();
+const normalizedCompressed = deflateSync(Buffer.from([0, 1, 2, 3, 4]), { level: 9 });
+const normalizedControl = png({ compressed: normalizedCompressed });
 const digest = (bytes) => createHash("sha256").update(bytes).digest("hex");
 let nextSynthetic;
 let closes = 0;
@@ -32,7 +35,7 @@ childProcess.spawn = (command, args, options) => {
 syncBuiltinESMExports();
 const { readStaticPng } = await import("../../../src/extraction/png/index.mjs");
 
-function framed(changes = {}, bytes = png()) {
+function framed(changes = {}, bytes = normalizedControl) {
   const header = {
     kind: "decoded", width: 1, height: 1, sourceColorType: 6, decodedRgbaBytes: 4,
     rgbaSha256: digest(Buffer.from([1, 2, 3, 4])), normalizedSha256: digest(bytes),
@@ -47,8 +50,20 @@ function framed(changes = {}, bytes = png()) {
   return Buffer.concat([prefix, json, bytes]);
 }
 
-const badCrc = Buffer.from(png());
+const badCrc = Buffer.from(normalizedControl);
 badCrc[29] ^= 1;
+const badMethod = Buffer.from(normalizedCompressed);
+badMethod[0] = 0x79;
+const dictionaryHeader = Buffer.from(normalizedCompressed);
+dictionaryHeader[1] = 0xf9;
+const reservedBlock = Buffer.from(normalizedCompressed);
+reservedBlock[2] = (reservedBlock[2] & ~6) | 6;
+const highBitIhdr = Buffer.from(normalizedControl);
+highBitIhdr[12] |= 0x80;
+highBitIhdr.writeUInt32BE(referenceCrc(highBitIhdr.subarray(12, 29)), 29);
+const highBitIdat = Buffer.from(normalizedControl);
+highBitIdat[37] |= 0x80;
+highBitIdat.writeUInt32BE(referenceCrc(highBitIdat.subarray(37, highBitIdat.length - 16)), highBitIdat.length - 16);
 for (const [name, synthetic, expected, options] of [
   ["valid frame control", { frame: framed() }, "decoded"],
   ["absent frame", { frame: Buffer.alloc(0) }, "PROTOCOL_ERROR"],
@@ -60,6 +75,15 @@ for (const [name, synthetic, expected, options] of [
   ["wrong dimensions", { frame: framed({ width: 2, decodedRgbaBytes: 8 }) }, "PROTOCOL_ERROR"],
   ["wrong derivative hash", { frame: framed({ normalizedSha256: "0".repeat(64) }) }, "PROTOCOL_ERROR"],
   ["bad PNG CRC with matching hash", { frame: framed({}, badCrc) }, "PROTOCOL_ERROR"],
+  ["empty IDAT with matching CRC and hash", { frame: framed({}, png({ compressed: Buffer.alloc(0) })) }, "PROTOCOL_ERROR"],
+  ["truncated zlib envelope with matching CRC and hash", { frame: framed({}, png({ compressed: Buffer.from("78da0000000000", "hex") })) }, "PROTOCOL_ERROR"],
+  ["empty zlib stream with matching CRC and hash", { frame: framed({}, png({ compressed: deflateSync(Buffer.alloc(0), { level: 9 }) })) }, "PROTOCOL_ERROR"],
+  ["invalid zlib method with matching CRC and hash", { frame: framed({}, png({ compressed: badMethod })) }, "PROTOCOL_ERROR"],
+  ["preset dictionary header with matching CRC and hash", { frame: framed({}, png({ compressed: dictionaryHeader })) }, "PROTOCOL_ERROR"],
+  ["unreviewed encoder header with matching CRC and hash", { frame: framed({}, source) }, "PROTOCOL_ERROR"],
+  ["reserved first deflate block with matching CRC and hash", { frame: framed({}, png({ compressed: reservedBlock })) }, "PROTOCOL_ERROR"],
+  ["high-bit IHDR type with matching CRC and hash", { frame: framed({}, highBitIhdr) }, "PROTOCOL_ERROR"],
+  ["high-bit IDAT type with matching CRC and hash", { frame: framed({}, highBitIdat) }, "PROTOCOL_ERROR"],
   ["wrong payload length", { frame: framed({ normalizedByteLength: 1 }) }, "PROTOCOL_ERROR"],
   ["trailing bytes", { frame: Buffer.concat([framed(), Buffer.from([0])]) }, "PROTOCOL_ERROR"],
   ["negative network count", { frame: framed({ networkApiAttemptCount: -1 }) }, "PROTOCOL_ERROR"],

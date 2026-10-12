@@ -172,13 +172,17 @@ function enqueue(job) {
 }
 
 function validNormalizedPng(bytes, header) {
-  if (bytes.length < 57 || bytes.toString("hex", 0, 8) !== "89504e470d0a1a0a" ||
-      bytes.readUInt32BE(8) !== 13 || bytes.toString("ascii", 12, 16) !== "IHDR" ||
+  if (bytes.length < 66 || bytes.toString("hex", 0, 8) !== "89504e470d0a1a0a" ||
+      bytes.readUInt32BE(8) !== 13 || bytes.readUInt32BE(12) !== 0x49484452 ||
       bytes.readUInt32BE(16) !== header.width || bytes.readUInt32BE(20) !== header.height ||
       bytes.toString("hex", 24, 29) !== "0806000000") return false;
   const idatLength = bytes.readUInt32BE(33);
-  if (bytes.toString("ascii", 37, 41) !== "IDAT" || idatLength + 57 !== bytes.length ||
+  if (idatLength < 9 || bytes.readUInt32BE(37) !== 0x49444154 || idatLength + 57 !== bytes.length ||
       bytes.toString("hex", bytes.length - 12) !== "0000000049454e44ae426082") return false;
+  // Positive RGBA rows cannot use an empty eight-byte zlib stream. The fixed
+  // level-9/window-15 encoder emits 78da (no dictionary); BTYPE=3 is reserved.
+  // Full bounded inflation/row validation remains in the worker, not here.
+  if (bytes.readUInt16BE(41) !== 0x78da || (bytes[43] & 6) === 6) return false;
   return crc32(bytes.subarray(12, 29)) === bytes.readUInt32BE(29) &&
     crc32(bytes.subarray(37, bytes.length - 16)) === bytes.readUInt32BE(bytes.length - 16);
 }

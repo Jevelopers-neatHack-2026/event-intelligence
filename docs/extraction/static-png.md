@@ -145,9 +145,15 @@ physical-memory/RSS cap. Production host containment and admission/budget
 authority remain separate requirements.
 
 The parent validates the complete worker frame: exact keys/profile/runtime,
-source binding, dimensions, output shape and CRC, derivative hash, byte count,
-and guarded-API count. Rejected/late/malformed frames do not expose pixel bytes.
-The parent does not inflate untrusted data a second time.
+source binding, dimensions, exact chunk-name bytes, output shape and CRC, derivative hash, byte count,
+and guarded-API count. It also requires the minimum nonempty zlib envelope,
+the fixed encoder's header, and a nonreserved first deflate block type. An
+empty IDAT, an eight-byte empty zlib stream, or a shorter envelope is a protocol
+rejection even with matching PNG CRCs and derivative hash.
+The parent does not inflate untrusted data a second time; complete compressed
+stream and pixel-row validation remain the worker's responsibility. These
+framing checks do not prove arbitrary faulty-worker pixel semantics.
+Rejected/late/malformed frames do not expose pixel bytes.
 
 ## Private error codes
 
@@ -181,7 +187,7 @@ npm run typecheck
 
 Use the repository's existing `npm ci` and locked compiler installation helper
 for a fresh checkout. The new `static-png.yml` workflow runs these commands on
-push and PR candidates. The dedicated PNG runner requires all **84** collected
+push and PR candidates. The dedicated PNG runner requires all **93** collected
 tests to pass with zero failures, cancellations, skips or TODOs; no existing
 shared verification route is changed.
 
