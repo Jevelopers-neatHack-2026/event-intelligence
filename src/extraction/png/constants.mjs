@@ -2,7 +2,7 @@
 export const PNG_CONFIG_VERSION = "ei-static-png/1";
 export const PNG_NODE_VERSION = "22.23.3";
 export const PNG_ZLIB_VERSION = "1.3.1-e00f703";
-export const PNG_PROTOCOL = "ei-static-png-worker/1";
+export const PNG_PROTOCOL = "ei-static-png-worker/2";
 
 export const PNG_LIMITS = Object.freeze({
   maxInputBytes: 10 * 1024 * 1024,
@@ -10,6 +10,7 @@ export const PNG_LIMITS = Object.freeze({
   maxPixels: 4 * 1024 * 1024,
   maxRows: 4096,
   maxInflatedBytes: 4 * 4 * 1024 * 1024 + 4096,
+  maxRgbaBytes: 4 * 4 * 1024 * 1024,
   maxOutputBytes: 20 * 1024 * 1024,
   maxChunks: 1024,
   maxHeaderBytes: 4096,

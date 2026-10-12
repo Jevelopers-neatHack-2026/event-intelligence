@@ -11,8 +11,12 @@ const parts = [];
 let size = 0;
 
 async function emit(result, sourceSha256) {
-  const { normalized, ...metadata } = result;
-  const payload = normalized ?? Buffer.alloc(0);
+  const { normalized, rgba, ...metadata } = result;
+  const derivative = normalized ?? Buffer.alloc(0);
+  const pixels = rgba ?? Buffer.alloc(0);
+  if (derivative.length > maxOutputBytes || pixels.length > PNG_LIMITS.maxRgbaBytes) {
+    throw new Error("PNG payload limit");
+  }
   const header = Buffer.from(JSON.stringify({
     ...metadata,
     protocol: PNG_PROTOCOL,
@@ -22,12 +26,14 @@ async function emit(result, sourceSha256) {
     sourceSha256: sourceSha256 ?? null,
     networkApiAttemptCount: guard.attemptCount,
     maxOutputBytes,
-    normalizedByteLength: payload.length,
+    normalizedByteLength: derivative.length,
+    rgbaByteLength: pixels.length,
   }));
   if (header.length > PNG_LIMITS.maxHeaderBytes) throw new Error("PNG header limit");
   const length = Buffer.alloc(4);
   length.writeUInt32BE(header.length);
-  const frame = Buffer.concat([length, header, payload]);
+  // v2 partitions one normalized PNG followed by contiguous, unpremultiplied RGBA.
+  const frame = Buffer.concat([length, header, derivative, pixels]);
   await new Promise((resolve, reject) => {
     process.stdout.write(frame, (error) => error ? reject(error) : resolve());
   });

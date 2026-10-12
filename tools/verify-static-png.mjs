@@ -11,7 +11,7 @@ const files = [
   "tests/extraction/png/network.test.mjs",
   "tests/extraction/png/protocol.test.mjs",
 ];
-const expectedTests = 93;
+const expectedTests = 107;
 if (process.platform !== "linux" || process.versions.node !== PNG_NODE_VERSION ||
     process.versions.zlib !== PNG_ZLIB_VERSION) {
   process.stderr.write("Required static PNG checks need Linux and the exact documented Node/zlib runtime.\n");

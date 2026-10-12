@@ -63,6 +63,8 @@ export interface StaticJpegWebpDecoded extends Base {
   readonly networkApiAttemptCount: 0;
   /** Fresh mutable copy; the retained deterministic PNG is never exposed. */
   readonly copyNormalizedBytes: () => Uint8Array;
+  /** Fresh contiguous RGBA8 samples, row-major without padding; alpha is preserved, not flattened. */
+  readonly copyRgbaBytes: () => Uint8Array;
 }
 export interface StaticJpegWebpRejected extends Base {
   readonly kind: "rejected";
