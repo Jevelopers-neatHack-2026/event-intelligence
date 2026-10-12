@@ -189,7 +189,10 @@ Use the repository's existing `npm ci` and locked compiler installation helper
 for a fresh checkout. The new `static-png.yml` workflow runs these commands on
 push and PR candidates. The dedicated PNG runner requires all **93** collected
 tests to pass with zero failures, cancellations, skips or TODOs; no existing
-shared verification route is changed.
+shared verification gate is weakened. The `deterministic-extraction` mock route
+keeps its existing extraction-root and text-PDF tests; it does not recursively
+enroll this dedicated PNG directory. PNG platform/profile qualification remains
+the separate required 93-case command above.
 
 The suite includes literal RGB/RGBA filter vectors with independently computed
 CRC; real decode at exact pixel/row/inflation ceilings; malformed/unsupported
