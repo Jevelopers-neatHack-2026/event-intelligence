@@ -1,0 +1,50 @@
+name: bounded static JPEG WebP reader
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  static-jpeg-webp:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      EI_JPEG_WEBP_TEST_RUNTIME: ${{ runner.temp }}/ei-static-raster-runtime
+      EI_JPEG_WEBP_TEST_WHEEL: ${{ runner.temp }}/ei-static-raster-wheels/pillow-12.3.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 22.23.3
+          cache: npm
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12.14'
+          architecture: x64
+      - run: npm ci
+      - name: Install the locked host TypeScript compiler
+        run: node tools/install-typescript-host.mjs
+      - name: Acquire the single hash-pinned development wheel
+        run: >-
+          python -I -m pip --isolated download --disable-pip-version-check
+          --only-binary=:all: --no-deps --require-hashes
+          --dest "$RUNNER_TEMP/ei-static-raster-wheels"
+          -r tools/static-raster/requirements.txt
+      - name: Install the verified wheel offline into a fresh private runtime
+        run: >-
+          python -I -S -B tools/static-raster/install.py
+          --wheel "$EI_JPEG_WEBP_TEST_WHEEL"
+          --destination "$EI_JPEG_WEBP_TEST_RUNTIME"
+      - name: Execute every required decode, policy, integrity, negative and recovery case
+        run: node tools/verify-static-jpeg-webp.mjs
+      - name: Check the private JPEG WebP consumer
+        run: >-
+          ./node_modules/.bin/tsc --noEmit --strict --target ES2022
+          --module NodeNext --moduleResolution NodeNext --lib ES2022,DOM
+          --types node tests/extraction/jpeg-webp/types-consumer.mts
+      - run: npm run typecheck
