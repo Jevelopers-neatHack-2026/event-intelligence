@@ -13,4 +13,4 @@ Use this map to choose a maintained guide. The package exports only controlled-r
 - [Asset source discovery](brand-research/asset-source-discovery.md), [asset permissions](security/asset-permissions.md), and [safe assets](security/safe-assets.md) govern candidate assets and permitted use.
 
 ## Contracts
-[Consumer handoff](contracts/consumer-handoff.md) and the [installed 0.9.7 diagnostic](contracts/installed-research-consumer-0.9.7.md) describe compatibility and the incompatible hold. [Provider readiness](providers/readiness-handoff.md) describes the deferred provider boundary. See [ownership](architecture/OWNERSHIP.md) and [acceptance allocation](architecture/ACCEPTANCE.md); current acceptance is in the master tracker.
+[Consumer handoff](contracts/consumer-handoff.md) and the [installed 0.9.7 diagnostic](contracts/installed-research-consumer-0.9.7.md) describe compatibility and the incompatible hold. [Provider readiness](providers/readiness-handoff.md) describes the pending provider/account readiness boundary. See [ownership](architecture/OWNERSHIP.md) and [acceptance allocation](architecture/ACCEPTANCE.md); current acceptance is in the master tracker.
