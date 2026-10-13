@@ -2028,7 +2028,8 @@
       "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/21",
       "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/22"
     ],
-    "closure_claims": []
+    "closure_claims": [],
+    "closure_claims_scope": "Master/global release acceptance only. This empty list does not describe local issue closure; accepted local closures are recorded in criterion_reconciliation.whole_issue_closure_claims."
   },
   "active_local_work_at_cutoff": [
     {
