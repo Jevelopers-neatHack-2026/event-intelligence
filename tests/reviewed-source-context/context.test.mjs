@@ -5,6 +5,7 @@ import { execFile } from 'node:child_process';
 import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { performance } from 'node:perf_hooks';
 import { setImmediate as nextTurn } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
@@ -553,6 +554,136 @@ test('original operation deadline bounds an unresolved review and permits a fres
   const context = await f.adapter.review(f.input());
   assert.ok(await f.adapter.materialize({ scope: f.scope, context, request: f.auth }));
 });
+
+function stallConfiguredClockUntil(target) {
+  // Fixture-only synchronous host delay. Native elapsed time and timers remain
+  // untouched, so the operation must recheck its budget when this call returns.
+  const cell = new Int32Array(new SharedArrayBuffer(4));
+  while (performance.now() < target) {
+    Atomics.wait(cell, 0, 0, Math.min(10, target - performance.now()));
+  }
+}
+
+for (const mode of ['normal', 'late-boundary-clock', 'late-evidence-clock']) {
+  test(`private source read enforces its original deadline after trusted clocks: ${mode}`, { timeout: 6_000 }, async (t) => {
+    const budgetMs = 500;
+    const f = await fixture(t, { deadlineMs: budgetMs });
+    const boundaryTime = f.boundaryClock.value;
+    const evidenceTime = f.clock.value;
+    let duringRead = false;
+    let blockEvidenceClock = false;
+    let interventions = 0;
+    let evidenceClocksDuringRead = 0;
+    let startedAt;
+    let observation;
+    Object.defineProperty(f.boundaryClock, 'value', { get() {
+      if (duringRead && mode === 'late-boundary-clock') {
+        interventions += 1;
+        stallConfiguredClockUntil(startedAt + budgetMs + 80);
+      }
+      return boundaryTime;
+    } });
+    Object.defineProperty(f.clock, 'value', { get() {
+      if (duringRead) evidenceClocksDuringRead += 1;
+      if (blockEvidenceClock) {
+        blockEvidenceClock = false;
+        interventions += 1;
+        stallConfiguredClockUntil(startedAt + budgetMs + 80);
+      }
+      return evidenceTime;
+    } });
+    f.ports.authority = () => {
+      if (duringRead && mode === 'late-evidence-clock') blockEvidenceClock = true;
+      return true;
+    };
+    f.ports.review = (input) => {
+      assert.ok(performance.now() - startedAt < budgetMs, 'reviewer enters within original budget');
+      const beforeAuthority = f.calls.contextAuthority;
+      duringRead = true;
+      try {
+        const text = input.readSourceText();
+        observation = { status: 'returned', exactSource: text === f.raw };
+      } catch (error) {
+        observation = { status: 'refused', code: error.code };
+      } finally { duringRead = false; }
+      observation.elapsedMs = performance.now() - startedAt;
+      observation.authorityCalls = f.calls.contextAuthority - beforeAuthority;
+      return { status: 'rejected' };
+    };
+    startedAt = performance.now();
+    await assert.rejects(f.adapter.review(f.input()), refuses(mode === 'normal' ? 'REVIEW_REJECTED' : 'DEADLINE_EXCEEDED'));
+    f.ports.authority = () => true;
+    f.ports.review = (input) => approved(input);
+    const context = await f.adapter.review(f.input());
+    const value = await f.adapter.materialize({ scope: f.scope, context, request: f.auth });
+    assert.equal(value.sourceDigest, digest(f.raw));
+    assert.equal(value.canonicalAdoption, false);
+    assert.equal(value.dispatchStatus, 'not_dispatched');
+    t.diagnostic(JSON.stringify({ mode, budgetMs, interventions, evidenceClocksDuringRead, observation, recovered: true }));
+    if (mode === 'normal') {
+      assert.equal(interventions, 0);
+      assert.equal(observation.status, 'returned');
+      assert.equal(observation.exactSource, true);
+    } else {
+      assert.equal(interventions, 1);
+      assert.equal(observation.status, 'refused', 'expired private read returns no source bytes');
+      assert.equal(observation.code, 'DEADLINE_EXCEEDED');
+      assert.equal(observation.authorityCalls, mode === 'late-boundary-clock' ? 0 : 1);
+      if (mode === 'late-boundary-clock') {
+        assert.equal(evidenceClocksDuringRead, 0, 'expired association prevents the next host clock and authority call');
+      }
+    }
+  });
+}
+
+for (const mode of ['normal', 'slow-initial-association']) {
+  test(`unresolved review timer retains the original start budget: ${mode}`, { timeout: 6_000 }, async (t) => {
+    const budgetMs = 1000;
+    const initialDelayMs = mode === 'normal' ? 0 : 600;
+    const f = await fixture(t, { deadlineMs: budgetMs });
+    const boundaryTime = f.boundaryClock.value;
+    let armed = false;
+    let interventions = 0;
+    let startedAt;
+    Object.defineProperty(f.boundaryClock, 'value', { get() {
+      if (armed) {
+        armed = false;
+        interventions += 1;
+        stallConfiguredClockUntil(startedAt + initialDelayMs);
+      }
+      return boundaryTime;
+    } });
+    const entered = deferred();
+    const release = deferred();
+    let reviewerEntryMs;
+    let captured;
+    f.ports.review = (input) => {
+      captured = input;
+      reviewerEntryMs = performance.now() - startedAt;
+      entered.resolve();
+      return release.promise;
+    };
+    startedAt = performance.now();
+    armed = mode !== 'normal';
+    const pending = f.adapter.review(f.input());
+    const settled = pending.then(() => ({ code: 'unexpected-success', elapsedMs: performance.now() - startedAt }),
+      (error) => ({ code: error.code, elapsedMs: performance.now() - startedAt }));
+    await Promise.race([entered.promise, settled.then(() => { throw new Error('reviewer did not enter within original budget'); })]);
+    const outcome = await settled;
+    assert.throws(() => captured.readSourceText(), ReviewedSourceContextError);
+    release.reject(new Error('SYNTHETIC_LATE_CONTEXT_REVIEW'));
+    await nextTurn();
+    f.ports.review = (input) => approved(input);
+    const context = await f.adapter.review(f.input());
+    assert.ok(await f.adapter.materialize({ scope: f.scope, context, request: f.auth }));
+    t.diagnostic(JSON.stringify({ mode, budgetMs, initialDelayMs, interventions, reviewerEntryMs, outcome, recovered: true }));
+    assert.ok(reviewerEntryMs < budgetMs, 'reviewer starts within original elapsed budget');
+    assert.equal(interventions, mode === 'normal' ? 0 : 1);
+    assert.equal(outcome.code, 'DEADLINE_EXCEEDED');
+    assert.ok(outcome.elapsedMs <= budgetMs + 100,
+      'initial synchronous source association does not schedule a fresh full operation budget');
+  });
+}
 
 test('retained sources over the bounded full-source limit refuse before reviewer execution', async (t) => {
   const source = 'x'.repeat(512 * 1024 + 1);

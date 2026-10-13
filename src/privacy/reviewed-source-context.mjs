@@ -195,18 +195,26 @@ export function createReviewedSourceContext(options) {
     catch { fail('SOURCE_BINDING_DENIED'); }
   }
 
-  function check(op) {
+  // This guard invokes no configured clock or association callback. Reuse the
+  // original captured deadline after each trusted phase, without renewing it.
+  function checkActive(op) {
     if (op.failure) throw op.failure;
     if (op.done || active !== op) fail('CANCELED');
     if (MONOTONIC_NOW() >= op.deadlineAt) fail('DEADLINE_EXCEEDED');
     if (op.entry?.revoked) fail('CONTEXT_REVOKED');
+  }
+
+  function check(op) {
+    checkActive(op);
     if (op.binding && association(op.scope, op.derivative) !== op.binding) fail('SOURCE_BINDING_DENIED');
+    checkActive(op);
     const time = currentTime();
     if (op.source && time >= op.source.expiresAtMs) fail('EVIDENCE_EXPIRED');
     // Both clocks and host callbacks may synchronously revoke/cancel.
     if (op.failure) throw op.failure;
     if (op.entry?.revoked) fail('CONTEXT_REVOKED');
     if (op.binding && SIGNAL_ABORTED.call(op.binding.signal)) fail('SOURCE_BINDING_DENIED');
+    checkActive(op);
   }
 
   function authorizeCurrent(op) {
@@ -366,7 +374,10 @@ export function createReviewedSourceContext(options) {
       follow(op, input.signal, 'CANCELED');
       follow(op, op.binding.signal, 'SOURCE_BINDING_DENIED');
       follow(op, op.entry?.controller.signal, 'CONTEXT_REVOKED');
-      op.timer = setTimeout(() => stop(op, 'DEADLINE_EXCEEDED'), deadlineMs);
+      // Initial source association may consume part of the original budget.
+      // Rounding only accounts for the native timer's millisecond resolution.
+      op.timer = setTimeout(() => stop(op, 'DEADLINE_EXCEEDED'),
+        Math.max(1, Math.ceil(op.deadlineAt - MONOTONIC_NOW())));
       op.key = opaque();
       operations.set(op.key, op);
       check(op);

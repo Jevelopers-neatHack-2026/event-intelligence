@@ -124,6 +124,16 @@ rejections are observed before cancellation can leave them detached. Late privat
 read capabilities refuse, and a completed/canceled attempt releases the adapter
 for a new operation.
 
+The guard rechecks captured native elapsed time after the trusted boundary
+association and evidence clock return. A slow clock cannot permit a later private
+source read, authority callback or materialization after the original deadline.
+The timeout also uses the remaining original budget after initial association;
+that synchronous work does not buy an additional full timeout for an unresolved
+review. This enforces the boundary after callbacks return without claiming to
+preempt synchronous host code. Native-time negative fixtures retain both the
+late-read and delayed-start failures from the original implementation and verify
+refusal plus later recovery.
+
 An invalid ordinary native Promise returned by synchronous current authorization
 has both its fulfillment and rejection discarded before refusal. The observer
 does not forward a fulfilled value or inspect a later `then` getter on that value.
