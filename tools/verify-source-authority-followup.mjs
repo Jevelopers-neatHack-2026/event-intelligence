@@ -8,7 +8,7 @@ import { spec } from 'node:test/reporters';
 import { finished } from 'node:stream/promises';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const EXPECTED_CASES = 75;
+const EXPECTED_CASES = 76;
 const files = [
   'tests/research/source-authority-followup/composer.test.mjs',
   'tests/research/source-authority-followup/integration.test.mjs',
