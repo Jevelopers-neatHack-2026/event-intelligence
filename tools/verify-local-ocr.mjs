@@ -8,8 +8,9 @@ import profile from "../src/extraction/local-ocr/profile.json" with { type: "jso
 const root = fileURLToPath(new URL("../", import.meta.url));
 const files = ["tests/extraction/local-ocr/reader.test.mjs", "tests/extraction/local-ocr/lifecycle.test.mjs",
   "tests/extraction/local-ocr/protocol.test.mjs", "tests/extraction/local-ocr/native.test.mjs",
-  "tests/extraction/local-ocr/runtime.test.mjs", "tests/extraction/local-ocr/initializer.test.mjs"];
-const expectedTests = 152;
+  "tests/extraction/local-ocr/runtime.test.mjs", "tests/extraction/local-ocr/initializer.test.mjs",
+  "tests/extraction/local-ocr/loader-diagnostic.test.mjs"];
+const expectedTests = 178;
 const sha = (value) => createHash("sha256").update(value).digest("hex");
 const git = (...args) => {
   const result = spawnSync("git", args, { cwd: root, encoding: "utf8" });

@@ -22,6 +22,36 @@ LOCK_BYTES = (TOOLS/"lock.json").read_bytes()
 LOCK = json.loads(LOCK_BYTES)
 sha = lambda data: hashlib.sha256(data).hexdigest()
 
+# Exact DT_NEEDED names read from the two hash-pinned ELF files in lock.json.
+# These are diagnostic labels, not a library search path or installation policy.
+LOADER_NEEDED = {
+    "leptonica": ("libpng16.so.16", "libjpeg.so.8", "libgif.so.7", "libtiff.so.6", "libwebp.so.7",
+                  "libwebpmux.so.3", "libopenjp2.so.7", "libm.so.6", "libz.so.1", "libc.so.6"),
+    "tesseract": ("libarchive.so.13", "libcurl.so.4", "liblept.so.5", "libstdc++.so.6", "libm.so.6",
+                  "libc.so.6", "libgcc_s.so.1", "libgomp.so.1"),
+}
+
+def loader_diagnostic(error):
+    # ctypes supplies dlerror() as one built-in OSError argument. Match only
+    # complete, short, closed forms. Never stringify/repr/format exceptions or
+    # values, invoke subclass getters, or preserve any part of unknown text.
+    if type(error) is not OSError or type(error.__dict__) is not dict:
+        return None
+    target = error.__dict__.get("_ei_native_loader")
+    if type(target) is not str or target not in LOADER_NEEDED:
+        return None
+    result = {"target": target, "reason": "unclassified", "dependency": None}
+    arguments = BaseException.args.__get__(error)
+    if type(arguments) is not tuple or len(arguments) != 1 or type(arguments[0]) is not str or len(arguments[0]) > 4096:
+        return result
+    message = arguments[0]
+    for dependency in LOADER_NEEDED[target]:
+        for reason, suffix in (("dependency_not_found", "cannot open shared object file: No such file or directory"),
+                               ("dependency_permission_denied", "cannot open shared object file: Permission denied")):
+            if message == dependency + ": " + suffix:
+                return {"target": target, "reason": reason, "dependency": dependency}
+    return result
+
 def exact_object(pairs):
     result = {}
     for key, value in pairs:
@@ -141,7 +171,7 @@ def initialization_diagnostic(error, phase):
                        "UnicodeError", "UnicodeDecodeError", "JSONDecodeError", "OverflowError", "RecursionError"}
     source_files = {"worker.py", "native.py", "isolation.py", "errors.py", "__init__.py", "pathlib.py"}
     source_functions = {"main", "initialize", "verify_dependencies", "describe_runtime", "__init__",
-                        "reject", "read_bytes", "read_text", "open", "stat", "resolve", "strict"}
+                        "reject", "read_bytes", "read_text", "open", "stat", "resolve", "strict", "_load_library"}
     if isinstance(error, Rejection):
         classification = "fixed_policy_rejection"
     elif isinstance(error, OSError):
@@ -169,6 +199,9 @@ def initialization_diagnostic(error, phase):
         trace = trace.tb_next
     value = {"initializationDiagnostic": {"schema": 2, "phase": phase,
              "exceptionType": exception_type, "classification": classification, "errno": error_number, "frames": frames}}
+    loader = loader_diagnostic(error) if phase == "initialize" else None
+    if loader is not None:
+        value["initializationDiagnostic"].update({"schema": 3, "loader": loader})
     data = json.dumps(value, separators=(",", ":"), ensure_ascii=True).encode("ascii")
     if len(data) <= 8192:
         sys.stderr.buffer.write(data + b"\n")

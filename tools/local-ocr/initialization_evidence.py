@@ -23,6 +23,14 @@ EVIDENCE_ROOT = pathlib.Path(__file__).resolve().parents[2]
 PROFILE = json.loads((EVIDENCE_ROOT / "src/extraction/local-ocr/profile.json").read_text())
 LOCK_SHA256 = hashlib.sha256((EVIDENCE_ROOT / "tools/local-ocr/lock.json").read_bytes()).hexdigest()
 INITIALIZER_CODES = {"INVALID_OPTIONS", "RUNTIME_MISMATCH", "MODEL_UNAVAILABLE", "OUTPUT_LIMIT", "OCR_FAILURE"}
+# Independently validate every projected loader value. Names are the exact
+# direct DT_NEEDED inventory of the two hash-pinned ELF files, not free text.
+LOADER_NEEDED = {
+    "leptonica": ("libpng16.so.16", "libjpeg.so.8", "libgif.so.7", "libtiff.so.6", "libwebp.so.7",
+                  "libwebpmux.so.3", "libopenjp2.so.7", "libm.so.6", "libz.so.1", "libc.so.6"),
+    "tesseract": ("libarchive.so.13", "libcurl.so.4", "liblept.so.5", "libstdc++.so.6", "libm.so.6",
+                  "libc.so.6", "libgcc_s.so.1", "libgomp.so.1"),
+}
 
 
 class InitializationFailure(ValueError):
@@ -78,9 +86,14 @@ def fixed_diagnostic(value):
     if not isinstance(value, dict) or set(value) != {"initializationDiagnostic"}:
         return None
     item = value["initializationDiagnostic"]
+    if not isinstance(item, dict):
+        return None
+    expected_keys = {"schema", "phase", "exceptionType", "classification", "errno", "frames"}
+    if type(item.get("schema")) is int and item["schema"] == 3:
+        expected_keys.add("loader")
     if (not isinstance(item, dict) or
-        set(item) != {"schema", "phase", "exceptionType", "classification", "errno", "frames"} or
-        type(item["schema"]) is not int or item["schema"] != 2 or
+        set(item) != expected_keys or
+        type(item["schema"]) is not int or item["schema"] not in (2, 3) or
         item["phase"] not in ("options", "initialize", "describe_runtime") or
         item["exceptionType"] not in ("Rejection", "OSError", "FileNotFoundError", "PermissionError", "MemoryError",
             "ImportError", "ModuleNotFoundError", "ValueError", "TypeError", "RuntimeError", "UnicodeError",
@@ -94,8 +107,21 @@ def fixed_diagnostic(value):
         if (not isinstance(frame, dict) or set(frame) != {"file", "function", "line"} or
             frame["file"] not in ("worker.py", "native.py", "isolation.py", "errors.py", "__init__.py", "pathlib.py", "other_source") or
             frame["function"] not in ("main", "initialize", "verify_dependencies", "describe_runtime", "__init__",
-                                     "reject", "read_bytes", "read_text", "open", "stat", "resolve", "strict", "other_function") or
+                                     "reject", "read_bytes", "read_text", "open", "stat", "resolve", "strict", "_load_library", "other_function") or
             type(frame["line"]) is not int or not 0 <= frame["line"] <= 1000000):
+            return None
+    if item["schema"] == 3:
+        loader = item["loader"]
+        if (item["phase"] != "initialize" or item["exceptionType"] != "OSError" or
+            item["classification"] != "operating_system_error" or
+            not isinstance(loader, dict) or set(loader) != {"target", "reason", "dependency"} or
+            type(loader["target"]) is not str or loader["target"] not in LOADER_NEEDED):
+            return None
+        if loader["reason"] == "unclassified":
+            if loader["dependency"] is not None:
+                return None
+        elif (loader["reason"] not in ("dependency_not_found", "dependency_permission_denied") or
+              type(loader["dependency"]) is not str or loader["dependency"] not in LOADER_NEEDED[loader["target"]]):
             return None
     return {"initializationDiagnostic": item}
 

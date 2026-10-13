@@ -8,11 +8,22 @@ def bind(library, name, arguments, result):
     function.argtypes, function.restype = arguments, result
     return function
 
+def _load_library(path, target, **options):
+    try:
+        return C.CDLL(str(path), **options)
+    except OSError as error:
+        # Only the built-in ctypes error gets a fixed pre-input source label.
+        # Do not inspect subclass properties; preserve its original type/args.
+        # The worker's startup-only projector separately validates this label.
+        if type(error) is OSError and type(error.__dict__) is dict:
+            error.__dict__["_ei_native_loader"] = target
+        raise
+
 class Engine:
     def __init__(self, site, profile):
         self.handle = None
-        self.lept = C.CDLL(str(site/"usr/lib/x86_64-linux-gnu/liblept.so.5.0.4"), mode=C.RTLD_GLOBAL)
-        self.library = C.CDLL(str(site/"usr/lib/x86_64-linux-gnu/libtesseract.so.5.0.3"), use_errno=True)
+        self.lept = _load_library(site/"usr/lib/x86_64-linux-gnu/liblept.so.5.0.4", "leptonica", mode=C.RTLD_GLOBAL)
+        self.library = _load_library(site/"usr/lib/x86_64-linux-gnu/libtesseract.so.5.0.3", "tesseract", use_errno=True)
         library = self.library
         self.version = bind(library, "TessVersion", [], C.c_char_p)().decode("ascii")
         lept_version = bind(self.lept, "getLeptonicaVersion", [], C.c_void_p)
