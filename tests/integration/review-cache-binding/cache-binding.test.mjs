@@ -2394,6 +2394,12 @@ test('timed-out binding callback cannot commit after an exact retry advances the
 
 test('cancelled correction callback cannot commit after an exact retry takes over the history fence', async (t) => {
   let f;
+  let setupObservationCalls = 0;
+  let resolveSetupObservationEntered;
+  let releaseSetupObservation;
+  const setupObservationEntered = new Promise((resolve) => { resolveSetupObservationEntered = resolve; });
+  const setupObservationGate = new Promise((resolve) => { releaseSetupObservation = resolve; });
+  t.after(() => releaseSetupObservation());
   let blockFirstPostBarrierAuthorization = false;
   let blockedAuthorization = false;
   let blockedFenceAtEntry;
@@ -2410,7 +2416,9 @@ test('cancelled correction callback cannot commit after an exact retry takes ove
       return database.prepare("SELECT phase, fence FROM correction_cache_state WHERE kind = 'correction'").get() ?? null;
     } finally { database.close(); }
   };
-  f = await fixture(t, { operationTimeoutMs: 500, history: {
+  // Setup and final reads have their own bounded budget. Only the deliberately
+  // blocked correction below uses the 500ms fault deadline.
+  f = await fixture(t, { operationTimeoutMs: 2_000, history: {
     authorize({ tenantId, actorId, action, request: value }) {
       const allowed = value?.serverContextToken === TRUSTED_TOKEN
         && value?.principal?.tenantId === tenantId && value?.principal?.actorId === actorId
@@ -2431,9 +2439,30 @@ test('cancelled correction callback cannot commit after an exact retry takes ove
       }
       return allowed;
     },
+  }, cache: {
+    async verifySourceObservation({ expectedContentHash }) {
+      setupObservationCalls += 1;
+      if (setupObservationCalls === 1) {
+        resolveSetupObservationEntered();
+        await setupObservationGate;
+      }
+      return { status: 'body_changed', contentHash: expectedContentHash,
+        retrievedAt: new Date(EPOCH - 1_000).toISOString(), validatedAt: new Date(EPOCH).toISOString(),
+        attemptLineage: { status: 'unknown' } };
+    },
   } });
-  const seeded = await createSeed(f);
-  await f.store.bindPrivateProfile(f.scope, EVENT_ID, { idempotencyKey: 'bind-cancelled-correction', profile: cacheProfile() }, f.authRequest);
+  const seeded = await withPhase('setup create history', createSeed(f));
+  const setupBind = withPhase('setup bind private profile', f.store.bindPrivateProfile(f.scope, EVENT_ID,
+    { idempotencyKey: 'bind-cancelled-correction', profile: cacheProfile() }, f.authRequest));
+  // Attach a rejection handler while the deterministic setup gate is held; the
+  // actual result is still awaited below and cannot become an unhandled rejection.
+  setupBind.catch(() => {});
+  await withPhase('setup observation entry', waitForSignal(setupObservationEntered, 'setup source observation'));
+  // A legitimate setup callback takes longer than the intentional correction fault.
+  // This must not borrow that operation's 500ms deadline.
+  await new Promise((resolve) => setTimeout(resolve, 600));
+  releaseSetupObservation();
+  assert.equal((await setupBind).status, 'bound');
   blockFirstPostBarrierAuthorization = true;
   const input = {
     eventId: EVENT_ID,
@@ -2445,15 +2474,17 @@ test('cancelled correction callback cannot commit after an exact retry takes ove
     retentionHandle: f.createPermit(),
   };
   t.after(() => releaseBlockedAuthorization?.());
-  const firstAttempt = f.store.applyCorrection(f.scope, input, f.authRequest);
+  const faultStore = f.makeStore(500);
+  const faultScope = await withPhase('authenticate faulted correction scope', faultStore.scopeForAuthenticatedRequest(f.authRequest));
+  const firstAttempt = faultStore.applyCorrection(faultScope, input, f.authRequest);
   const rejected = assert.rejects(firstAttempt,
     (error) => error instanceof ReviewHistoryError && error.code === 'REVIEW_ABORTED');
-  await waitForSignal(blockedEntry, 'post-barrier correction authorization');
+  await withPhase('post-barrier correction authorization entry', waitForSignal(blockedEntry, 'post-barrier correction authorization'));
   assert.equal(blockedAuthorization, true);
   assert.equal(pendingPhaseAtEntry, 'pending_correction');
-  await rejected;
+  await withPhase('intentional correction deadline rejection', rejected);
   const readWorker = runWorker(['read-history', f.root, EVENT_ID]);
-  const readResult = await readWorker.exit;
+  const readResult = await withPhase('read history barrier in restarted worker', readWorker.exit);
   assert.equal(readResult.signal, null, readResult.stderr);
   assert.equal(readResult.code, 0, readResult.stderr);
   assert.deepEqual(JSON.parse(readResult.stdout), { outcome: 'error', code: 'REVIEW_BUSY' });
@@ -2461,7 +2492,7 @@ test('cancelled correction callback cannot commit after an exact retry takes ove
   blockFirstPostBarrierAuthorization = false;
   const recoveryWorker = runWorker(['retry-correction', f.root, EVENT_ID,
     seeded.snapshot.versionId, seeded.snapshot.contentHash, '', input.idempotencyKey]);
-  const recoveryResult = await recoveryWorker.exit;
+  const recoveryResult = await withPhase('exact correction retry in restarted worker', recoveryWorker.exit);
   assert.equal(recoveryResult.signal, null, recoveryResult.stderr);
   assert.equal(recoveryResult.code, 0, recoveryResult.stderr);
   assert.deepEqual(JSON.parse(recoveryResult.stdout), { outcome: 'committed', revision: seeded.snapshot.revision + 1 });
@@ -2469,7 +2500,7 @@ test('cancelled correction callback cannot commit after an exact retry takes ove
   assert.equal(recoveredState?.phase, 'complete');
   assert.ok(recoveredState.fence > blockedFenceAtEntry);
   releaseBlockedAuthorization();
-  await waitForSignal(blockedCompletion, 'late post-barrier authorization callback completion');
+  await withPhase('late post-barrier authorization completion', waitForSignal(blockedCompletion, 'late post-barrier authorization callback completion'));
   await new Promise((resolve) => setTimeout(resolve, 30));
 
   const history = new DatabaseSync(historyDatabasePath(f.root));
@@ -2482,7 +2513,8 @@ test('cancelled correction callback cannot commit after an exact retry takes ove
     assert.equal(cache.prepare('SELECT COUNT(*) AS count FROM reuse_history_invalidation_ops').get().count, 1);
     assert.equal(cache.prepare("SELECT COUNT(*) AS count FROM reuse_outbox WHERE status != 'delivered'").get().count, 1);
   } finally { history.close(); cache.close(); }
-  assert.equal((await f.store.getPrivateProfile(f.scope, EVENT_ID, f.authRequest, lookup())).status, 'miss');
+  const finalRead = await withPhase('read after late correction callback', f.store.getPrivateProfile(f.scope, EVENT_ID, f.authRequest, lookup()));
+  assert.equal(finalRead.status, 'miss');
 });
 
 for (const mode of ['abort during participant key preparation', 'abort from final bind guard']) {

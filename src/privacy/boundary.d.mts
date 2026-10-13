@@ -120,6 +120,8 @@ export interface PrivacyBoundary<Request = unknown> {
     trust: 'untrusted_external';
     facts: PublicFacts;
   }>;
+  /** Revokes only the private source association; public derivative serialization is unchanged. */
+  revokeSourceAssociation(scope: TenantScope, derivative: SanitizedDerivative): boolean;
   withPrivateOriginal(scope: TenantScope, source: SourceHandle, request: unknown): Promise<unknown>;
   purgeExpired(): number;
   retainedOriginalCount(): number;
@@ -131,3 +133,15 @@ export interface PrivacyBoundary<Request = unknown> {
 export declare function createPrivacyBoundary<Request = unknown>(options?: PrivacyBoundaryOptions<Request>): PrivacyBoundary<Request>;
 /** @internal Authenticity check used by the adjacent flow adapter. */
 export declare function isPrivacyBoundary(value: unknown): value is PrivacyBoundary;
+/** @internal Requires genuine issuer-backed handles; a digest is never a permission grant. */
+export declare function readDerivativeSourceAssociation(
+  boundary: PrivacyBoundary,
+  scope: TenantScope,
+  derivative: SanitizedDerivative,
+): Readonly<{
+  tenantId: string;
+  recordId: string;
+  modality: ContentModality;
+  sourceDigest: string;
+  signal: AbortSignal;
+}>;
