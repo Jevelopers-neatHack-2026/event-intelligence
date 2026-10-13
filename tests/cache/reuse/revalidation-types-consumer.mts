@@ -29,7 +29,7 @@ if (result.status === 'completed') {
   // @ts-expect-error An unresolved transport has no authenticated local completion receipt.
   result.receipt.observationRef;
 }
-// @ts-expect-error There is no public-profile conditional adapter or cross-tenant validator handoff.
+// @ts-expect-error The private-profile coordinator cannot substitute for the separate reviewed-public source/authority binding.
 await coordinator.refresh(scope, {}, { profileRef: 'profile', scopeKind: 'public_profile', admissionRef: 'admission' });
 // @ts-expect-error A caller cannot supply an observation to bypass native transport provenance.
 await coordinator.refresh(scope, {}, { profileRef: 'profile', scopeKind: 'tenant_private', admissionRef: 'admission', observation: { status: 'not_modified' } });

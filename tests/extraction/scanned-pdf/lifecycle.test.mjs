@@ -102,20 +102,60 @@ test("one active and four waiting jobs bound the module-wide queue", async () =>
   assert.equal((await readScannedPdf(imagePdf())).kind, "decoded");
 });
 
-test("active timeout kills the actual process and waits for close", async () => {
-  let closed = false, child;
+test("active timeout kills the actual process and waits for close", async (t) => {
+  const input = imagePdf();
+  let closed = false, child, spawnAttempts = 0, spawnAfterMs, closeCode, closeSignal;
+  let started;
   const restore = interceptSpawns((real, _command, _args, options) => {
+    spawnAttempts += 1;
+    spawnAfterMs = performance.now() - started;
     child = heldChild(real, options);
-    child.once("close", () => { closed = true; });
+    child.once("close", (code, signal) => { closed = true; closeCode = code; closeSignal = signal; });
     return child;
   });
+  const observations = {};
   try {
-    const result = await readScannedPdf(imagePdf(), { timeoutMs: 150 });
+    // A spent admission allowance must refuse before launch. It cannot prove
+    // active-child termination, which needs its own observed launch phase.
+    const originalHash = crypto.createHash;
+    let delayed = false;
+    const delayAdmission = mock.method(crypto, "createHash", (...args) => {
+      if (!delayed) {
+        delayed = true;
+        const until = performance.now() + 200;
+        while (performance.now() < until) { /* Synthetic synchronous admission delay. */ }
+      }
+      return originalHash(...args);
+    });
+    syncBuiltinESMExports();
+    try {
+      started = performance.now();
+      const result = await readScannedPdf(input, { timeoutMs: 150 });
+      observations.admission = { delayed, resultCode: result.code, spawnAttempts };
+      assert.equal(delayed, true);
+      assert.equal(result.code, "TIMEOUT");
+      assert.equal(spawnAttempts, 0);
+    } finally { delayAdmission.mock.restore(); syncBuiltinESMExports(); }
+
+    // Retain one original allowance through real kill, close and reaping.
+    // Leave enough of it for runtime validation to reach the active phase.
+    const timeoutMs = 3000;
+    started = performance.now();
+    const result = await readScannedPdf(input, { timeoutMs });
+    observations.active = {
+      timeoutMs, spawnAttempts, spawnAfterMs, elapsedMs: performance.now() - started,
+      resultCode: result.code, childPid: child?.pid ?? null, closed, closeCode, closeSignal,
+    };
     assert.ok(child?.pid, "the timed request entered an actual child");
+    assert.equal(spawnAttempts, 1);
+    assert.ok(spawnAfterMs < timeoutMs, "launch occurred before the original deadline");
     assert.equal(result.code, "TIMEOUT");
     assert.equal(closed, true);
+    assert.equal(closeCode, null);
+    assert.equal(closeSignal, "SIGKILL", "the timeout killed the held child rather than waiting for its natural exit");
     assert.throws(() => process.kill(child.pid, 0), { code: "ESRCH" });
-  } finally { restore(); }
+  } finally { restore(); t.diagnostic(JSON.stringify(observations)); }
+  assert.equal((await readScannedPdf(imagePdf())).kind, "decoded");
 });
 
 test("parent frame hashing cannot renew an already spent deadline", async () => {

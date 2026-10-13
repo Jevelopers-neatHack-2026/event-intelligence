@@ -1,4 +1,5 @@
-import type { SourceIdentityCompositionResult } from '../../discovery/identity/from-extraction.mjs';
+import type { SupportedSourceIdentityComposition } from '../../discovery/identity/from-extraction.mjs';
+import type { SourceCorroborationCluster, SourceCorroborationEdge, SourceCorroborationFactBinding } from '../../discovery/identity/corroboration.mjs';
 import type { OccurrenceEvidenceLocator } from '../../discovery/occurrences/identity.mjs';
 import type { QuestionPlan } from './index.mjs';
 
@@ -55,13 +56,24 @@ export interface SourceIdentityBindingObservationGroup {
   readonly fieldRef: string;
   readonly observationRef: string;
   readonly text: string;
+  readonly corroboration?: SourceCorroborationContext;
 }
 
-export interface SourceIdentityBinding {
-  readonly schema: 'ei-source-identity-question-binding-internal/v1';
+export interface SourceCorroborationContext {
+  readonly schema: 'ei-source-corroboration-internal/v1';
+  readonly policy: 'explicit-source-declaration/v1';
+  readonly clusterId: string;
+  readonly relation: 'shared_dependence_cluster' | 'no_retained_dependence_link';
+  readonly independence: 'unknown';
+  readonly origin: 'not_established';
+  readonly sourceAuthority: 'not_evaluated';
+  readonly bases: readonly ('exact_content' | 'source_declared_derivation')[];
+  readonly unresolvedClaimCount: number;
+}
+
+export interface SourceIdentityBindingFields {
   readonly questionId: 'Q-EI-IDENTITY:v1';
   readonly candidateIds: readonly [string, string];
-  readonly sourceCompositionSchema: 'ei-source-identity-composition-internal/v1';
   readonly sourceAuthority: 'not_evaluated';
   readonly sourceEvidence: readonly Readonly<{
     evidenceId: string;
@@ -124,6 +136,30 @@ export interface SourceIdentityBinding {
   readonly utf8Bytes: number;
 }
 
+/** Historical v1 contains no declaration graph; independence remains unknown. */
+export interface LegacySourceIdentityBinding extends SourceIdentityBindingFields {
+  readonly schema: 'ei-source-identity-question-binding-internal/v1';
+  readonly sourceCompositionSchema: 'ei-source-identity-composition-internal/v1';
+}
+
+export interface CurrentSourceIdentityBinding extends SourceIdentityBindingFields {
+  readonly schema: 'ei-source-identity-question-binding-internal/v2';
+  readonly sourceCompositionSchema: 'ei-source-identity-composition-internal/v2';
+  readonly corroboration: Readonly<{
+    schema: 'ei-source-corroboration-internal/v1';
+    policy: 'explicit-source-declaration/v1';
+    sourceGraphDigest: string;
+    factBindings: readonly SourceCorroborationFactBinding[];
+    sourceAuthority: 'not_evaluated';
+    independence: 'unknown';
+    selectedCandidates: readonly (SourceCorroborationContext & { readonly candidateId: string })[];
+    clusters: readonly SourceCorroborationCluster[];
+    edges: readonly SourceCorroborationEdge[];
+  }>;
+}
+
+export type SourceIdentityBinding = LegacySourceIdentityBinding | CurrentSourceIdentityBinding;
+
 export interface SourceIdentityQuestionPreparationResult {
   readonly plan: QuestionPlan;
   readonly sourceIdentityBinding: SourceIdentityBinding;
@@ -140,6 +176,6 @@ export declare class SourceIdentityQuestionPreparationError extends Error {
  * authority, current retention, tenant authorization, or a DecisionPort response.
  */
 export declare function prepareIdentityQuestionFromComposition(
-  composition: SourceIdentityCompositionResult,
+  composition: SupportedSourceIdentityComposition,
   options: SourceIdentityQuestionPreparationOptions
 ): SourceIdentityQuestionPreparationResult;

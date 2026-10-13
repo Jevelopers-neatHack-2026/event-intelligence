@@ -10,6 +10,7 @@ import type {
   OccurrenceTransition,
 } from "../occurrences/identity.mjs";
 import type { RetrievedDocument } from "../../security/index.mjs";
+import type { SourceCorroboration, SourceCorroborationFactBinding } from "./corroboration.mjs";
 
 export type SourceIdentityCompositionErrorCode =
   | "INVALID_INPUT"
@@ -105,8 +106,7 @@ export interface SourceIdentityCompositionLimits {
   readonly deadlineMs: 12000;
 }
 
-export interface SourceIdentityCompositionResult {
-  readonly schema: "ei-source-identity-composition-internal/v1";
+export interface SourceIdentityCompositionFields {
   readonly sources: readonly ComposedSourceIdentitySource[];
   /** Private evidence facts preserve raw and normalized values separately. */
   readonly facts: readonly StoredEvidenceFactRecord[];
@@ -128,6 +128,19 @@ export interface SourceIdentityCompositionResult {
   readonly sourceAuthority: "not_evaluated";
   readonly limits: SourceIdentityCompositionLimits;
 }
+
+/** Historical output has no retained attribution policy; independence is unknown. */
+export interface LegacySourceIdentityCompositionResult extends SourceIdentityCompositionFields {
+  readonly schema: "ei-source-identity-composition-internal/v1";
+}
+
+export interface SourceIdentityCompositionResult extends SourceIdentityCompositionFields {
+  readonly schema: "ei-source-identity-composition-internal/v2";
+  readonly corroboration: SourceCorroboration;
+  readonly corroborationFactBindings: readonly SourceCorroborationFactBinding[];
+}
+
+export type SupportedSourceIdentityComposition = SourceIdentityCompositionResult | LegacySourceIdentityCompositionResult;
 
 export declare class SourceIdentityCompositionError extends Error {
   readonly code: SourceIdentityCompositionErrorCode;

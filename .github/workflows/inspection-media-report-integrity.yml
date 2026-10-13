@@ -17,6 +17,16 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          fetch-depth: 0
+      - name: Check merge-relative whitespace
+        shell: bash
+        run: |
+          comparison_base="$(git merge-base HEAD origin/main)"
+          if [ "$comparison_base" = "$(git rev-parse HEAD)" ]; then
+            comparison_base="$(git rev-parse HEAD^)"
+          fi
+          printf 'Whitespace comparison: %s..%s\n' "$comparison_base" "$(git rev-parse HEAD)"
+          git diff --check "$comparison_base" HEAD
       - name: Set runner-local inspection paths
         shell: bash
         run: |

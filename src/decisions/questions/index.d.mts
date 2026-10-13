@@ -355,7 +355,10 @@ export type {
   SourceIdentityQuestionPreparationResult,
   SourceIdentityQuestionPreparationErrorCode,
   SourceIdentityBinding,
-  SourceIdentityBindingObservationGroup
+  SourceIdentityBindingObservationGroup,
+  SourceCorroborationContext,
+  LegacySourceIdentityBinding,
+  CurrentSourceIdentityBinding
 } from './from-source-identity.mjs';
 export {
   SourceIdentityQuestionPreparationError,
