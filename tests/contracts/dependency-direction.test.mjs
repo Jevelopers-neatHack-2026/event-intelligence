@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import fs, { chmodSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { syncBuiltinESMExports } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
@@ -10,8 +12,11 @@ import { checkDependencyDirection } from "../../tools/check-dependency-direction
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const NATIVE_PATH = "src/extraction/pdf/network-guard.mjs";
 const NATIVE_SOURCE = readFileSync(path.join(ROOT, NATIVE_PATH), "utf8");
+const PNG_PATH = "src/extraction/png/network-guard.mjs";
+// Exact public PR86 source, read as text only; never import or install its guards.
+const PNG_SOURCE = readFileSync(path.join(ROOT, "tests/contracts/fixtures/png-network-guard.source.txt"), "utf8");
 
-function fixture(files, mutate = () => {}) {
+function fixture(files, mutate = () => {}, beforeCheck = () => {}) {
   const directory = mkdtempSync(path.join(tmpdir(), "ei-dependency-direction-test-"));
   const manifest = { name: "synthetic-ei-engine", type: "module", dependencies: { "synthetic-contract-only": "0.0.0-synthetic" }, devDependencies: { typescript: "7.0.2" } };
   const lock = { lockfileVersion: 3, packages: { "": { dependencies: { ...manifest.dependencies }, devDependencies: { ...manifest.devDependencies } }, "node_modules/typescript": { version: "7.0.2" }, "node_modules/synthetic-contract-only": { version: "0.0.0-synthetic" } } };
@@ -25,6 +30,7 @@ function fixture(files, mutate = () => {}) {
       mkdirSync(path.dirname(target), { recursive: true });
       writeFileSync(target, text);
     }
+    beforeCheck(directory);
     return checkDependencyDirection(directory);
   } finally {
     rmSync(directory, { recursive: true, force: true });
@@ -44,8 +50,11 @@ test("current source graph has no Harness import and preserves external acceptan
   assert.ok(result.counts.source_files > 0);
   assert.ok(result.edges.some((edge) => edge.layer === "engine"));
   assert.ok(result.edges.some((edge) => edge.layer === "declared-package"));
-  assert.equal(result.counts.bounded_native_require_loops, 1);
-  assert.equal(result.edges.filter((edge) => edge.kind === "bounded-native-require").length, 7);
+  const hasPng = existsSync(path.join(ROOT, PNG_PATH));
+  assert.equal(result.counts.bounded_native_require_loops, hasPng ? 2 : 1);
+  assert.equal(result.edges.filter((edge) => edge.kind === "bounded-native-require" && edge.from === NATIVE_PATH).length, 7);
+  assert.equal(result.edges.filter((edge) => edge.kind === "bounded-native-require" && edge.from === PNG_PATH).length, hasPng ? 8 : 0);
+  assert.equal(result.edges.filter((edge) => edge.kind === "bounded-native-require").length, hasPng ? 15 : 7);
   assert.equal(result.acceptance.foreign_harness_to_engine, "not_inspected");
   assert.equal(result.acceptance.accepted_contract_pin, "not_asserted");
   assert.equal(result.acceptance.decision_capability_behavior, "not_executed");
@@ -346,6 +355,168 @@ for (const [name, source, expected] of [
       t.diagnostic(JSON.stringify({ runtime: process.version, mode: "native-synthetic-mts", stdout: child.stdout }));
     } finally {
       rmSync(directory, { recursive: true, force: true });
+    }
+  });
+}
+
+test("the exact PNG guard contributes eight computed and five literal native edges without execution", () => {
+  assert.equal(createHash("sha1").update(`blob ${Buffer.byteLength(PNG_SOURCE)}\0`).update(PNG_SOURCE).digest("hex"), "5f0a99624b2695dda363af6ebc153e1762e175da");
+  const result = fixture({ [PNG_PATH]: PNG_SOURCE });
+  assert.equal(result.status, "passed", JSON.stringify(result.violations));
+  assert.equal(result.counts.bounded_native_require_loops, 1);
+  assert.deepEqual(result.edges.filter((e) => e.kind === "bounded-native-require").map((e) => e.target),
+    ["node:http", "node:https", "node:http2", "node:net", "node:tls", "node:dgram", "node:dns", "node:dns/promises"]);
+  assert.equal(result.edges.filter((e) => e.kind === "require").length, 5);
+  assert.equal(result.edges.filter((e) => e.specifier === "node:module").length, 1);
+});
+
+test("both exact native guards retain distinct finite inventories", () => {
+  const result = fixture({ [NATIVE_PATH]: NATIVE_SOURCE, [PNG_PATH]: PNG_SOURCE });
+  assert.equal(result.status, "passed", JSON.stringify(result.violations));
+  assert.equal(result.counts.bounded_native_require_loops, 2);
+  assert.equal(result.edges.filter((e) => e.kind === "bounded-native-require").length, 15);
+});
+
+for (const [name, change, code = "NATIVE_REQUIRE_EXCEPTION_DRIFT"] of [
+  ["different path", (s) => s, "UNACCOUNTED_MODULE_LOADER"],
+  ["extra module import", (s) => s.replace("createRequire, syncBuiltinESMExports", "createRequire, syncBuiltinESMExports, register")],
+  ["aliased factory", (s) => s.replace("createRequire,", "createRequire as factory,")],
+  ["mutable loader", (s) => s.replace("const require =", "let require =")],
+  ["altered factory base", (s) => s.replace("createRequire(import.meta.url)", 'createRequire("/tmp/other.mjs")')],
+  ["shadowed parameter", (s) => s.replace("installPngNetworkGuard()", "installPngNetworkGuard(require)")],
+  ["async function", (s) => s.replace("export function", "export async function")],
+  ["mutable loop", (s) => s.replace("for (const [name", "for (let [name")],
+  ["different loop binding", (s) => s.replace("[name, methods]", "[otherName, methods]")],
+  ["added module", (s) => s.replace('["node:http",', '["node:fs", []], ["node:http",')],
+  ["Harness module", (s) => s.replace('"node:http"', '"agent-harness"')],
+  ["changed methods", (s) => s.replace('["connect", "createConnection"]', '["connect"]')],
+  ["mutable DNS constant", (s) => s.replace("const dnsMethods =", "let dnsMethods =")],
+  ["changed DNS list", (s) => s.replace('"lookupService", ', '')],
+  ["DNS mutation", (s) => s.replace("  for (const [name", '  dnsMethods.push("extra");\n  for (const [name')],
+  ["extra DNS escape", (s) => `${s}\nconst exported = dnsMethods;`],
+  ["computed loop source", (s) => s.replace("] of [", "] of choose([").replace("]) patch", "])) patch")],
+  ["changed loop invocation", (s) => s.replace("patch(require(name), methods)", "patch(require(selected), methods)")],
+  ["changed prototype constructor", (s) => s.replace(".Server.prototype", ".Other.prototype")],
+  ["changed prototype module", (s) => s.replace('require("node:net").Socket', 'require("node:tls").Socket')],
+  ["changed prototype methods", (s) => s.replace('["listen"]', '["listen", "extra"]')],
+  ["extra literal load", (s) => `${s}\nrequire("node:fs");`],
+  ["extra computed load", (s) => `${s}\nrequire(selected);`],
+  ["factory escape", (s) => `${s}\nconst factory = createRequire;`, "UNACCOUNTED_MODULE_LOADER"],
+  ["loader escape", (s) => `${s}\nconst load = require;`, "UNACCOUNTED_MODULE_LOADER"],
+  ["additional Harness import", (s) => `${s}\nimport "agent-harness";`, "ENGINE_IMPORTS_HARNESS"],
+  ["destructured builtin loader", (s) => `${s}\nconst { getBuiltinModule: load } = process;`, "UNACCOUNTED_MODULE_LOADER"],
+]) {
+  test(`PNG finite exception rejects ${name}`, () => {
+    const changed = change(PNG_SOURCE);
+    if (name !== "different path") assert.notEqual(changed, PNG_SOURCE);
+    refuses(fixture({ [name === "different path" ? "src/other.mjs" : PNG_PATH]: changed }), code);
+  });
+}
+
+test("literal attributed JSON imports inventory real data separately without executing source", () => {
+  const bytes = '{"profile":"synthetic","text":"import agent-harness; throw new Error()"}\n';
+  const result = fixture({
+    "src/a.mjs": 'import profile from "./profile.json" with { type: "json" }; throw new Error("MUST_NOT_EXECUTE");',
+    "src/profile.json": bytes,
+  });
+  assert.equal(result.status, "passed", JSON.stringify(result.violations));
+  assert.equal(result.counts.source_files, 1);
+  assert.equal(result.counts.data_files, 1);
+  assert.deepEqual(result.data_files.map(({ path, sha256 }) => ({ path, sha256 })), [
+    { path: "src/profile.json", sha256: createHash("sha256").update(bytes).digest("hex") },
+  ]);
+  assert.deepEqual(result.edges.map(({ target, layer, attributes }) => ({ target, layer, attributes })), [
+    { target: "src/profile.json", layer: "engine-data", attributes: { type: "json" } },
+  ]);
+  assert.match(result.data_files[0].mode, /^[0-7]{3}$/);
+});
+
+for (const [name, source, code = "UNSUPPORTED_JSON_IMPORT"] of [
+  ["missing attribute", 'import p from "./profile.json";'],
+  ["wrong type", 'import p from "./profile.json" with { type: "javascript" };'],
+  ["extra attribute", 'import p from "./profile.json" with { type: "json", other: "value" };'],
+  ["duplicate attribute", 'import p from "./profile.json" with { type: "json", type: "json" };'],
+  ["old assert spelling", 'import p from "./profile.json" assert { type: "json" };'],
+  ["reexport", 'export { default } from "./profile.json" with { type: "json" };'],
+  ["dynamic load", 'void import("./profile.json", { with: { type: "json" } });'],
+  ["CommonJS load", 'require("./profile.json");'],
+  ["type-only import", 'import type P from "./profile.json" with { type: "json" };'],
+  ["computed path", 'void import("./" + "profile.json");', "UNRESOLVED_MODULE_SPECIFIER"],
+  ["missing target", 'import p from "./missing.json" with { type: "json" };', "UNRESOLVED_LOCAL_MODULE"],
+  ["source traversal", 'import p from "../profile.json" with { type: "json" };', "ENGINE_SOURCE_ESCAPE"],
+  ["encoded target", 'import p from "./%70rofile.json" with { type: "json" };', "UNSUPPORTED_MODULE_SPECIFIER"],
+  ["file URL", 'import p from "file:///tmp/profile.json" with { type: "json" };', "UNSUPPORTED_MODULE_SPECIFIER"],
+  ["attribute on executable module", 'import p from "./value.mjs" with { type: "json" };', "UNSUPPORTED_IMPORT_ATTRIBUTES"],
+]) {
+  test(`JSON data import rejects ${name}`, () => {
+    refuses(fixture({ "src/a.mts": source, "src/profile.json": "{}", "src/value.mjs": "export default {};", "profile.json": "{}" }), code);
+  });
+}
+
+for (const [name, bytes, code] of [
+  ["invalid JSON", '{"unfinished":', "INVALID_JSON_DATA"],
+  ["invalid UTF-8", Buffer.from([0x22, 0xff, 0x22]), "SOURCE_ENCODING"],
+  ["BOM", Buffer.from([0xef, 0xbb, 0xbf, 0x7b, 0x7d]), "INVALID_JSON_DATA"],
+]) {
+  test(`JSON inventory refuses ${name}`, () => {
+    refuses(fixture({ "src/a.mjs": 'import p from "./profile.json" with { type: "json" };', "src/profile.json": bytes }), code);
+  });
+}
+
+test("an unimported invalid JSON file cannot disappear from the data inventory", () => {
+  refuses(fixture({ "src/a.mjs": "export {};", "src/profile.json": "not json" }), "INVALID_JSON_DATA");
+});
+
+test("JSON symlink data cannot escape confinement", () => {
+  refuses(fixture({ "src/a.mjs": 'import p from "./profile.json" with { type: "json" };', "outside.json": "{}" }, (_m, _l, root) => {
+    mkdirSync(path.join(root, "src")); symlinkSync("../outside.json", path.join(root, "src/profile.json"));
+  }), "SOURCE_SYMLINK");
+});
+
+test("a JSON target directory is not admitted as data", () => {
+  refuses(fixture({ "src/a.mjs": 'import p from "./profile.json" with { type: "json" };' }, (_m, _l, root) => {
+    mkdirSync(path.join(root, "src/profile.json"), { recursive: true });
+  }), "UNRESOLVED_LOCAL_MODULE");
+});
+
+test("data bytes and modes affect the graph digest independently of executable source", () => {
+  const source = 'import p from "./profile.json" with { type: "json" };';
+  const first = fixture({ "src/a.mjs": source, "src/profile.json": "{}" });
+  const same = fixture({ "src/a.mjs": source, "src/profile.json": "{}" });
+  const changed = fixture({ "src/a.mjs": source, "src/profile.json": '{"v":2}' });
+  assert.equal(first.status, "passed"); assert.equal(same.status, "passed"); assert.equal(changed.status, "passed");
+  assert.equal(first.graph_sha256, same.graph_sha256);
+  assert.notEqual(first.graph_sha256, changed.graph_sha256);
+  assert.deepEqual(first.files, changed.files);
+  const differentMode = fixture({ "src/a.mjs": source, "src/profile.json": "{}" }, undefined,
+    (directory) => chmodSync(path.join(directory, "src/profile.json"), 0o600));
+  assert.equal(differentMode.status, "passed");
+  assert.notEqual(first.graph_sha256, differentMode.graph_sha256);
+  assert.equal(differentMode.data_files[0].mode, "600");
+});
+
+for (const [name, mutate] of [
+  ["bytes", (filename) => writeFileSync(filename, '{"changed":true}')],
+  ["mode", (filename) => chmodSync(filename, 0o600)],
+  ["deletion", (filename) => rmSync(filename)],
+  ["new data file", (filename) => writeFileSync(path.join(path.dirname(filename), "new.json"), "{}")],
+]) {
+  test(`JSON ${name} drift after the captured read fails readback`, () => {
+    const original = fs.readFileSync; let changed = false;
+    fs.readFileSync = function (filename, ...args) {
+      const bytes = Reflect.apply(original, this, [filename, ...args]);
+      if (!changed && typeof filename === "string" && filename.endsWith("/profile.json")) {
+        changed = true; mutate(filename);
+      }
+      return bytes;
+    };
+    syncBuiltinESMExports();
+    try {
+      const result = fixture({ "src/a.mjs": 'import p from "./profile.json" with { type: "json" };', "src/profile.json": "{}" });
+      assert.equal(changed, true);
+      refuses(result, "DATA_CHANGED_DURING_SCAN");
+    } finally {
+      fs.readFileSync = original; syncBuiltinESMExports();
     }
   });
 }

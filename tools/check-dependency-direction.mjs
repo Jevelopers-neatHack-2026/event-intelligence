@@ -13,6 +13,16 @@ const MODULE_FILE = /\.(?:[cm]?[jt]s|[jt]sx)$/;
 const DEPENDENCY_GROUPS = ["dependencies", "optionalDependencies", "peerDependencies", "devDependencies"];
 const LOADER_NAMES = new Set(["require", "createRequire", "getBuiltinModule"]);
 const NATIVE_GUARD = "src/extraction/pdf/network-guard.mjs";
+const PNG_NATIVE_GUARD = "src/extraction/png/network-guard.mjs";
+const PNG_DNS_METHODS = ["lookup", "lookupService", "resolve", "resolve4", "resolve6",
+  "resolveAny", "resolveCaa", "resolveCname", "resolveMx", "resolveNaptr",
+  "resolveNs", "resolvePtr", "resolveSoa", "resolveSrv", "resolveTxt", "reverse"];
+const PNG_NATIVE_MODULES = [
+  ["node:http", ["request", "get", "ClientRequest"]], ["node:https", ["request", "get"]],
+  ["node:http2", ["connect"]], ["node:net", ["connect", "createConnection"]],
+  ["node:tls", ["connect"]], ["node:dgram", ["createSocket"]],
+  ["node:dns", PNG_DNS_METHODS], ["node:dns/promises", PNG_DNS_METHODS],
+];
 const NATIVE_MODULES = [
   ["node:http", ["request", "get"], "http"],
   ["node:https", ["request", "get"], "https"],
@@ -108,11 +118,89 @@ function nativeGuardException(source, relative) {
   return {
     loaderImport,
     call,
+    modules: NATIVE_MODULES,
     identifiers: new Set([imported.name, declaration.name, factory.expression, call.expression]),
   };
 }
 
-function collectSources(root, violations) {
+// The PNG child has a distinct fixed eight-module loop. Recognize its exact
+// loader binding, loop, DNS constant and five prototype loads; no file exemption.
+function pngNativeGuardException(source, relative) {
+  if (relative !== PNG_NATIVE_GUARD) return undefined;
+  const imports = source.statements.filter((n) => n.kind === SyntaxKind.ImportDeclaration && literal(n.moduleSpecifier) === "node:module");
+  if (imports.length !== 1) return undefined;
+  const loaderImport = imports[0];
+  const bindings = loaderImport.importClause?.namedBindings;
+  if (loaderImport.importClause?.name || loaderImport.importClause?.isTypeOnly || bindings?.kind !== SyntaxKind.NamedImports || bindings.elements.length !== 2) return undefined;
+  if (bindings.elements.some((n, i) => n.propertyName || n.isTypeOnly || !identifier(n.name, ["createRequire", "syncBuiltinESMExports"][i]))) return undefined;
+  const declarations = source.statements.map((n) => constantDeclaration(n, "require")).filter(Boolean);
+  if (declarations.length !== 1) return undefined;
+  const declaration = declarations[0];
+  const factory = declaration.initializer;
+  if (factory?.kind !== SyntaxKind.CallExpression || !identifier(factory.expression, "createRequire") || factory.arguments.length !== 1) return undefined;
+  const location = factory.arguments[0];
+  if (location.kind !== SyntaxKind.PropertyAccessExpression || !identifier(location.name, "url") || location.expression.kind !== SyntaxKind.MetaProperty || location.expression.keywordToken !== SyntaxKind.ImportKeyword || !identifier(location.expression.name, "meta")) return undefined;
+  const functions = source.statements.filter((n) => n.kind === SyntaxKind.FunctionDeclaration && identifier(n.name, "installPngNetworkGuard"));
+  if (functions.length !== 1) return undefined;
+  const fn = functions[0];
+  if (fn.parameters.length || fn.asteriskToken || fn.modifiers?.some((n) => n.kind === SyntaxKind.AsyncKeyword) || !fn.body) return undefined;
+  const dns = fn.body.statements.map((n) => constantDeclaration(n, "dnsMethods")).filter(Boolean);
+  if (dns.length !== 1 || JSON.stringify(constantArray(dns[0].initializer)) !== JSON.stringify(PNG_DNS_METHODS)) return undefined;
+  const dnsIdentifiers = new Set([dns[0].name]);
+  const array = (n) => {
+    if (identifier(n, "dnsMethods")) { dnsIdentifiers.add(n); return PNG_DNS_METHODS; }
+    if (n?.kind === SyntaxKind.ArrayLiteralExpression) return n.elements.map(array);
+    return n?.kind === SyntaxKind.StringLiteral ? n.text : null;
+  };
+  const loops = fn.body.statements.filter((n) => n.kind === SyntaxKind.ForOfStatement);
+  if (loops.length !== 1) return undefined;
+  const loop = loops[0];
+  if (loop.awaitModifier || loop.initializer.kind !== SyntaxKind.VariableDeclarationList || !(loop.initializer.flags & NodeFlags.Const) || loop.initializer.declarations.length !== 1 || loop.initializer.declarations[0].initializer) return undefined;
+  const names = loop.initializer.declarations[0].name;
+  if (names.kind !== SyntaxKind.ArrayBindingPattern || names.elements.length !== 2 || names.elements.some((n, i) => n.kind !== SyntaxKind.BindingElement || n.dotDotDotToken || n.propertyName || n.initializer || !identifier(n.name, ["name", "methods"][i]))) return undefined;
+  if (JSON.stringify(array(loop.expression)) !== JSON.stringify(PNG_NATIVE_MODULES) || loop.statement.kind !== SyntaxKind.ExpressionStatement) return undefined;
+  const patch = loop.statement.expression;
+  if (patch.kind !== SyntaxKind.CallExpression || !identifier(patch.expression, "patch") || patch.arguments.length !== 2 || !identifier(patch.arguments[1], "methods")) return undefined;
+  const call = patch.arguments[0];
+  if (call.kind !== SyntaxKind.CallExpression || !identifier(call.expression, "require") || call.arguments.length !== 1 || !identifier(call.arguments[0], "name")) return undefined;
+  const allowedCalls = new Set([call]);
+  const prototypes = [
+    ["node:net", "Socket", ["connect"]], ["node:net", "Server", ["listen"]],
+    ["node:dgram", "Socket", ["connect", "send", "bind"]],
+    ["node:dns", "Resolver", PNG_DNS_METHODS], ["node:dns/promises", "Resolver", PNG_DNS_METHODS],
+  ];
+  const offset = fn.body.statements.indexOf(loop) + 1;
+  for (const [i, [moduleName, constructor, methods]] of prototypes.entries()) {
+    const statement = fn.body.statements[offset + i];
+    const invocation = statement?.kind === SyntaxKind.ExpressionStatement ? statement.expression : undefined;
+    if (invocation?.kind !== SyntaxKind.CallExpression || !identifier(invocation.expression, "patch") || invocation.arguments.length !== 2 || JSON.stringify(array(invocation.arguments[1])) !== JSON.stringify(methods)) return undefined;
+    const target = invocation.arguments[0];
+    if (target.kind !== SyntaxKind.PropertyAccessExpression || !identifier(target.name, "prototype")) return undefined;
+    const owner = target.expression;
+    if (owner.kind !== SyntaxKind.PropertyAccessExpression || !identifier(owner.name, constructor)) return undefined;
+    const load = owner.expression;
+    if (load.kind !== SyntaxKind.CallExpression || !identifier(load.expression, "require") || load.arguments.length !== 1 || literal(load.arguments[0]) !== moduleName) return undefined;
+    allowedCalls.add(load);
+  }
+  let drift = false;
+  visit(source, (n) => {
+    if (n.kind === SyntaxKind.CallExpression && identifier(n.expression, "require") && !allowedCalls.has(n)) drift = true;
+    if (identifier(n, "dnsMethods") && !dnsIdentifiers.has(n)) drift = true;
+  });
+  if (drift) return undefined;
+  return { loaderImport, call, modules: PNG_NATIVE_MODULES,
+    identifiers: new Set([bindings.elements[0].name, declaration.name, factory.expression, call.expression]) };
+}
+
+function jsonImport(node) {
+  const attributes = node.attributes;
+  return node.kind === SyntaxKind.ImportDeclaration && !node.importClause?.isTypeOnly
+    && attributes?.token === SyntaxKind.WithKeyword && attributes.attributes?.length === 1
+    && propertyName(attributes.attributes[0].name) === "type"
+    && literal(attributes.attributes[0].value) === "json";
+}
+
+function collectSources(root, violations, dataFiles = new Map()) {
   const sources = new Map();
   const collect = (directory) => {
     for (const entry of readdirSync(directory).sort()) {
@@ -123,12 +211,16 @@ function collectSources(root, violations) {
         violations.push({ code: "SOURCE_SYMLINK", file: relative });
       } else if (stat.isDirectory()) {
         collect(filename);
-      } else if (stat.isFile() && MODULE_FILE.test(entry)) {
+      } else if (stat.isFile() && (MODULE_FILE.test(entry) || entry.endsWith(".json"))) {
         const bytes = readFileSync(filename);
         const text = bytes.toString("utf8");
         if (!Buffer.from(text).equals(bytes)) violations.push({ code: "SOURCE_ENCODING", file: relative });
-        sources.set(filename, { path: relative, sha256: digest(bytes), mode: (stat.mode & 0o777).toString(8), text });
-      } else if (MODULE_FILE.test(entry)) {
+        const identity = { path: relative, sha256: digest(bytes), mode: (stat.mode & 0o777).toString(8), text };
+        if (entry.endsWith(".json")) {
+          try { JSON.parse(text); } catch { violations.push({ code: "INVALID_JSON_DATA", file: relative }); }
+          dataFiles.set(filename, identity);
+        } else sources.set(filename, identity);
+      } else if (MODULE_FILE.test(entry) || entry.endsWith(".json")) {
         violations.push({ code: "UNSUPPORTED_SOURCE_ENTRY", file: relative });
       }
     }
@@ -145,6 +237,7 @@ export function checkDependencyDirection(directory = REPOSITORY) {
   const violations = [];
   const edges = [];
   let sources = new Map();
+  const dataFiles = new Map();
   let inputBytes;
   let workspace;
   let api;
@@ -168,7 +261,7 @@ export function checkDependencyDirection(directory = REPOSITORY) {
     for (const [name, entry] of Object.entries(lock.packages ?? {})) {
       if (harnessIdentity(name) || harnessIdentity(entry.name) || harnessIdentity(entry.resolved)) violations.push({ code: "HARNESS_LOCK_ENTRY", file: "package-lock.json", package: name });
     }
-    sources = collectSources(root, violations);
+    sources = collectSources(root, violations, dataFiles);
     if (sources.size === 0) violations.push({ code: "NO_ENGINE_SOURCES", file: "src" });
     workspace = mkdtempSync(path.join(tmpdir(), "ei-dependency-direction-"));
     const config = path.join(workspace, "tsconfig.json");
@@ -185,7 +278,7 @@ export function checkDependencyDirection(directory = REPOSITORY) {
       }
       const diagnostics = project.program.getSyntacticDiagnostics(filename);
       for (const diagnostic of diagnostics) violations.push({ code: "SOURCE_SYNTAX", file: identity.path, diagnostic: diagnostic.code });
-      const exception = nativeGuardException(source, identity.path);
+      const exception = nativeGuardException(source, identity.path) ?? pngNativeGuardException(source, identity.path);
       if (exception) nativeRequireLoops += 1;
       const where = (node, position = node.getStart(source)) => ({ file: identity.path, line: source.getLineAndCharacterOfPosition(position).line + 1 });
       const refuse = (code, node) => { violations.push({ code, ...where(node) }); };
@@ -205,6 +298,16 @@ export function checkDependencyDirection(directory = REPOSITORY) {
         } else if (specifier.startsWith("./") || specifier.startsWith("../")) {
           const target = path.resolve(path.dirname(filename), specifier);
           if (!within(path.join(root, "src"), target)) { deny("ENGINE_SOURCE_ESCAPE"); return; }
+          if (specifier.endsWith(".json")) {
+            if (!jsonImport(node)) { deny("UNSUPPORTED_JSON_IMPORT"); return; }
+            if (!dataFiles.has(target)) { deny("UNRESOLVED_LOCAL_MODULE"); return; }
+            edge.target = dataFiles.get(target).path;
+            edge.layer = "engine-data";
+            edge.attributes = { type: "json" };
+            edges.push(edge);
+            return;
+          }
+          if (node.attributes) { deny("UNSUPPORTED_IMPORT_ATTRIBUTES"); return; }
           let resolved = target;
           if (typeOnly || /\.d\.[cm]?ts$/.test(filename)) {
             const declaration = target.replace(/\.mjs$/, ".d.mts").replace(/\.cjs$/, ".d.cts").replace(/\.js$/, ".d.ts");
@@ -239,7 +342,7 @@ export function checkDependencyDirection(directory = REPOSITORY) {
           const requireResolve = callee.kind === SyntaxKind.PropertyAccessExpression && identifier(callee.expression, "require") && identifier(callee.name, "resolve");
           const builtinLoader = callee.kind === SyntaxKind.PropertyAccessExpression && identifier(callee.expression, "process") && identifier(callee.name, "getBuiltinModule");
           if (node === exception?.call) {
-            for (const [specifier] of NATIVE_MODULES) add(specifier, "bounded-native-require", node);
+            for (const [specifier] of exception.modules) add(specifier, "bounded-native-require", node);
           } else if (callee.kind === SyntaxKind.ImportKeyword || directRequire || moduleRequire || requireResolve || builtinLoader) {
             if (node.arguments.length < 1 || (callee.kind !== SyntaxKind.ImportKeyword && node.arguments.length !== 1)) refuse("UNRESOLVED_MODULE_SPECIFIER", node);
             else add(literal(node.arguments[0]), callee.kind === SyntaxKind.ImportKeyword ? "dynamic-import" : "require", node);
@@ -271,7 +374,7 @@ export function checkDependencyDirection(directory = REPOSITORY) {
       });
       for (const reference of source.referencedFiles) add(reference.fileName, "reference-path", source, true, reference.pos);
       for (const reference of source.typeReferenceDirectives) add(reference.fileName, "reference-types", source, true, reference.pos);
-      if (identity.path === NATIVE_GUARD && !exception) violations.push({ code: "NATIVE_REQUIRE_EXCEPTION_DRIFT", file: identity.path });
+      if ([NATIVE_GUARD, PNG_NATIVE_GUARD].includes(identity.path) && !exception) violations.push({ code: "NATIVE_REQUIRE_EXCEPTION_DRIFT", file: identity.path });
     }
   } catch (error) {
     violations.push({ code: "INCOMPLETE_GRAPH", detail: error instanceof Error ? error.message : String(error) });
@@ -281,21 +384,24 @@ export function checkDependencyDirection(directory = REPOSITORY) {
   }
   try {
     const readbackViolations = [];
-    const after = collectSources(root, readbackViolations);
+    const dataAfter = new Map();
+    const after = collectSources(root, readbackViolations, dataAfter);
     if (readbackViolations.length !== 0 || after.size !== sources.size || [...sources].some(([name, record]) => after.get(name)?.sha256 !== record.sha256 || after.get(name)?.mode !== record.mode)) violations.push({ code: "SOURCE_CHANGED_DURING_SCAN", file: "src" });
+    if (dataAfter.size !== dataFiles.size || [...dataFiles].some(([name, record]) => dataAfter.get(name)?.sha256 !== record.sha256 || dataAfter.get(name)?.mode !== record.mode)) violations.push({ code: "DATA_CHANGED_DURING_SCAN", file: "src" });
     for (const [name, bytes] of inputBytes ?? []) if (!readFileSync(path.join(root, name)).equals(bytes)) violations.push({ code: "INPUT_CHANGED_DURING_SCAN", file: name });
   } catch (error) {
     violations.push({ code: "INCOMPLETE_READBACK", detail: error instanceof Error ? error.message : String(error) });
   }
   const files = [...sources.values()].map(({ text: _text, ...identity }) => identity);
-  const graph = { files, edges };
+  const data_files = [...dataFiles.values()].map(({ text: _text, ...identity }) => identity);
+  const graph = { files, data_files, edges };
   return {
     schema_version: "ei-dependency-direction/v1",
     status: violations.length === 0 ? "passed" : "failed",
     mode: "local-static-import-graph",
     inputs,
     graph_sha256: digest(JSON.stringify(graph)),
-    counts: { source_files: files.length, edges: edges.length, bounded_native_require_loops: nativeRequireLoops, violations: violations.length },
+    counts: { source_files: files.length, data_files: data_files.length, edges: edges.length, bounded_native_require_loops: nativeRequireLoops, violations: violations.length },
     ...graph,
     violations,
     acceptance: { local_import_boundary: violations.length === 0 ? "passed" : "failed", foreign_harness_to_engine: "not_inspected", accepted_contract_pin: "not_asserted", decision_capability_behavior: "not_executed" },
