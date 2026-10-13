@@ -21,6 +21,23 @@
     "Historical provider usage and unobserved measurements remain unknown, never zero. This documentation change performs no provider operation.",
     "New source observations and proof belong in additive dated snapshots. Preserve this snapshot, old manifest observations, failure receipts and original acceptance-null fields."
   ],
+  "evidence_classification": {
+    "modes": {
+      "mock": "Synthetic authorities or fixtures; native local clocks, SQLite, child processes or controlled HTTP do not make the end-to-end journey live.",
+      "recorded": "A retained earlier execution or source observation; its original revision, time and mode remain attached. Reading it is not a new execution.",
+      "sandbox": "Actual provider or consumer sandbox execution; none is supplied by this index.",
+      "live": "An actually authorized external execution. The retained public-source attempts remain incomplete or refused and do not establish a live provider/consumer journey.",
+      "estimated": "An estimate with an explicit basis; no estimated measurement is promoted into actual usage.",
+      "pending": "Required execution, input or acceptance is absent; no pass, zero usage or authorization is inferred."
+    },
+    "usage": {
+      "status": "unknown",
+      "amount": null,
+      "currency": null,
+      "basis_ref": null
+    },
+    "limits": "Modes describe evidence, not grants. This index authoring and validation use no paid/provider request. Historical unobserved cost is unknown; that is separate from the absence of new provider calls."
+  },
   "historical_inventory": {
     "path": "release/component-manifest.json",
     "audit_date": "2026-10-10",
