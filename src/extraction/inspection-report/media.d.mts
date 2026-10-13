@@ -6,7 +6,7 @@ import type { ScannedPdfDecoded, ScannedPdfRejected, RasterPageObservation } fro
 export type InspectionMediaComponent = "static-png" | "static-jpeg-webp" | "scanned-pdf";
 /** Explicit data projection: callers copy derivatives outside the pure composer.
  * An absent native source hash becomes null, never a fabricated hash. */
-type Projected<T> = Omit<T, "sourceSha256" | "copyNormalizedBytes"> & { readonly sourceSha256: string | null; readonly copyNormalizedBytes?: never };
+type Projected<T> = Omit<T, "sourceSha256" | "copyNormalizedBytes" | "copyRgbaBytes"> & { readonly sourceSha256: string | null; readonly copyNormalizedBytes?: never; readonly copyRgbaBytes?: never };
 export type PngDataProjection = Readonly<{ schemaVersion: "ei-native-media-data-projection/1"; component: "static-png"; result: Projected<StaticPngDecoded> | Projected<StaticPngRejected> }>;
 export type JpegWebpDataProjection = Readonly<{ schemaVersion: "ei-native-media-data-projection/1"; component: "static-jpeg-webp"; result: Projected<StaticJpegWebpDecoded> | Projected<StaticJpegWebpRejected> }>;
 export type ScannedPdfDataProjection = Readonly<{ schemaVersion: "ei-native-media-data-projection/1"; component: "scanned-pdf"; result:
@@ -53,6 +53,13 @@ export interface InspectionPngDerivative {
   readonly bytes: Uint8Array;
   readonly expectedSha256: string;
 }
+/** Raw static-image samples; distinct from encoded PNG and scanned-page RGBA. */
+export interface InspectionImageRgbaDerivative {
+  readonly role: "image-rgba8";
+  readonly page: null;
+  readonly bytes: Uint8Array;
+  readonly expectedSha256: string;
+}
 export interface InspectionRgbaDerivative {
   readonly role: "page-rgba8";
   readonly page: number;
@@ -62,8 +69,8 @@ export interface InspectionRgbaDerivative {
 type OriginalSource = Readonly<{ sourceBytes: Uint8Array; expectedSourceSha256: string }> | Readonly<{ sourceBytes: null; expectedSourceSha256: null }>;
 interface ObservationBase { readonly id: string; readonly pins: SelectedInspectionPins; readonly executionId: string; }
 export type InspectionMediaObservation = ObservationBase & OriginalSource & (
-  Readonly<{ component: "static-png"; format: "png"; projection: PngDataProjection; derivatives: readonly InspectionPngDerivative[] }> |
-  Readonly<{ component: "static-jpeg-webp"; format: "jpeg" | "webp"; projection: JpegWebpDataProjection; derivatives: readonly InspectionPngDerivative[] }> |
+  Readonly<{ component: "static-png"; format: "png"; projection: PngDataProjection; derivatives: readonly (InspectionPngDerivative | InspectionImageRgbaDerivative)[] }> |
+  Readonly<{ component: "static-jpeg-webp"; format: "jpeg" | "webp"; projection: JpegWebpDataProjection; derivatives: readonly (InspectionPngDerivative | InspectionImageRgbaDerivative)[] }> |
   Readonly<{ component: "scanned-pdf"; format: "scanned-pdf"; projection: ScannedPdfDataProjection; derivatives: readonly InspectionRgbaDerivative[] }>
 );
 export interface InspectionMediaReportInput {
@@ -75,7 +82,7 @@ export interface InspectionMediaReportInput {
   readonly observations: readonly InspectionMediaObservation[];
 }
 export interface InspectionMediaReport {
-  readonly schemaVersion: "ei-local-inspection-media-report/1";
+  readonly schemaVersion: "ei-local-inspection-media-report/2";
   readonly pins: SelectedInspectionPins;
   readonly pinAuthority: "checked-host-selection-only";
   readonly mappingState: InspectionReportInput["mappingState"];
@@ -105,7 +112,7 @@ export interface InspectionMediaReportArtifact {
   readonly byteLength: number;
   copyBytes(): Uint8Array;
 }
-export const INSPECTION_MEDIA_REPORT_VERSION: "ei-local-inspection-media-report/1";
+export const INSPECTION_MEDIA_REPORT_VERSION: "ei-local-inspection-media-report/2";
 export const INSPECTION_MEDIA_PROJECTION_VERSION: "ei-native-media-data-projection/1";
 export const INSPECTION_SOURCE_SNAPSHOT_VERSION: "ei-inspection-source-snapshot/1";
 export const INSPECTION_MEDIA_REPORT_LIMITS: Readonly<Record<string, number>>;

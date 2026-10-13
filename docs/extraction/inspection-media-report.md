@@ -6,7 +6,7 @@ native PNG/JPEG/WebP/scanned-PDF observations, copied derivative bytes, complete
 component checker output, and selected source/runtime receipts. It does not run
 a decoder, read a file, fetch a URL, invoke a supplied method, or dispatch OCR.
 
-This is the local `ei-local-inspection-media-report/1` format. It adds no canonical
+This is the local `ei-local-inspection-media-report/2` format. It adds no canonical
 contract export or accepted schema pin. `overall` remains `incomplete`,
 `acceptance.evaluated` remains `false`, and neither rights nor Finance authority
 is created. The generic `inspection-adapters` selector is not registered by this
@@ -22,6 +22,7 @@ local report consumer, not completion of issue #12, gate #22, or epic #1.
 | Native data projection | Exact component version, declared fields, bounded effective limits, supported format and typed decoded/refused result | No callable copy method enters the pure composer; undeclared native metadata is rejected |
 | Original source bytes | Copied and independently hashed against the selected source digest and the native source digest when returned | A refusal that omitted `sourceSha256` retains explicit `null`; non-byte input cannot establish a source identity |
 | Copied normalized PNG | Separate digest/length plus fixed PNG signature, three-chunk shape, CRCs, dimensions and RGBA8 output header | This checks PNG bytes and framing. It does not inflate PNG or claim verified decoded samples |
+| Copied static-image raw RGBA8 | Separate raw digest/length, dimensions, stride and transparent/translucent/opaque sample counts | Verifies only the provided raw sample domain; it does not independently decode PNG, flatten alpha, run OCR or grant rights |
 | Copied scanned-PDF page | Separate raw RGBA8 digest/length, one-based page sequence, source digest, stride, dimensions and opaque alpha | The retained bytes are raw samples, not a PNG file; physical page points remain separate from pixel dimensions |
 | Native checker stdout/stderr | Full raw wrapper streams, one terminal native summary, exact native file/case inventory, actual TAP verdicts/counts, exit and signal | Failed, skipped, missing, contradictory, ambiguous, recorded or relabeled live evidence cannot become complete local coverage |
 | Pinned runtime receipt | Exact selected manifest bytes, declared versions/wheel identity and bounded file inventory; PDF closure uses the installer's Python ASCII JSON hash domain | JPEG/WebP results also return the selected manifest digest. Scanned-PDF results do not return a closure digest, so the receipt remains separately host-selected |
@@ -34,12 +35,30 @@ those profiles or turn a cooperative network counter into native egress proof.
 
 ### Byte and geometry domains
 
-PNG and JPEG/WebP readers expose copied normalized PNG bytes and a separate
-`rgbaSha256`. This composer can hash the copied PNG independently. It retains
-the component's RGBA digest as `componentReportedRgba`, with `verified: false`,
-because decoded RGBA samples are not supplied by those copy methods. A matching
-PNG hash does not verify that different domain. This limitation remains a report
-reason even when every declared format is present.
+PNG and JPEG/WebP readers now expose two independent copy methods:
+`copyNormalizedBytes()` returns encoded PNG, and `copyRgbaBytes()` returns
+contiguous row-major RGBA8 samples. The caller supplies the normalized derivative
+first and may supply raw `image-rgba8` second. The report separately hashes each
+copy against the matching native digest and exact length. A raw image must have
+`width * height * 4` bytes; its stride is `width * 4`, and it has no page ordinal.
+Both copied representations count against the existing aggregate derivative cap.
+
+Only supplied matching raw bytes set `componentReportedRgba.verified: true`.
+The report counts zero, intermediate and 255 alpha samples without changing any
+pixel or choosing a background. It preserves RGB values under transparent
+pixels. Those counts describe bytes, not visual meaning or an opaque OCR grant.
+The normalized PNG is still checked for framing, CRC and geometry without
+inflation; independently verifying both hashes does not independently establish
+that the two representations decode to the same pixels. That common sample
+origin remains the fixed native reader's responsibility.
+
+If raw bytes are omitted, the reported raw digest stays `verified: false`, and
+`COMPONENT_RGBA_DOMAIN_NOT_INDEPENDENTLY_VERIFIED` keeps selected coverage
+incomplete. Encoded PNG bytes cannot stand in for raw samples. The local media
+report advances from schema 1 to schema 2 for these assertions. Earlier schema-1
+artifacts and their encoded-only 93/158-case reader evidence stay historical;
+the validator does not relabel them. The original text-report schema and the
+method-free data-projection envelope remain version 1.
 
 Scanned-PDF `pages[].copyRgbaBytes()` does supply raw opaque RGBA8 samples. Each
 copied page must match its own digest, `width * height * 4` byte length,
@@ -60,8 +79,9 @@ The trusted component caller copies derivatives before calling the report API.
 For example, after an actual successful `readStaticPng` call:
 
 ```js
-const { copyNormalizedBytes, ...metadata } = nativePng;
+const { copyNormalizedBytes, copyRgbaBytes, ...metadata } = nativePng;
 const copiedPng = copyNormalizedBytes();
+const copiedRgba = copyRgbaBytes();
 const observation = {
   id: "poster-png",
   component: "static-png",
@@ -80,6 +100,11 @@ const observation = {
     page: null,
     bytes: copiedPng,
     expectedSha256: nativePng.normalizedSha256,
+  }, {
+    role: "image-rgba8",
+    page: null,
+    bytes: copiedRgba,
+    expectedSha256: nativePng.rgbaSha256,
   }],
 };
 ```
@@ -108,9 +133,9 @@ media layer cannot silently lower that selection or invent a new one.
 
 `overall: incomplete` and the empty acceptance/owner-acknowledgement fields are
 unconditional. Held or missing canonical mappings, unrecorded accountable
-acceptance, facts requiring review, and unavailable independently decoded RGBA
-remain reasons. Missing formats, refused component results, unavailable runtime
-receipts, changed source, incomplete native checks, unknown process outcomes
+acceptance and facts requiring review remain reasons. Missing copied raw RGBA
+remains an explicit byte-domain limitation. Missing formats, refused component
+results, unavailable runtime receipts, changed source, incomplete native checks, unknown process outcomes
 and unknown required stderr remain additional coverage blockers.
 
 Execution IDs are unique across the v1 and media inventories. Observation IDs
@@ -151,14 +176,21 @@ to 256 KiB, checker stdout to 1 MiB, each stderr to 256 KiB, and final report JS
 to 4 MiB. JSON traversal also has depth and node bounds. Required cases are never
 turned into skips to fit an unavailable environment.
 
-The dedicated checker has two explicitly selected test files and 123 required
+The dedicated checker has two explicitly selected test files and 148 required
 top-level cases. Its actual fixture additionally runs the existing deterministic
-50-case route, native text-PDF 14-case route, PNG 93-case route, JPEG/WebP
-158-case route and scanned-PDF 99-case route. These nested component results are
+50-case route, native text-PDF 14-case route, PNG 107-case route, JPEG/WebP
+160-case route and scanned-PDF 99-case route. These nested component results are
 retained separately; they are not added into a misleading top-level count.
+The PNG worker protocol is `ei-static-png-worker/2`; its source profile remains
+`ei-static-png/1`. JPEG/WebP keeps its existing worker protocol. The report
+requires the corresponding 107/160-case inventories and the exact current native
+limits, including the PNG raw-output ceiling. No older result is silently upgraded.
 Tests use local synthetic bytes with real native readers, copied derivatives,
 source snapshots and raw summaries. Deliberately altered metadata/receipt/TAP
-controls are labeled synthetic and cannot establish component acceptance.
+controls are labeled synthetic and cannot establish component acceptance. Raw
+controls include copy isolation/recovery, swapped hash domains, missing or
+duplicate derivatives, alpha preservation, callable/proxy refusal and the
+combined encoded/raw byte ceiling.
 
 Acquire only the existing locked wheels and install them through the component
 installers. An example for Linux x86_64 with Node22.23.3/Python3.12.14 is:

@@ -11,11 +11,12 @@ declare const scannedNative: ScannedPdfDecoded;
 
 const png = await readStaticPng(new Uint8Array([1]));
 if (png.kind === "decoded") {
-  const { copyNormalizedBytes, ...metadata } = png;
+  const { copyNormalizedBytes, copyRgbaBytes, ...metadata } = png;
   const projection: PngDataProjection = { schemaVersion: "ei-native-media-data-projection/1", component: "static-png", result: metadata };
   const observation: InspectionMediaObservation = { id: "native-png", component: "static-png", format: "png", pins, executionId: "png-native-checks",
     sourceBytes: new Uint8Array([1]), expectedSourceSha256: png.sourceSha256, projection,
-    derivatives: [{ role: "normalized-png", page: null, bytes: copyNormalizedBytes(), expectedSha256: png.normalizedSha256 }] };
+    derivatives: [{ role: "normalized-png", page: null, bytes: copyNormalizedBytes(), expectedSha256: png.normalizedSha256 },
+      { role: "image-rgba8", page: null, bytes: copyRgbaBytes(), expectedSha256: png.rgbaSha256 }] };
   void observation;
 }
 const scanned = await readScannedPdf(new Uint8Array([1]));
@@ -47,3 +48,10 @@ const complete: true = validated.report.acceptance.evaluated;
 // @ts-expect-error report inventory and retained data are immutable
 validated.report.observations.push({});
 void unprojectedPng; void unprojectedPdf; void inventedSource; void complete;
+
+const { copyNormalizedBytes: normalizedOnlyRemoved, ...stillHasRawMethod } = pngNative;
+// @ts-expect-error removing the PNG accessor alone still leaves a callable raw-byte capability
+const rawMethodNotProjected: PngDataProjection = { schemaVersion: "ei-native-media-data-projection/1", component: "static-png", result: stillHasRawMethod };
+// @ts-expect-error static raw images have no scanned-page ordinal
+const inventedRawPage: InspectionMediaObservation = { id: "x", component: "static-png", format: "png", pins, executionId: "x", sourceBytes: new Uint8Array([1]), expectedSourceSha256: "a", projection: unprojectedPng, derivatives: [{ role: "image-rgba8", page: 1, bytes: new Uint8Array(4), expectedSha256: "a" }] };
+void normalizedOnlyRemoved; void rawMethodNotProjected; void inventedRawPage;

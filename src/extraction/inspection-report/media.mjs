@@ -6,7 +6,7 @@ import { SCANNED_PDF_ERRORS, SCANNED_PDF_LIMITS } from "../scanned-pdf/index.mjs
 import profile from "../scanned-pdf/profile.json" with { type: "json" };
 import { array, bytes, canonical, check, data, exactKeys, freeze, hash, identity, integer, isHash, isId, isRevision, parseJson, record, same } from "./media-data.mjs";
 
-export const INSPECTION_MEDIA_REPORT_VERSION = "ei-local-inspection-media-report/1";
+export const INSPECTION_MEDIA_REPORT_VERSION = "ei-local-inspection-media-report/2";
 export const INSPECTION_MEDIA_PROJECTION_VERSION = "ei-native-media-data-projection/1";
 export const INSPECTION_SOURCE_SNAPSHOT_VERSION = "ei-inspection-source-snapshot/1";
 export const INSPECTION_MEDIA_REPORT_LIMITS = Object.freeze({
@@ -23,8 +23,8 @@ const MODES = ["mock", "recorded", "sandbox", "live"];
 const PDF_ENGINE = Object.freeze({ name: "PDFium", version: profile.pdfiumVersion, bindings: "pypdfium2@" + profile.wrapperVersion });
 const PDF_WHEEL = "11f281613fa22313d9c7ab89947665e84eccf8ebe40e1198a84a88352305648d";
 const CASES = Object.freeze({
-  "static-png": { expected: 93, files: ["core", "reader", "lifecycle", "network", "protocol"].map((name) => "tests/extraction/png/" + name + ".test.mjs"), mode: "local synthetic PNG bytes; actual Linux children; no provider calls" },
-  "static-jpeg-webp": { expected: 158, files: ["reader", "profile", "native-validation", "webp-native", "normalization", "lifecycle", "protocol", "network", "runtime", "setup"].map((name) => "tests/extraction/jpeg-webp/" + name + ".test.mjs"), mode: "synthetic JPEG/WebP fixtures; actual pinned native decodes and Linux child resource/lifecycle controls; local loopback canary; no provider calls" },
+  "static-png": { expected: 107, files: ["core", "reader", "lifecycle", "network", "protocol"].map((name) => "tests/extraction/png/" + name + ".test.mjs"), mode: "local synthetic PNG bytes; actual Linux children; no provider calls" },
+  "static-jpeg-webp": { expected: 160, files: ["reader", "profile", "native-validation", "webp-native", "normalization", "lifecycle", "protocol", "network", "runtime", "setup"].map((name) => "tests/extraction/jpeg-webp/" + name + ".test.mjs"), mode: "synthetic JPEG/WebP fixtures; actual pinned native decodes and Linux child resource/lifecycle controls; local loopback canary; no provider calls" },
   "scanned-pdf": { expected: 99, files: ["reader", "lifecycle", "protocol", "native-boundary", "runtime"].map((name) => "tests/extraction/scanned-pdf/" + name + ".test.mjs"), mode: "synthetic PDF/pixel fixtures; real PDFium and native syscall/process controls; separately synthetic protocol producers; no provider requests" },
 });
 const byId = (a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
@@ -287,13 +287,32 @@ function observation(input, pins, executions, runtimes, budget) {
     const runtime = runtimes.get(input.component);
     if (runtime) check(runtime.manifest.sha256 === r.runtimeManifestSha256, "RUNTIME_MISMATCH");
   }
-  check(derivatives.length === 1 && integer(r.normalizedByteLength, r.limits.maxOutputBytes, 1), "DERIVATIVE_LENGTH_MISMATCH");
+  check((derivatives.length === 1 || derivatives.length === 2) && integer(r.normalizedByteLength, r.limits.maxOutputBytes, 1), "DERIVATIVE_LENGTH_MISMATCH");
   const owned = derivative(derivatives[0], r.normalizedSha256, r.normalizedByteLength, "normalized-png", null);
   normalizedPng(owned, r.width, r.height);
-  return { ...out, derivatives: [{ ...identity(owned, "normalized-png-bytes"), page: null, role: "normalized-png", width: r.width, height: r.height, coordinateSystem: "image-pixels" }],
-    omittedMethods: ["copyNormalizedBytes"], limitsEvidence: "native projected effective limits; no provider budget",
-    componentReportedRgba: { domain: "decoded-rgba8-sample-bytes", sha256: r.rgbaSha256, bytes: r.decodedRgbaBytes, verified: false,
-      reason: "copied derivative is PNG; this composer does not inflate it or claim independently verified RGBA samples" },
+  const outputs = [{ ...identity(owned, "normalized-png-bytes"), page: null, role: "normalized-png", width: r.width, height: r.height, coordinateSystem: "image-pixels" }];
+  let rgba = { domain: "decoded-rgba8-sample-bytes", sha256: r.rgbaSha256, bytes: r.decodedRgbaBytes, verified: false,
+    reason: "raw samples not supplied; normalized PNG bytes do not verify the separate raw RGBA domain" };
+  if (derivatives.length === 2) {
+    // The native raw accessor is called only by the trusted component caller.
+    // Copy, hash and bound those provided samples independently of encoded PNG.
+    const pixels = derivative(derivatives[1], r.rgbaSha256, r.decodedRgbaBytes, "image-rgba8", null);
+    let transparent = 0, translucent = 0, opaque = 0;
+    for (let at = 3; at < pixels.length; at += 4) {
+      if (pixels[at] === 0) transparent++;
+      else if (pixels[at] === 255) opaque++;
+      else translucent++;
+    }
+    const alpha = { transparent, translucent, opaque, total: r.width * r.height,
+      policy: "preserved native sample values; no flattening, background or pixel-meaning inference" };
+    outputs.push({ ...identity(pixels, "decoded-rgba8-sample-bytes"), page: null, role: "image-rgba8", width: r.width, height: r.height,
+      stride: r.width * 4, format: "rgba8", coordinateSystem: "top-left-pixels", rgbaHashVerified: true, alpha });
+    rgba = { ...rgba, verified: true, reason: "native reported digest equals independently hashed provided raw sample bytes",
+      normalizedPixelEquivalence: "not independently established; the fixed native reader owns the common sample origin" };
+  }
+  return { ...out, derivatives: outputs,
+    omittedMethods: ["copyNormalizedBytes", "copyRgbaBytes"], limitsEvidence: "native projected effective limits; no provider budget",
+    componentReportedRgba: rgba,
     runtimeReceiptComplete: isPng || runtimes.has(input.component), runtimeBinding: isPng ? "exact declared Node/zlib profile; no external runtime receipt" : "native result hash equals selected runtime receipt bytes when present",
     networkEvidence: isPng ? "guarded JavaScript API counter only; not native-egress attestation" : "cooperative Python API counter only; not native-egress attestation" };
 }
@@ -320,8 +339,8 @@ function compose(input) {
   if (executions.some((e) => !e.complete)) reasons.add("MEDIA_EXECUTION_INCOMPLETE");
   if (observations.some((o) => o.native.kind === "rejected" || o.source === null)) reasons.add("MEDIA_COMPONENT_LIMITATION");
   if (observations.some((o) => o.native.kind === "decoded" && !o.runtimeReceiptComplete)) reasons.add("RUNTIME_RECEIPT_MISSING");
-  if (observations.some((o) => o.componentReportedRgba)) reasons.add("COMPONENT_RGBA_DOMAIN_NOT_INDEPENDENTLY_VERIFIED");
-  const blockers = ["DETERMINISTIC_PREREQUISITE_MISSING", "DETERMINISTIC_PREREQUISITE_INCOMPLETE", "EXECUTION_INCOMPLETE", "COMPONENT_LIMITATION", "MODE_MISMATCH", "RECORDED_OR_PROVIDER_EXECUTION_NOT_AUTHENTICATED", "REQUIRED_FORMATS_MISSING", "SOURCE_BINDING_INCOMPLETE", "MEDIA_EXECUTION_INCOMPLETE", "MEDIA_COMPONENT_LIMITATION", "RUNTIME_RECEIPT_MISSING"];
+  if (observations.some((o) => o.componentReportedRgba?.verified === false)) reasons.add("COMPONENT_RGBA_DOMAIN_NOT_INDEPENDENTLY_VERIFIED");
+  const blockers = ["DETERMINISTIC_PREREQUISITE_MISSING", "DETERMINISTIC_PREREQUISITE_INCOMPLETE", "EXECUTION_INCOMPLETE", "COMPONENT_LIMITATION", "MODE_MISMATCH", "RECORDED_OR_PROVIDER_EXECUTION_NOT_AUTHENTICATED", "REQUIRED_FORMATS_MISSING", "SOURCE_BINDING_INCOMPLETE", "MEDIA_EXECUTION_INCOMPLETE", "MEDIA_COMPONENT_LIMITATION", "RUNTIME_RECEIPT_MISSING", "COMPONENT_RGBA_DOMAIN_NOT_INDEPENDENTLY_VERIFIED"];
   const report = freeze(data({ schemaVersion: INSPECTION_MEDIA_REPORT_VERSION, pins, pinAuthority: "checked-host-selection-only",
     mappingState: base.mappingState, requiredMode: base.requiredMode, overall: "incomplete",
     acceptance: { evaluated: false, satisfiedIds: [], ownerAcknowledgements: [] }, providerActivity: "not established by report validation", financeAuthority: "none", ocrOrFactInference: "none",

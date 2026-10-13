@@ -83,12 +83,16 @@ export function recoverScannedChildStderr(wrapper, expectedSha256) {
 export function projectedObservation(component, format, id, native, sourceBytes, pins) {
   const result = { ...native, sourceSha256: native.sourceSha256 ?? null };
   delete result.copyNormalizedBytes;
+  delete result.copyRgbaBytes;
   let derivatives = [];
   if (native.kind === "decoded" && component === "scanned-pdf") {
     result.pages = native.pages.map(({ copyRgbaBytes, ...metadata }) => metadata);
     derivatives = native.pages.map((p) => ({ role: "page-rgba8", page: p.page, bytes: p.copyRgbaBytes(), expectedSha256: p.sha256 }));
   } else if (native.kind === "decoded") {
-    derivatives = [{ role: "normalized-png", page: null, bytes: native.copyNormalizedBytes(), expectedSha256: native.normalizedSha256 }];
+    derivatives = [
+      { role: "normalized-png", page: null, bytes: native.copyNormalizedBytes(), expectedSha256: native.normalizedSha256 },
+      { role: "image-rgba8", page: null, bytes: native.copyRgbaBytes(), expectedSha256: native.rgbaSha256 },
+    ];
   }
   return { id, component, format, pins, executionId: component, sourceBytes,
     expectedSourceSha256: sourceBytes === null ? null : hash(sourceBytes),

@@ -12,7 +12,7 @@ export const INSPECTION_MEDIA_REPORT_TEST_FILES = Object.freeze([
   "tests/inspection-report/media/media.test.mjs",
   "tests/inspection-report/media/runner.test.mjs",
 ]);
-export const INSPECTION_MEDIA_REPORT_EXPECTED_CASES = 123;
+export const INSPECTION_MEDIA_REPORT_EXPECTED_CASES = 148;
 
 async function ordinary(filename, directory = false) {
   if (typeof filename !== "string" || !path.isAbsolute(filename)) throw new Error("required runtime or source file unavailable");

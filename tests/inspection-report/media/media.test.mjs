@@ -12,19 +12,24 @@ const jpeg = (value) => value.observations.find((o) => o.id === "jpeg-rgb-baseli
 const pdf = (value) => value.observations.find((o) => o.id === "pdf-scan-two");
 function refused(value, code) { assert.throws(() => composeInspectionMediaReport(value), (error) => error instanceof InspectionReportError && (!code || error.code === code), code); }
 
-test("actual original bytes, native PNG derivatives and raw PDF pixels compose an immutable incomplete aggregate", () => {
+test("actual original bytes, native encoded PNG and independent raw image/PDF pixels compose an immutable incomplete aggregate", () => {
   const f = input(), artifact = composeInspectionMediaReport(f), report = artifact.report;
   assert.equal(report.overall, "incomplete"); assert.equal(report.acceptance.evaluated, false);
   assert.deepEqual(report.acceptance.satisfiedIds, []); assert.deepEqual(report.acceptance.ownerAcknowledgements, []);
   assert.equal(report.ocrOrFactInference, "none"); assert.equal(report.financeAuthority, "none");
   assert.deepEqual(report.missingFormats, []);
   assert.equal(report.declaredCoverage, report.source.complete ? "complete" : "incomplete");
-  assert.deepEqual(report.executions.map((e) => e.expectedCases).sort((a, b) => a - b), [93, 99, 158]);
+  assert.deepEqual(report.executions.map((e) => e.expectedCases).sort((a, b) => a - b), [99, 107, 160]);
   assert.ok(report.executions.every((e) => e.nativeDeclaredComplete));
   assert.equal(report.prerequisite.sha256, f.prerequisite.expectedSha256);
   const normalized = report.observations.find((o) => o.id === "png-rgba");
   assert.equal(normalized.derivatives[0].domain, "normalized-png-bytes");
-  assert.equal(normalized.componentReportedRgba.verified, false);
+  assert.equal(normalized.componentReportedRgba.verified, true);
+  assert.equal(normalized.derivatives[1].domain, "decoded-rgba8-sample-bytes");
+  assert.equal(normalized.derivatives[1].rgbaHashVerified, true);
+  assert.equal(normalized.derivatives[1].stride, normalized.native.width * 4);
+  assert.equal(normalized.derivatives[1].sha256, hash(png(f).derivatives[1].bytes));
+  assert.equal(report.reasons.includes("COMPONENT_RGBA_DOMAIN_NOT_INDEPENDENTLY_VERIFIED"), false);
   const scanned = report.observations.find((o) => o.id === "pdf-scan-two");
   assert.deepEqual(scanned.derivatives.map((d) => d.page), [1, 2]);
   assert.equal(scanned.derivatives[0].domain, "scanned-page-opaque-rgba8-bytes");
@@ -110,7 +115,7 @@ test("matching derivative digest cannot turn arbitrary bytes into normalized PNG
   refused(f, "DERIVATIVE_FORMAT_MISMATCH");
 });
 test("a component-reported RGBA digest is retained explicitly unverified without pretending to decode PNG", () => {
-  const f = input(); png(f).projection.result.rgbaSha256 = "1".repeat(64);
+  const f = input(); png(f).derivatives.pop(); png(f).projection.result.rgbaSha256 = "1".repeat(64);
   const o = composeInspectionMediaReport(f).report.observations.find((o) => o.id === "png-rgba");
   assert.equal(o.componentReportedRgba.sha256, "1".repeat(64)); assert.equal(o.componentReportedRgba.verified, false);
 });
@@ -201,7 +206,7 @@ test("an earlier native TAP failure cannot be replaced by a green footer", () =>
 for (const [status, directive] of [["fail", "not ok"], ["skipped", "ok"]]) test("honest raw native " + status + " remains failed/incomplete evidence", () => {
   const f = input(); changeNativeSummary(f, "static-png", (s) => { s.complete = false; s.counts.pass--; s.counts[status]++; },
     (tap) => tap.replace(/^ok 1 - ([^\n]*)/m, directive + " 1 - $1" + (status === "skipped" ? " # SKIP required unavailable" : ""))
-      .replace(/^# pass 93$/m, "# pass 92").replace(new RegExp("^# " + status + " 0$", "m"), "# " + status + " 1"));
+      .replace(/^# pass 107$/m, "# pass 106").replace(new RegExp("^# " + status + " 0$", "m"), "# " + status + " 1"));
   f.executions.find((e) => e.component === "static-png").exitCode = 1;
   const e = composeInspectionMediaReport(f).report.executions.find((e) => e.component === "static-png");
   assert.equal(e.counts[status], 1); assert.equal(e.complete, false);
@@ -294,7 +299,7 @@ test("report bytes, schema, prerequisite and duplicate JSON keys are checked by 
   const changed = JSON.parse(Buffer.from(a.copyBytes()).toString()); changed.overall = "complete";
   const b = jsonBytes(changed); assert.throws(() => validateInspectionMediaReport(b, hash(b), f), { code: "REPORT_BYTES_MISMATCH" });
   changed.schemaVersion = "future"; const c = jsonBytes(changed); assert.throws(() => validateInspectionMediaReport(c, hash(c), f), { code: "UNSUPPORTED_VERSION" });
-  const duplicate = Buffer.from('{"schemaVersion":"ei-local-inspection-media-report/1","schemaVersion":"ei-local-inspection-media-report/1"}');
+  const duplicate = Buffer.from('{"schemaVersion":"ei-local-inspection-media-report/2","schemaVersion":"ei-local-inspection-media-report/2"}');
   assert.throws(() => validateInspectionMediaReport(duplicate, hash(duplicate), f), { code: "DUPLICATE_KEY" });
   f.prerequisite.reportBytes[0] ^= 1; refused(f, "REPORT_HASH_MISMATCH");
 });
@@ -326,4 +331,93 @@ for (const component of ["static-png", "static-jpeg-webp", "scanned-pdf"]) test(
 test("constructor configuration exceptions are not invented as native decoder result codes", () => {
   const f = input(); jpeg(f).projection.result = { kind: "rejected", code: "TypeError", sourceSha256: null, decoder: jpeg(f).projection.result.decoder };
   jpeg(f).derivatives = []; refused(f, "UNSUPPORTED_REFUSAL");
+});
+
+
+for (const [component, select] of [["PNG", png], ["JPEG", jpeg]]) {
+  for (const [name, mutate, code] of [
+    ["changed raw bytes", (o) => { o.derivatives[1].bytes[0] ^= 1; }, "DERIVATIVE_HASH_MISMATCH"],
+    ["wrong raw sidecar", (o) => { o.derivatives[1].expectedSha256 = "0".repeat(64); }, "DERIVATIVE_HASH_MISMATCH"],
+    ["wrong reported raw hash", (o) => { o.projection.result.rgbaSha256 = "0".repeat(64); }, "DERIVATIVE_HASH_MISMATCH"],
+    ["short raw copy", (o) => { o.derivatives[1].bytes = o.derivatives[1].bytes.subarray(1); }, "DERIVATIVE_LENGTH_MISMATCH"],
+    ["encoded PNG in the raw slot", (o) => { o.derivatives[1].bytes = o.derivatives[0].bytes; o.derivatives[1].expectedSha256 = o.derivatives[0].expectedSha256; }, "DERIVATIVE_HASH_MISMATCH"],
+    ["scanned-page raw role", (o) => { o.derivatives[1].role = "page-rgba8"; }, "DERIVATIVE_FORMAT_MISMATCH"],
+    ["invented raw page", (o) => { o.derivatives[1].page = 1; }, "DERIVATIVE_FORMAT_MISMATCH"],
+    ["undeclared raw metadata", (o) => { o.derivatives[1].privateText = "PRIVATE_RAW_CANARY"; }, "INVALID_INPUT"],
+  ]) test(component + " raw-byte join rejects " + name, () => { const f = input(); mutate(select(f)); refused(f, code); });
+
+  test(component + " missing raw bytes remain unverified/incomplete and cannot borrow the encoded hash", () => {
+    const f = input(); select(f).derivatives.pop();
+    const report = composeInspectionMediaReport(f).report;
+    const o = report.observations.find((o) => o.id === select(f).id);
+    assert.equal(report.declaredCoverage, "incomplete"); assert.equal(o.componentReportedRgba.verified, false);
+    assert.ok(report.reasons.includes("COMPONENT_RGBA_DOMAIN_NOT_INDEPENDENTLY_VERIFIED"));
+    assert.equal(o.derivatives.length, 1); assert.equal(o.derivatives[0].domain, "normalized-png-bytes");
+    assert.equal(report.acceptance.evaluated, false);
+  });
+
+  test(component + " actual raw-copy isolation, tamper refusal and original-copy recovery remain separately attributable", async () => {
+    const f = input(), source = select(f).sourceBytes;
+    const native = await (component === "PNG" ? fixture.readStaticPng(source) : fixture.raster.read(source));
+    assert.equal(native.kind, "decoded");
+    const first = native.copyRgbaBytes(), second = native.copyRgbaBytes(), encoded = native.copyNormalizedBytes();
+    assert.notEqual(first.buffer, second.buffer); assert.equal(hash(first), native.rgbaSha256);
+    assert.equal(hash(encoded), native.normalizedSha256); assert.notEqual(hash(encoded), hash(first));
+    const actual = projectedObservation(select(f).component, select(f).format, "copy-recovery", native, source, f.prerequisite.input.expectedPins);
+    f.observations = f.observations.filter((o) => o.id !== select(f).id); f.observations.push(actual);
+    const before = composeInspectionMediaReport(f);
+    first[0] ^= 1; assert.equal(hash(second), native.rgbaSha256); assert.equal(hash(native.copyRgbaBytes()), native.rgbaSha256);
+    actual.derivatives[1].bytes = first; refused(f, "DERIVATIVE_HASH_MISMATCH");
+    actual.derivatives[1].bytes = native.copyRgbaBytes();
+    assert.equal(composeInspectionMediaReport(f).sha256, before.sha256);
+    assert.equal(before.report.acceptance.evaluated, false);
+  });
+}
+
+test("actual PNG alpha values remain distinct transparent/translucent/opaque samples without flattening", async () => {
+  const source = fixture.png({ width: 3, height: 1, scanlines: Buffer.from([0, 11, 22, 33, 0, 44, 55, 66, 128, 77, 88, 99, 255]) });
+  const native = await fixture.readStaticPng(source); assert.equal(native.kind, "decoded");
+  const f = input(); f.observations.push(projectedObservation("static-png", "png", "alpha-three", native, source, f.prerequisite.input.expectedPins));
+  const result = composeInspectionMediaReport(f).report.observations.find((o) => o.id === "alpha-three");
+  const raw = result.derivatives[1];
+  assert.deepEqual([raw.alpha.transparent, raw.alpha.translucent, raw.alpha.opaque, raw.alpha.total], [1, 1, 1, 3]);
+  assert.equal(raw.format, "rgba8"); assert.equal(raw.coordinateSystem, "top-left-pixels"); assert.equal(raw.stride, 12);
+  assert.deepEqual([...native.copyRgbaBytes()], [11, 22, 33, 0, 44, 55, 66, 128, 77, 88, 99, 255]);
+  assert.match(result.componentReportedRgba.normalizedPixelEquivalence, /not independently established/);
+  assert.equal(result.textOrFacts.startsWith("none;"), true);
+});
+
+test("duplicate, reordered or raw-only raster derivatives cannot replace the normalized representation", () => {
+  const a = input(); png(a).derivatives.reverse(); refused(a, "DERIVATIVE_FORMAT_MISMATCH");
+  const b = input(); png(b).derivatives.push(copy(png(b).derivatives[1])); refused(b, "DERIVATIVE_LENGTH_MISMATCH");
+  const c = input(); png(c).derivatives.shift(); refused(c, "DERIVATIVE_FORMAT_MISMATCH");
+});
+
+test("raw slots reject proxy, accessor and shared byte inputs without executing caller code", () => {
+  let calls = 0;
+  const a = input(); png(a).derivatives[1] = new Proxy(png(a).derivatives[1], { get() { calls++; throw Error("trap"); }, ownKeys() { calls++; throw Error("trap"); } }); refused(a);
+  const b = input(); Object.defineProperty(png(b).derivatives[1], "bytes", { get() { calls++; return new Uint8Array(4); }, enumerable: true }); refused(b);
+  const c = input(); png(c).derivatives[1].bytes = new Uint8Array(new SharedArrayBuffer(4)); refused(c);
+  const d = input(); png(d).projection.result.copyRgbaBytes = () => { calls++; return new Uint8Array(4); }; refused(d);
+  assert.equal(calls, 0);
+});
+
+test("the existing aggregate derivative ceiling charges normalized and independently copied raw bytes together", async () => {
+  // One actual native decoded maximum-pixel result is reused as a deliberately
+  // repeated input. The byte admission bound must run before any report/dedupe
+  // completion, without treating the repetitions as accepted source evidence.
+  const source = fixture.png({ width: 4096, height: 1024, scanlines: Buffer.alloc((4096 * 4 + 1) * 1024) });
+  const native = await fixture.readStaticPng(source); assert.equal(native.kind, "decoded", JSON.stringify(native));
+  const f = input(), one = projectedObservation("static-png", "png", "large-copy", native, source, f.prerequisite.input.expectedPins);
+  assert.equal(one.derivatives[1].bytes.length, 16 * 1024 * 1024);
+  assert.ok(one.derivatives[0].bytes.length > 0);
+  f.observations = Array.from({ length: 4 }, (_, index) => ({ ...one, id: "large-copy-" + index }));
+  refused(f, "RESOURCE_LIMIT");
+});
+
+test("a schema1 report cannot be relabeled as the raw-verified schema2 format", () => {
+  const f = input(), old = JSON.parse(Buffer.from(composeInspectionMediaReport(f).copyBytes()).toString());
+  old.schemaVersion = "ei-local-inspection-media-report/1";
+  const oldBytes = jsonBytes(old);
+  assert.throws(() => validateInspectionMediaReport(oldBytes, hash(oldBytes), f), { code: "UNSUPPORTED_VERSION" });
 });
