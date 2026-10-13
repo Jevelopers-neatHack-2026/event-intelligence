@@ -17,6 +17,77 @@ function hasNoQuestion(result) {
   assert.equal(result.draft, null);
 }
 
+function nativeDeadlineFixture(h, durationMs) {
+  const native = { monotonic: performance.now, wall: Date.now, wait: Atomics.wait, timer: setTimeout };
+  const cell = new Int32Array(new SharedArrayBuffer(4));
+  const trace = { durationMs, authorityCalls: [], frontierCreates: 0, timerDeliveries: 0 };
+  const clock = () => ({ monotonic: performance.now(), wallMs: Date.now() });
+  const frontier = wrapStore(h.frontier, { createRun: async (...args) => {
+    const result = await h.frontier.createRun(...args);
+    trace.frontierCreates += 1;
+    trace.durableDeadlineAtMs = result.deadlineAtMs;
+    trace.frontierReturned = clock();
+    return result;
+  } });
+  return {
+    trace, frontier,
+    authority(context) {
+      const entry = { stage: context.stage, ...clock() };
+      trace.authorityCalls.push(entry);
+      if (context.stage === 'start') trace.startAuthority = entry;
+    },
+    consume() {
+      trace.targetEntry = clock();
+      // This is the unchanged original native budget's upper bound, not a new
+      // budget from release. The private effective deadline may be earlier.
+      trace.nativeUpperBound = trace.startAuthority.monotonic + durationMs;
+      trace.waitUntil = trace.nativeUpperBound + 25;
+      setTimeout(() => { trace.timerDeliveries += 1; trace.timerDelivered = clock(); }, 0);
+      while (performance.now() < trace.waitUntil) {
+        Atomics.wait(cell, 0, 0, Math.max(0, trace.waitUntil - performance.now()));
+      }
+      trace.waitFinished = clock();
+      trace.timerDeliveriesBeforeReturn = trace.timerDeliveries;
+    },
+    async run(input) {
+      assert.equal(input.limits.durationMs, durationMs);
+      // Build the input before bracketing the coordinator's internal start.
+      trace.beforeInvocation = clock();
+      const result = await runPrivateRetrieval(input);
+      trace.afterResult = clock();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      trace.nativeIntrinsicsUnmodified = native.monotonic === performance.now && native.wall === Date.now
+        && native.wait === Atomics.wait && native.timer === setTimeout;
+      return result;
+    },
+  };
+}
+
+function assertConsumedOriginalBudget(trace) {
+  assert.ok(trace.startAuthority);
+  assert.ok(trace.targetEntry, 'the intended callback must actually be entered');
+  assert.ok(trace.startAuthority.monotonic >= trace.beforeInvocation.monotonic);
+  assert.ok(trace.waitFinished.monotonic >= trace.nativeUpperBound);
+  assert.equal(trace.timerDeliveriesBeforeReturn, 0, 'native timers cannot run during the synchronous callback');
+  assert.equal(trace.timerDeliveries, 1);
+  assert.ok(trace.timerDelivered.monotonic >= trace.waitFinished.monotonic);
+  assert.equal(trace.nativeIntrinsicsUnmodified, true);
+}
+
+function assertFinalPhaseEnteredInTime(trace) {
+  assertConsumedOriginalBudget(trace);
+  assert.equal(trace.frontierCreates, 1);
+  assert.ok(Number.isSafeInteger(trace.durableDeadlineAtMs));
+  // These are separate native-budget and durable-wall preconditions. Neither
+  // exports the effective monotonic deadline after its private durable clamp.
+  // The coordinator also checks that effective deadline immediately before
+  // invoking this release callback. Earlier expiry must fail this fixture.
+  assert.ok(trace.targetEntry.monotonic < trace.beforeInvocation.monotonic + trace.durationMs,
+    'the target phase must begin within the original native budget');
+  assert.ok(trace.targetEntry.wallMs < trace.durableDeadlineAtMs,
+    'the target phase must begin before the actual durable wall deadline');
+}
+
 function validReferences(result) {
   const review = result.sourceAuthorityReview;
   assert.equal(review.authority, 'unknown');
@@ -159,34 +230,87 @@ test('default-off final host revocation suppresses the entire projection and its
 
 test('time consumed in the last default-off authority callback is checked before projection reads source URLs', async (t) => {
   const h = await harness(t); let releaseCalls = 0; let consumed = false; let sourceUrlReads = 0;
-  let materializations = 0;
+  let materializations = 0; let finalEvidenceCount = 0; let installedGetters = 0;
+  let canariesAtTarget;
+  // New final-phase fixture: use the harness's existing 10 s setup allowance.
+  // This is not a claimed pass of the historical 500 ms missed-phase fixture.
+  const timing = nativeDeadlineFixture(h, 10_000);
   const store = wrapStore(h.evidenceStore, {
     materializeSelected: async (...args) => {
       const result = await h.evidenceStore.materializeSelected(...args);
       if (++materializations !== 3) return result;
-      return { ...result, evidence: result.evidence.map((entry) => ({
-        ...entry,
-        source: Object.defineProperty({ ...entry.source }, 'sourceUrl', {
-          get() { sourceUrlReads += 1; return entry.source.sourceUrl; },
-        }),
-      })) };
+      finalEvidenceCount = result.evidence.length;
+      return { ...result, evidence: result.evidence.map((entry) => {
+        installedGetters += 1;
+        return {
+          ...entry,
+          source: Object.defineProperty({ ...entry.source }, 'sourceUrl', {
+            get() { sourceUrlReads += 1; return entry.source.sourceUrl; },
+          }),
+        };
+      }) };
     },
   });
-  const started = performance.now();
-  const result = await h.run('followup-final-authority-deadline', {
-    evidenceStore: store, limits: { maxDepth: 0, maxTransportAttemptAdmissions: 8, durationMs: 500 },
+  const input = h.input('followup-final-authority-deadline', {
+    evidenceStore: store, frontier: timing.frontier,
     authorizeCurrent: (_request, context) => {
+      timing.authority(context);
       if (context.stage === 'release' && ++releaseCalls === 3) {
         consumed = true;
-        while (performance.now() < started + 525) { /* Synthetic trusted callback consumes original time. */ }
+        canariesAtTarget = { materializations, finalEvidenceCount, installedGetters, sourceUrlReads };
+        timing.consume();
       }
       return true;
     },
   });
+  const result = await timing.run(input);
+  const transport = await h.frontier.getTransportProgress(h.scope, input.runId);
+  t.diagnostic(`FINAL_AUTHORITY_DEADLINE_JSON=${JSON.stringify({ ...timing.trace, releaseCalls, consumed,
+    materializations, finalEvidenceCount, installedGetters, sourceUrlReads, canariesAtTarget,
+    paths: h.paths, transport, result })}`);
   assert.equal(consumed, true, JSON.stringify(result));
+  assertFinalPhaseEnteredInTime(timing.trace);
+  assert.equal(releaseCalls, 3);
+  assert.equal(materializations, 3);
+  assert.ok(finalEvidenceCount > 0, 'the final selection must contain actual evidence');
+  assert.equal(installedGetters, finalEvidenceCount);
+  assert.deepEqual(canariesAtTarget, { materializations: 3, finalEvidenceCount, installedGetters, sourceUrlReads: 0 });
+  assert.deepEqual(h.paths, ['/event']);
+  assert.equal(transport.reservedBytes, 0);
   hasNoQuestion(result);
   assert.ok(result.limitations.includes('deadline_exceeded'));
   assert.equal(sourceUrlReads, 0, 'a later outer refusal must not hide an earlier projection read');
+});
+
+test('expiry before retrieval safely refuses without claiming final-callback coverage', async (t) => {
+  const h = await harness(t); const timing = nativeDeadlineFixture(h, 500);
+  let releaseCalls = 0; let materializations = 0;
+  const input = h.input('followup-early-authority-deadline', {
+    frontier: timing.frontier,
+    limits: { maxDepth: 0, maxTransportAttemptAdmissions: 8, durationMs: 500 },
+    evidenceStore: wrapStore(h.evidenceStore, { materializeSelected: async (...args) => {
+      materializations += 1;
+      return h.evidenceStore.materializeSelected(...args);
+    } }),
+    authorizeCurrent: (_request, context) => {
+      timing.authority(context);
+      if (context.stage === 'start') timing.consume();
+      if (context.stage === 'release') releaseCalls += 1;
+      return true;
+    },
+  });
+  const result = await timing.run(input);
+  t.diagnostic(`EARLY_AUTHORITY_DEADLINE_JSON=${JSON.stringify({ ...timing.trace,
+    releaseCalls, materializations, paths: h.paths, result })}`);
+  assertConsumedOriginalBudget(timing.trace);
+  assert.equal(timing.trace.authorityCalls.length, 1);
+  assert.equal(timing.trace.authorityCalls[0].stage, 'start');
+  assert.equal(timing.trace.frontierCreates, 0);
+  assert.equal(releaseCalls, 0);
+  assert.equal(materializations, 0);
+  assert.deepEqual(h.paths, []);
+  hasNoQuestion(result);
+  assert.ok(result.limitations.includes('deadline_exceeded'));
 });
 
 test('a settled no-source result requires fresh host release authorization', async (t) => {
@@ -239,17 +363,28 @@ test('cancellation inside no-source release authorization prevents its fixed pro
 
 test('time consumed by no-source authorization cannot create a fresh question budget', async (t) => {
   const h = await harness(t, { respond: (_req, response) => respond(response, 200, { 'content-type': 'text/html' }, EMPTY_SOURCE) });
-  const started = performance.now(); let checked = false;
-  const result = await h.run('followup-no-source-deadline', {
-    limits: { maxDepth: 0, maxTransportAttemptAdmissions: 8, durationMs: 500 },
+  // The sibling final phase needs the same explicit setup precondition.
+  const timing = nativeDeadlineFixture(h, 10_000); let checked = false; let releaseCalls = 0;
+  const input = h.input('followup-no-source-deadline', {
+    frontier: timing.frontier,
     authorizeCurrent: (_request, context) => {
+      timing.authority(context);
       if (context.stage === 'release') {
+        releaseCalls += 1;
         checked = true;
-        while (performance.now() < started + 525) { /* Synthetic trusted callback, no budget reset. */ }
+        timing.consume();
       }
       return true;
     },
   });
+  const result = await timing.run(input);
+  const transport = await h.frontier.getTransportProgress(h.scope, input.runId);
+  t.diagnostic(`NO_SOURCE_AUTHORITY_DEADLINE_JSON=${JSON.stringify({ ...timing.trace,
+    releaseCalls, checked, paths: h.paths, transport, result })}`);
+  assertFinalPhaseEnteredInTime(timing.trace);
+  assert.equal(releaseCalls, 1);
+  assert.deepEqual(h.paths, ['/event']);
+  assert.equal(transport.reservedBytes, 0);
   assert.equal(checked, true); hasNoQuestion(result);
   assert.ok(result.limitations.includes('deadline_exceeded'));
 });
