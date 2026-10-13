@@ -108,3 +108,27 @@ never a skip credit. Optional capture directories must be outside the source
 checkout; captured files use exclusive creation so an earlier attempt cannot be
 overwritten. Native provider calls, OCR accuracy benchmarks, canonical mapping,
 Creative acceptance and production-host authorization remain separate outcomes.
+
+## Hosted evidence capture
+
+The dedicated workflow retains its original uploads and additionally mirrors a
+fixed synthetic evidence inventory into bounded log records. The two report
+directories contribute fourteen media and twenty-four OCR capture files; two
+runtime manifests and the six fixed files from the single fresh startup attempt
+complete the successful forty-six-file capture. The startup manifest does not
+select an attempt: the workflow admits exactly one ordinary attempt directory,
+checks its timestamp/UUID name against both receipts, and refuses ambiguity.
+
+Every selected file must be ordinary, stable and at most 4 MiB; the total is
+limited to 16 MiB. All files are validated before any payload is emitted as
+16 KiB base64 records with lengths and SHA256 values. Missing, unexpected,
+oversized or ambiguous evidence fails the mirror step; original failed steps and
+the always-run upload remain visible. This bounded fixture capture does not
+change the production report's 8 MiB output limit. A future larger fixture needs
+an explicit reviewed evidence transport decision.
+
+The capture contains sanitized startup projections, not arbitrary initializer
+stdout, environment values, credentials or native library binaries. Captured
+source maps and manifests support independent byte and provenance checks; they
+do not prove physical host rehash, complete source/pixel replay, hostile-host
+containment, canonical adoption or accountable acceptance.

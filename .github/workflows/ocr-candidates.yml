@@ -34,6 +34,8 @@ jobs:
         with:
           python-version: '3.12.14'
           architecture: x64
+      - name: Verify the fixed evidence-mirror controls (not product/readiness tests)
+        run: python -I -S -B tests/tools/test_mirror_composition_evidence.py
       - run: npm ci
       - name: Install the locked host TypeScript compiler
         run: node tools/install-typescript-host.mjs
@@ -70,6 +72,9 @@ jobs:
           tests/extraction/scanned-pdf-ocr/types-consumer.mts
           tests/decisions/questions/types-consumer.mts
       - run: npm run typecheck
+      - name: Mirror bounded OCR candidate evidence for API review
+        if: always()
+        run: python -I -S -B tools/mirror-composition-evidence.py ocr-candidates
       - name: Preserve local source, output and failure evidence without native libraries
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9

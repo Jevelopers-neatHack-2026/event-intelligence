@@ -73,6 +73,122 @@ jobs:
           tests/extraction/jpeg-webp/types-consumer.mts
           tests/extraction/scanned-pdf/types-consumer.mts
       - run: npm run typecheck
+      - name: Mirror the fixed synthetic report and startup evidence inventory
+        if: always()
+        shell: bash
+        run: |
+          python -I -S -B - <<'PY'
+          import base64, hashlib, json, os, re, stat
+          from pathlib import Path
+
+          root = Path.cwd().resolve(strict=True)
+          temporary = Path(os.environ["RUNNER_TEMP"]).resolve(strict=True)
+          if temporary == root or root in temporary.parents:
+              raise ValueError("capture destination must remain outside source")
+
+          def directory(selected):
+              if (not selected.is_absolute() or selected.is_symlink()
+                      or selected.resolve(strict=True) != selected
+                      or not stat.S_ISDIR(selected.lstat().st_mode)):
+                  raise ValueError("capture directory must be ordinary and canonical")
+              return selected
+
+          def temporary_capture(variable):
+              selected = directory(Path(os.environ[variable]))
+              if selected.parent != temporary:
+                  raise ValueError("capture must be a direct runner-temp child")
+              return selected
+
+          media = temporary_capture("EI_INSPECTION_MEDIA_REPORT_CAPTURE")
+          ocr = temporary_capture("EI_INSPECTION_OCR_REPORT_CAPTURE")
+          media_names = [
+              "source-before.json", "source-after.json", "actual-fixture-origins.json",
+              "static-png.stdout", "static-png.stderr", "static-png.command.json",
+              "static-jpeg-webp.stdout", "static-jpeg-webp.stderr", "static-jpeg-webp.command.json",
+              "scanned-pdf.stdout", "scanned-pdf.stderr", "scanned-pdf.command.json",
+              "scanned-pdf.stderr-recovery.json", "scanned-pdf.child-stderr",
+          ]
+          ocr_names = [
+              "wrapper.stdout", "wrapper.stderr", "ocr-report.json", "fixture-origin.json",
+              "cancellation-and-recovery.json",
+              "text-png.native-result.json", "text-jpeg.native-result.json",
+              "text-webp.native-result.json", "blank-png.native-result.json",
+              "transparent-png.native-result.json", "text-pdf.native-result.json",
+              "blank-pdf.native-result.json",
+              "static-image-ocr.stdout", "static-image-ocr.stderr", "static-image-ocr.command.json",
+              "static-image-ocr.child-stderr-recovery.json", "static-image-ocr.child-stderr",
+              "static-image-ocr.caller-record.json",
+              "scanned-pdf-ocr.stdout", "scanned-pdf-ocr.stderr", "scanned-pdf-ocr.command.json",
+              "scanned-pdf-ocr.child-stderr-recovery.json", "scanned-pdf-ocr.child-stderr",
+              "scanned-pdf-ocr.caller-record.json",
+          ]
+          selections = []
+          for label, selected, names in (("media", media, media_names), ("ocr", ocr, ocr_names)):
+              if sorted(item.name for item in selected.iterdir()) != sorted(names):
+                  raise ValueError("missing or unexpected report capture member")
+              selections.extend((label + "/" + name, selected / name) for name in names)
+
+          ocr_runtime = directory(root / "tools/local-ocr/runtime")
+          pdf_runtime = directory(root / "tools/scanned-pdf/runtime")
+          selections.extend([
+              ("runtime/local-ocr-manifest.json", ocr_runtime / "manifest.json"),
+              ("runtime/scanned-pdf-manifest.json", pdf_runtime / "manifest.json"),
+          ])
+          attempts = directory(ocr_runtime / "initialization-attempts")
+          children = list(attempts.iterdir())
+          if len(children) != 1:
+              raise ValueError("fresh workflow requires one unambiguous startup attempt")
+          attempt = directory(children[0])
+          if not re.fullmatch(
+                  r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}"
+                  r"(?:\.[0-9]{6})?\+00-00-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}"
+                  r"-[89ab][0-9a-f]{3}-[0-9a-f]{12}", attempt.name):
+              raise ValueError("unexpected startup attempt identifier")
+          attempt_names = [
+              "started.json", "source-before.json", "source-after.json",
+              "stdout.txt", "stderr.txt", "summary.json",
+          ]
+          if sorted(item.name for item in attempt.iterdir()) != sorted(attempt_names):
+              raise ValueError("startup evidence is incomplete or contains unexpected members")
+          selections.extend(("startup/" + name, attempt / name) for name in attempt_names)
+
+          payloads, total = [], 0
+          for label, selected in selections:
+              descriptor = os.open(selected, os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC)
+              with os.fdopen(descriptor, "rb") as stream:
+                  before = os.fstat(stream.fileno())
+                  if not stat.S_ISREG(before.st_mode) or before.st_size > 4 * 1024 * 1024:
+                      raise ValueError("capture member is not an admitted bounded regular file")
+                  raw = stream.read(4 * 1024 * 1024 + 1)
+                  after = os.fstat(stream.fileno())
+              identity = lambda item: (item.st_dev, item.st_ino, item.st_size, item.st_mtime_ns)
+              if len(raw) != before.st_size or identity(before) != identity(after):
+                  raise ValueError("capture member changed during read")
+              total += len(raw)
+              if total > 16 * 1024 * 1024:
+                  raise ValueError("aggregate capture exceeds bound")
+              payloads.append((label, raw))
+          captured = dict(payloads)
+          for name in ("started.json", "summary.json"):
+              row = json.loads(captured["startup/" + name])
+              if row["attempt"] != attempt.name or not attempt.name.startswith(
+                      row["startedAt"].replace(":", "-") + "-"):
+                  raise ValueError("startup receipt does not name the selected attempt")
+          manifest = []
+          for label, raw in payloads:
+              manifest.append({"file": label, "bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()})
+              for offset in range(0, max(1, len(raw)), 16384):
+                  record = {"file": label, "encoding": "base64", "offset": offset,
+                            "total_bytes": len(raw),
+                            "data": base64.b64encode(raw[offset:offset + 16384]).decode("ascii")}
+                  print("OCR_REPORT_CAPTURE_BYTES " + json.dumps(record, sort_keys=True), flush=True)
+          print("OCR_REPORT_CAPTURE_MANIFEST_JSON=" + json.dumps({
+              "schemaVersion": "ei-inspection-ocr-capture-mirror/1",
+              "mode": "local-synthetic-native-evidence",
+              "startupAttempt": attempt.name,
+              "members": manifest, "totalBytes": total, "acceptanceAuthority": "none",
+          }, sort_keys=True), flush=True)
+          PY
       - name: Preserve local source, output and failure evidence without native libraries
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9

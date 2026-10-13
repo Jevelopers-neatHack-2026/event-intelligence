@@ -99,3 +99,44 @@ the fresh native controls, checks strict declarations and project types, and
 retains raw streams, source identities and runtime manifests. Native prerequisites
 are mandatory, never skipped. No provider grant, live commerce, accepted canonical
 mapping, deployed network, release readiness or foreign consumer ACK is implied.
+
+## Readable capture and replay limits
+
+The workflow runs the shared evidence mirror in its third fixed `ocr-candidates`
+mode after the verification steps, including when an earlier step fails. The
+separate helper suite has exactly **22 helper-only controls** across all three
+modes. Those controls do not change the **41** candidate cases, **10** checker
+controls, six strict consumers, native dependency pins or project type checks.
+
+The candidate mirror reads only these nine fixed files under the canonical
+`$RUNNER_TEMP/ei-ocr-candidate-evidence` directory: `wrapper.stdout`,
+`wrapper.stderr`, `labelled.native-result.json`, `doors.native-result.json`,
+`labelled-pdf.native-result.json`, `native-cancel-recovery.json`,
+`native-fixture-origin.json`, `candidate-report.json` and
+`question-preparation.json`. It also captures the labeled fixture's checked-in
+provenance, the OCR/PDF manifests, the common OCR initializer/provenance/notices,
+and `runtime.json` from the canonical
+`$RUNNER_TEMP/ei-ocr-candidate-jpeg-runtime` directory. Both runner directories
+must be the exact named children of a canonical RUNNER_TEMP outside the checkout.
+No caller-selected path, source image, arbitrary runtime file or native library is
+admitted by a candidate output filename.
+
+All nine candidate files are required for complete capture. Missing or unsafe
+files make capture incomplete while available fixed evidence is still retained;
+a missing/invalid candidate directory produces an explicit unavailable entry for
+each required file. The existing optional standalone OCR verification pointer and
+failed-startup source-snapshot rules stay unchanged. Base64 chunks preserve exact
+bytes, and the terminal manifest records source identity, file modes, lengths,
+digests and errors. The shared 4 MiB per-file, 16 MiB aggregate and bounded-attempt
+limits apply. Existing artifact upload remains separate and always attempted.
+
+**This capture is not a complete input-graph replay bundle.** The nine outputs do
+not serialize the original source bytes, raw derivative inputs, complete
+prerequisite inspection reports or their caller records. They allow review of
+observed outputs and their recorded hashes, not independent rederivation of the
+whole candidate/report graph from the captured files alone. The in-process
+maintained tests exercise that graph with actual supplied inputs; the mirror does
+not substitute for those tests or make missing predecessor executions available.
+Predecessor missing-summary/incomplete reasons and held mappings remain intact;
+`acceptedFacts` stays empty and acceptance is not evaluated. Capture completeness
+never grants facts, provider authority, owner acknowledgement or release readiness.
