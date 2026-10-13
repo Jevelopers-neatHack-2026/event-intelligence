@@ -2,8 +2,10 @@
 import { InspectionReportError } from "./index.mjs";
 import { validateInspectionMediaReport } from "./media.mjs";
 import { array, bytes, canonical, check, data, exactKeys, freeze, hash, identity, integer, isHash, isId, parseJson, record, same } from "./media-data.mjs";
-import { PROFILE as IMAGE_PROFILE, STATIC_IMAGE_OCR_LIMITS, STATIC_IMAGE_OCR_ERRORS, PNG_DECODER, RASTER_DECODER } from "../static-image-ocr/profile.mjs";
+import { PROFILE as IMAGE_PROFILE, STATIC_IMAGE_OCR_LIMITS, STATIC_IMAGE_OCR_ERRORS, PNG_DECODER, RASTER_DECODER, PNG_ERROR_CODES, RASTER_ERROR_CODES, OCR_PROFILE } from "../static-image-ocr/profile.mjs";
 import { PROFILE as PDF_PROFILE, SCANNED_PDF_OCR_LIMITS, SCANNED_PDF_OCR_ERRORS, PDF_ENGINE, OCR_ENGINE } from "../scanned-pdf-ocr/profile.mjs";
+import { LOCAL_OCR_ERRORS } from "../local-ocr/index.mjs";
+import { SCANNED_PDF_ERRORS } from "../scanned-pdf/index.mjs";
 
 export const INSPECTION_OCR_REPORT_VERSION = "ei-local-inspection-ocr-report/1";
 export const INSPECTION_OCR_REPORT_LIMITS = Object.freeze({ maxObservations: 32, maxExecutions: 2, maxResultBytes: 1024 * 1024,
@@ -44,13 +46,17 @@ function provenance(value, expected) {
 }
 function words(result, expected, limits) {
   provenance(result.provenance, expected);
-  const list = array(result.words, limits.maxWords); let total = 0;
+  const list = array(result.words, limits.maxWords); let total = 0, previous = [0, 0, 0, 0];
   for (const w of list) {
     exactKeys(w, ["text", "confidence", "confidenceMeaning", "requiresReview", "block", "paragraph", "line", "word", "box", "provenance"]);
-    check(typeof w.text === "string" && w.text.length > 0 && w.text.isWellFormed() && !/[\u0000-\u001f\u007f]/.test(w.text), "INVALID_WORD");
+    check(typeof w.text === "string" && w.text.length > 0 && w.text.isWellFormed() && !/[\u0000-\u001f\u007f-\u009f\u2028-\u202e\u2066-\u2069]/u.test(w.text), "INVALID_WORD");
     total += Buffer.byteLength(w.text); check(total <= limits.maxTextBytes, "RESOURCE_LIMIT");
     check(typeof w.confidence === "number" && Number.isFinite(w.confidence) && w.confidence >= 0 && w.confidence <= 100 && w.confidenceMeaning === "uncalibrated-engine-score" && w.requiresReview === true, "INVALID_WORD");
-    for (const k of ["block", "paragraph", "line", "word"]) check(integer(w[k], 2147483647, 1), "INVALID_WORD");
+    const ordinal = [w.block, w.paragraph, w.line, w.word];
+    check(ordinal.every((n) => integer(n, OCR_PROFILE.maxWords, 1)), "INVALID_WORD");
+    let comparison = 0;
+    for (let at = 0; at < ordinal.length; at++) if (ordinal[at] !== previous[at]) { comparison = ordinal[at] - previous[at]; break; }
+    check(comparison > 0, "INVALID_WORD"); previous = ordinal;
     exactKeys(w.box, ["left", "top", "width", "height"]);
     check(integer(w.box.left, expected.width) && integer(w.box.top, expected.height) && integer(w.box.width, expected.width, 1) && integer(w.box.height, expected.height, 1) && w.box.left + w.box.width <= expected.width && w.box.top + w.box.height <= expected.height, "INVALID_GEOMETRY");
     provenance(w.provenance, expected);
@@ -159,7 +165,7 @@ function observation(input, base, executions, budget) {
     if (r.sourceSha256 !== undefined) check(media.source !== null && r.sourceSha256 === media.source.sha256, "SOURCE_HASH_MISMATCH");
     if (r.stage !== undefined) check((pdf ? ["admission", "render", "pixels", "ocr", "aggregate"] : ["admission", "decode", "pixels", "ocr", "aggregate"]).includes(r.stage));
     if (r.page !== undefined) check(integer(r.page, L.maxPages, 1));
-    if (r.componentCode !== undefined) check(typeof r.componentCode === "string" && /^[A-Z][A-Z_]{0,63}$/.test(r.componentCode));
+    if (r.componentCode !== undefined) check([...LOCAL_OCR_ERRORS, ...(pdf ? SCANNED_PDF_ERRORS : [...PNG_ERROR_CODES, ...RASTER_ERROR_CODES])].includes(r.componentCode), "INVALID_STATUS");
     return { ...out, binding: "refused-component-result", observation: r };
   }
   const common = ["kind", "profile", "completeness", "requiresReview", "sourceSha256", "sourceBinding", "sourceAuthority", "decoder", "observer", "tokenUtf8Bytes", "limits"];
@@ -170,7 +176,9 @@ function observation(input, base, executions, budget) {
   check(media.native.kind === "decoded", "MEDIA_BINDING_MISMATCH");
   check(same(r.observer, observer), "UNSUPPORTED_VERSION");
   effectiveLimits(r.limits, pdf ? SCANNED_PDF_OCR_LIMITS : STATIC_IMAGE_OCR_LIMITS);
-  check(encoded.length <= r.limits.maxOutputBytes, "RESOURCE_LIMIT");
+  // The native cap applies to JSON itself; this report's canonical domain adds
+  // one LF which is independently counted in the report/result byte budgets.
+  check(encoded.length - 1 <= r.limits.maxOutputBytes, "RESOURCE_LIMIT");
   let missingRaw = false, totalWords = 0, totalText = 0;
   if (pdf) {
     check(same(r.decoder, decoderPdf), "UNSUPPORTED_VERSION");

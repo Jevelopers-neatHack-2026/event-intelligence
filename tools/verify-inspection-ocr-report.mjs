@@ -12,7 +12,7 @@ export const INSPECTION_OCR_REPORT_TEST_FILES = Object.freeze([
   "tests/inspection-report/ocr/report.test.mjs",
   "tests/inspection-report/ocr/input-boundary.test.mjs",
 ]);
-export const INSPECTION_OCR_REPORT_EXPECTED_CASES = 107;
+export const INSPECTION_OCR_REPORT_EXPECTED_CASES = 120;
 
 async function ordinary(filename, directory = false) {
   if (typeof filename !== "string" || !path.isAbsolute(filename)) throw new Error("required runtime or source file unavailable");
@@ -24,8 +24,9 @@ async function ordinary(filename, directory = false) {
 export async function verifyInspectionOcrReport(args) {
   const mode = args.length === 0 ? "mock" : args.length === 2 && args[0] === "--mode" ? args[1] : null;
   const common = { schemaVersion: "ei-inspection-ocr-report-check/1", case: "inspection-ocr-report-integrity", mode,
-    expectedCases: INSPECTION_OCR_REPORT_EXPECTED_CASES, fullInspectionAdaptersAcceptance: false, providerActivity: "none", ocrActivity: "none",
-    fixtureScope: "synthetic sources; actual deterministic, native text-PDF, PNG, pinned JPEG/WebP and scanned-PDF components" };
+    expectedCases: INSPECTION_OCR_REPORT_EXPECTED_CASES, fullInspectionAdaptersAcceptance: false, providerActivity: "none",
+    requiredOcrMode: "actual local Tesseract calls over synthetic sources; actual outcomes retained in caller captures",
+    fixtureScope: "synthetic sources and boundary mutations; actual deterministic, text-PDF, media and image/PDF-to-OCR components" };
   const emit = (value) => process.stdout.write(`INSPECTION_OCR_REPORT_VERIFY_JSON=${JSON.stringify({ ...common, ...value })}\n`);
   if (mode !== "mock") {
     emit({ status: mode === "live" ? "blocked" : "failed", exitCode: 1, testFiles: 0, terminalCases: 0,

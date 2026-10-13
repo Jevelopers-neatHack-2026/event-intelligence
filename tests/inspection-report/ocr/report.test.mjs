@@ -195,3 +195,36 @@ test("actual offset Buffer and Uint8Array report views preserve exact byte ident
   const view = b.subarray(6, b.length - 6); assert.equal(validate(view, a.sha256, original).sha256, a.sha256);
   assert.equal(validate(new Uint8Array(view.buffer, view.byteOffset, view.byteLength), a.sha256, original).sha256, a.sha256);
 });
+for (const [name, change] of [
+  ["duplicate ordinal", (r) => { for (const k of ["block", "paragraph", "line", "word"]) r.words[1][k] = r.words[0][k]; }],
+  ["reordered ordinal", (r) => { r.words.reverse(); }],
+  ["overlarge ordinal", (r) => { r.words[0].block = 2049; }],
+  ...["\u0080", "\u2028", "\u2066"].map((c) => ["forbidden U+" + c.codePointAt(0).toString(16), (r) => { r.words[0].text = c; r.tokenUtf8Bytes = r.words.reduce((n, w) => n + Buffer.byteLength(w.text), 0); }]),
+]) test("rejects exact native-profile " + name, () => {
+  const i = fresh(); alterResult(i, "text-png", change); rejected(() => compose(i), "INVALID_WORD");
+});
+test("rejects invented component refusal error rather than accepting arbitrary uppercase text", () => {
+  const i = fresh(); alterResult(i, "transparent-png", (r) => { r.componentCode = "INVENTED_SUCCESS"; }); rejected(() => compose(i), "INVALID_STATUS");
+});
+for (const status of ["fail", "skipped", "todo", "cancelled"]) test("honest " + status + " case remains incomplete even with a complete case inventory", () => {
+  const i = fresh();
+  alterSummary(i, "static-image-ocr", (n) => { n.complete = false; n.counts.pass--; n.counts[status]++; n.exitCode = 1; }, (tap) => {
+    const tag = status === "skipped" ? " # SKIP deliberate synthetic control" : status === "todo" ? " # TODO deliberate synthetic control" : "";
+    return tap.replace(/^ok 1 - [^\r\n]*$/m, (line) => (tag ? line + tag : "not " + line))
+      .replace(/^# pass (\d+)$/m, (_, n) => "# pass " + (Number(n) - 1)).replace(new RegExp("^# " + status + " 0$", "m"), "# " + status + " 1");
+  });
+  i.executions[0].exitCode = 1;
+  assert.equal(compose(i).report.executions.find((e) => e.component === "static-image-ocr").complete, false);
+});
+test("matching selected source hash with changed after-snapshot remains incomplete", () => {
+  const i = fresh(), p = i.prerequisite.input.source, after = JSON.parse(Buffer.from(p.afterBytes));
+  after.dirty = true; p.afterBytes = jsonBytes(after); p.expectedAfterSha256 = hash(p.afterBytes); refreshMedia(i); refreshCallerRecords(i);
+  assert.ok(compose(i).report.executions.every((e) => !e.complete));
+});
+test("native output JSON limit is distinct from the canonical record's trailing LF", () => {
+  const i = fresh(); alterResult(i, "text-png", (r) => {
+    r.limits.maxOutputBytes = 1;
+    for (let k = 0; k < 3; k++) r.limits.maxOutputBytes = Buffer.byteLength(JSON.stringify(r));
+  });
+  assert.equal(compose(i).report.observations.find((o) => o.id === "text-png").binding, "bound-supplied-byte-domains");
+});
