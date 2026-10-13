@@ -10,6 +10,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const exec = promisify(execFile);
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const fixtureRoot = new URL('../../tests/contracts/installed-research-consumer/', import.meta.url);
+const candidatePins = Object.freeze({ '0.9.7': 'pin.json', '0.10.2': 'pin-0.10.2.json' });
 const digest = (bytes, algorithm = 'sha256', encoding = 'hex') => createHash(algorithm).update(bytes).digest(encoding);
 const canonical = (value) => value === null || typeof value !== 'object' ? JSON.stringify(value)
   : Array.isArray(value) ? `[${value.map(canonical).join(',')}]`
@@ -20,14 +21,17 @@ const json = (value) => JSON.stringify(value, null, 2) + '\n';
 function options(args) {
   const parsed = {};
   for (let i = 0; i < args.length; i += 2) {
-    assert.ok(['--archive', '--output', '--tsc'].includes(args[i]), 'unknown option');
+    assert.ok(['--archive', '--output', '--tsc', '--candidate'].includes(args[i]), 'unknown option');
     assert.ok(args[i + 1] && !args[i + 1].startsWith('--'), 'missing option value');
     assert.equal(parsed[args[i]], undefined, 'duplicate option');
-    parsed[args[i]] = path.resolve(args[i + 1]);
+    parsed[args[i]] = args[i] === '--candidate' ? args[i + 1] : path.resolve(args[i + 1]);
   }
   assert.ok(parsed['--archive'] && parsed['--output'],
-    'usage: node tools/contracts/installed-research-consumer.mjs --archive exact.tgz --output new-directory [--tsc compiler-path]');
+    'usage: node tools/contracts/installed-research-consumer.mjs --archive exact.tgz --output new-directory [--candidate 0.9.7|0.10.2] [--tsc compiler-path]');
+  const candidate = parsed['--candidate'] ?? '0.9.7';
+  assert.ok(Object.hasOwn(candidatePins, candidate), 'UNSUPPORTED_CANDIDATE: choose an explicitly pinned diagnostic version');
   return { archive: parsed['--archive'], output: parsed['--output'],
+    candidate, candidateExplicit: parsed['--candidate'] !== undefined,
     tsc: parsed['--tsc'] ?? path.join(root, 'node_modules/typescript/bin/tsc') };
 }
 
@@ -75,9 +79,14 @@ async function main() {
   const config = options(process.argv.slice(2));
   // Every invocation gets a fresh directory. Existing failures/receipts must survive.
   await mkdir(config.output, { recursive: false, mode: 0o700 });
-  const pin = await readJson(new URL('pin.json', fixtureRoot));
+  const pinFile = new URL(candidatePins[config.candidate], fixtureRoot);
+  const pinBytes = await readFile(pinFile);
+  const pin = JSON.parse(pinBytes.toString('utf8'));
+  const pinRelative = path.relative(root, fileURLToPath(pinFile)).split(path.sep).join('/');
   const report = { receipt_kind: 'ei_installed_consumer_diagnostic_v1', recorded_at: new Date().toISOString(),
     producer: pin, diagnostic_status: 'failed', consumer_acceptance: 'INCOMPATIBLE_HOLD',
+    candidate_selection: { version: config.candidate, explicit: config.candidateExplicit,
+      pin_path: pinRelative, pin_sha256: digest(pinBytes) },
     commands: [], failures: [], skips: [], provider_mode: 'offline_no_provider_transport',
     environment: { node: process.version, os: process.platform, architecture: process.arch, kernel: release() },
     stages: { domain_owner_acceptance: null, product_acceptance: null, release: null },
@@ -106,6 +115,7 @@ async function main() {
   };
   try {
     report.required_checks.archive_identity = 'failed';
+    assert.equal(pin.version, config.candidate, 'selected diagnostic pin must match the explicit version');
     assert.equal(process.version, pin.node, 'exact private baseline toolchain required');
     const archiveInfo = await lstat(config.archive);
     assert.ok(archiveInfo.isFile() && !archiveInfo.isSymbolicLink(), 'archive must be an ordinary local file');
@@ -125,7 +135,8 @@ async function main() {
       'tests/contracts/installed-research-consumer/pin.json', 'tests/contracts/installed-research-consumer/caller.mjs',
       'tests/contracts/installed-research-consumer/consumer.mts', 'tests/contracts/installed-research-consumer/decision-caller.mjs',
       'src/review/history/store.mjs', 'src/review/history/cache-binding-capability.mjs', 'src/private/boundary-guard.mjs',
-      'src/evidence/store.mjs', 'src/discovery/identity/from-extraction.mjs',
+      'src/evidence/store.mjs', 'src/discovery/identity/from-extraction.mjs', 'src/discovery/identity/from-extraction.d.mts',
+      'src/discovery/identity/corroboration.mjs', 'src/discovery/identity/corroboration.d.mts',
       'src/discovery/entities/identity.mjs', 'src/discovery/occurrences/identity.mjs',
       'src/extraction/index.mjs', 'src/extraction/jsonld.mjs', 'src/extraction/source.mjs',
       'src/decisions/questions/index.mjs', 'src/decisions/questions/index.d.mts',
@@ -135,6 +146,7 @@ async function main() {
       'evals/corpus/labels.jsonl', 'evals/corpus/manifest.json']) {
       report.source_file_hashes[relative] = digest(await readFile(path.join(root, relative)));
     }
+    report.source_file_hashes[pinRelative] = digest(pinBytes);
     temporary = await mkdtemp(path.join(tmpdir(), 'ei-installed-research-'));
     // Install the exact bytes that were checked, avoiding a second read of the caller's archive.
     const verifiedArchive = path.join(temporary, 'verified-shared-contracts.tgz');

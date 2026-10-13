@@ -24,6 +24,17 @@ Issued source handles, sessions, results, derivatives, telemetry records, decisi
 
 `src/security/content-boundary/policy.mjs` keeps trusted capability, billable-unit, and approval-set checks independent from optional injection-classifier annotations. Only trusted composition-root code should wrap a callback with `createTrustedInjectionClassifier`; the returned brand records that choice but does not inspect or prove the callback safe. `optionalInjectionSignal` rejects raw callbacks and never invokes them. Boolean annotations are synchronous. An ordinary native Promise is rejection-observed with the captured intrinsic `Promise.prototype.then`; its eventual value is discarded because the API is synchronous. A promise with an own `constructor`, a Promise subclass with custom species, a Promise proxy, or a plain thenable is outside the supported result contract. The trusted adapter must handle rejection before returning those values and must not alter runtime Promise intrinsics. The adapter and callback execute in-process and are not sandboxed. Classifier misses, failures, malformed results, or positive signals cannot change the deterministic authorization result. This is not an accepted approval contract, tenant/project/asset/version binding, cumulative financial ledger, or production action authority.
 
+## Private association to retained source context
+
+Publication now also keeps a private, revocable association between the genuine
+derivative and the reviewed source digest, bounded by the original source expiry.
+It contains no raw source and does not change the public derivative or flow
+serialization. The adjacent [reviewed source-context adapter](reviewed-source-context.md)
+can reopen matching complete evidence through the actual EvidenceStore and require
+an explicit trusted context review plus current host authority. Its output stays
+tenant-private; three published facts and a matching digest alone never authorize
+complete source context or downstream model use.
+
 ## Local verification
 
 Run the dependency-free fixture suites with Node 22:

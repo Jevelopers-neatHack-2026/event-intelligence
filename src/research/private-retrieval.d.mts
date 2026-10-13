@@ -22,6 +22,7 @@ import type {
 } from '../discovery/occurrences/identity.mjs';
 import type { SafeFetcher } from '../security/index.mjs';
 import type { PrivateAssetReleaseAuthorityController } from './private-asset-release.mjs';
+import type { PrivateSourceAuthorityReview } from './source-authority-followup.mjs';
 
 export type PrivateRetrievalAuthorizationStage = 'start' | 'candidate' | 'asset-acquisition' | 'release';
 
@@ -261,6 +262,8 @@ export interface PrivateRetrievalDraft {
   }>[];
   readonly conflicts: readonly PrivateRetrievalConflict[];
   readonly sourceAuthority: 'not_evaluated';
+  /** Passive private input request, built only from the final authorized selection. */
+  readonly sourceAuthorityReview?: PrivateSourceAuthorityReview;
   readonly rights: 'not_evaluated';
   readonly usage: 'unknown';
   readonly limitations: readonly string[];
@@ -273,6 +276,8 @@ export interface PrivateRetrievalIncomplete {
   readonly status: 'incomplete' | 'cancelled' | 'denied';
   readonly completeness: 'incomplete';
   readonly draft: null;
+  /** Present only for a settled eligible source refusal with current release authorization; references are empty. */
+  readonly sourceAuthorityReview?: PrivateSourceAuthorityReview;
   readonly limitations: readonly string[];
   readonly progress?: PrivateRetrievalProgress;
 }

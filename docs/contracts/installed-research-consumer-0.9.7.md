@@ -14,6 +14,11 @@ of CON-01/02/03, #3, #22, or #1.
 The earlier [b47 candidate fixture evidence](research-contract-candidate-v1.md)
 remains separate and unchanged. This lane does not replace its preserved results.
 
+The launcher still selects this exact 0.9.7 pin by default. An explicit
+`--candidate 0.10.2` selects the separately recorded
+[0.10.2 proposal diagnostic](installed-research-consumer-0.10.2.md). A newer
+archive never changes the default selection or transfers an earlier result.
+
 ## Exact candidate and reproduction
 
 The diagnostic pin is in

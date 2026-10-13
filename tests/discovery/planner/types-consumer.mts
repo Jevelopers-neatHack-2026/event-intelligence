@@ -1,15 +1,25 @@
 import {
   createDiscoveryFrontierStore,
   type FrontierSnapshot,
+  type FrontierTenantProgress,
 } from '../../../src/discovery/planner/frontier.mjs';
 
 const store = createDiscoveryFrontierStore({
   directory: '/tmp/private-frontier',
   resolveTenant: (request: { readonly tenant: string }) => request.tenant,
+  tenantLimits: { maxInFlightLeases: 4, maxReservedDecodedBytes: 100 * 1024 * 1024 },
 });
 
 async function consumer(request: { readonly tenant: string }): Promise<FrontierSnapshot> {
   const scope = await store.scopeForAuthenticatedRequest(request);
+  const tenantProgress: FrontierTenantProgress = await store.getTenantProgress(scope);
+  const outstanding: number = tenantProgress.reservedBytes;
+  // @ts-expect-error tenant policy fields accept numeric bounds, not caller labels
+  const forgedLimit: import('../../../src/discovery/planner/frontier.mjs').FrontierTenantLimits = { maxInFlightLeases: 'trusted' };
+  // @ts-expect-error the tenant progress reader requires an issuer-backed scope
+  void store.getTenantProgress({ tenant: request.tenant });
+  void outstanding;
+  void forgedLimit;
   const snapshot = await store.createRun(scope, {
     runId: 'typed-run',
     seeds: [{ url: 'https://events.example.com/seed' }],
