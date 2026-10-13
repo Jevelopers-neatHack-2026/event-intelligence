@@ -24,8 +24,10 @@ alternative consumer endpoint.
 
 Inputs are genuine non-proxy Uint8Array/Buffer views on ordinary ArrayBuffer
 storage. The boundary creates an intrinsic canonical view without caller getters,
-iterators or coercion. The actual reader then copies it synchronously. Shared,
-subclassed and proxy storage is refused. Options must be plain own data properties.
+iterators or coercion. The actual reader then copies it synchronously. SharedArrayBuffer
+backing and subclassed/proxy byte views are refused; ordinary ArrayBuffer subclass
+backing is admitted by the intrinsic brand check. Options must be plain own data
+properties.
 Unknown keys, accessors, proxies and nonnumeric limit values fail closed; numeric
 range validation remains in the actual reader. Boundary failures are explicitly
 distinguished from native reader refusals and contain no invented source hash.

@@ -28,3 +28,24 @@ Run focused checks with Node 22.23.3, after `npm ci` and `node tools/install-typ
 node --test tests/extraction/*.test.mjs
 node_modules/.bin/tsc --noEmit --strict --target ES2022 --module NodeNext --moduleResolution NodeNext --lib ES2022,DOM --types node tests/extraction/types-consumer.mts
 ```
+
+## Parser-side request measurement
+
+The deterministic route strengthens its existing fetch-only regression with a fixed fresh-child API recorder in `tests/extraction/support/parser-egress-probe.mjs`. The recorder installs before the extractor and its dependencies are imported. It records and synchronously refuses the declared Node HTTP(S), HTTP/2, TCP/TLS, UDP, DNS, fetch/WebSocket, child-process, worker and addon entry points before calling their native implementations. The scope is API interposition on this fixed, trusted parser/dependency stack, not a kernel firewall, process-wide packet trace, hostile native-code sandbox, deployment attestation or public-egress measurement.
+
+The one maintained top-level test has an explicit nested inventory: 86 guarded entry points, 87 positive interception calls per child (including an already-imported ESM HTTP binding), 11 fixed parser fixtures per healthy child, two expected failing children and six receipt refusal controls. It exercises completed HTML/XHTML documents with remote canonical/context/ID, stylesheet/script/image/iframe references, an external XHTML DTD identifier, JS-required and access-restricted fixtures, cancellation and subsequent usable parsing. Exact source byte ranges and selected usable output are checked alongside zero parser network/launch attempts and no inline-script execution.
+
+The negative children deliberately make and swallow one synthetic guarded HTTP attempt after the complete parser matrix has settled, or one browser process-launch attempt before otherwise usable parsing. The child emits its final receipt only at its once-only before-exit boundary after rechecking all counters, so a late caught attempt cannot disappear behind an earlier success report. Both negative children must exit nonzero with the exact recorded attempt; catching the denial cannot turn the receipt into success. A final fresh healthy child must recover with identical fixture outcomes. The parent refuses missing or duplicate receipts, absent fixture/control assertions, signaled children and watchdog errors. Each child has a 10-second process watchdog and a 256 KiB output bound; these are test containment bounds and do not change production parser deadlines.
+
+`PARSER_SIDE_REQUEST_PROBE_JSON` child records and the parent `PARSER_SIDE_REQUEST_RECORDER_JSON` diagnostic retain the scoped API/control/fixture counts, synthetic input hashes and the expected failed controls. Nested controls are not additional top-level product cases. The collected three-file deterministic route and its existing runner inventory stay unchanged. The ordinary runner's `external_egress: "not measured"` remains accurate and unchanged. PDF/PNG worker guards and JPEG/WebP native-reader canary checks retain their separate evidence and limits.
+
+Run the focused maintained test, full deterministic route and runner controls on the exact candidate before claiming an executed result:
+
+```sh
+node --test --test-name-pattern='records HTML/XHTML parser side requests' tests/extraction/deterministic-extraction.test.mjs
+make verify CASE=deterministic-extraction MODE=mock
+npm run test:runner
+npm run typecheck
+```
+
+The name-filtered command intentionally skips unrelated top-level tests and is only a focused diagnostic. Required full-route qualification must separately execute all selected cases with zero required skips. This local measurement contributes to issue8 AC5; it does not close the full issue, establish provider/canonical/consumer authority or supply a public-source journey.
