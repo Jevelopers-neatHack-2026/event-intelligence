@@ -69,6 +69,8 @@ export interface StaticPngReaderOptions {
   readonly signal?: AbortSignal;
   /** Lower-only original wall deadline including admission, queue and return validation. */
   readonly timeoutMs?: number;
+  /** Lower-only absolute deadline in this Node process's performance.now() timebase. */
+  readonly deadlineAtMs?: number;
   /** Lower-only cap on normalized PNG bytes, not a provider or monetary budget. */
   readonly maxOutputBytes?: number;
 }

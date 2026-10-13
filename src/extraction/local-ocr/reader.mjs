@@ -53,7 +53,7 @@ function valuesFrom(value, keys) {
 
 function optionsFrom(options) {
   try {
-    const values = valuesFrom(options === undefined ? {} : options, ["signal", "timeoutMs", "maxTextBytes", "maxWords"]);
+    const values = valuesFrom(options === undefined ? {} : options, ["signal", "timeoutMs", "maxTextBytes", "maxWords", "deadlineAtMs"]);
     if (!values) return { error: "INVALID_OPTIONS" };
     const signal = values.signal;
     if (signal !== undefined) {
@@ -63,10 +63,12 @@ function optionsFrom(options) {
     const timeoutMs = values.timeoutMs === undefined ? CONFIG.defaultTimeoutMs : values.timeoutMs;
     const maxTextBytes = values.maxTextBytes === undefined ? CONFIG.maxTextBytes : values.maxTextBytes;
     const maxWords = values.maxWords === undefined ? CONFIG.maxWords : values.maxWords;
+    const deadlineAtMs = values.deadlineAtMs;
     if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > CONFIG.maxTimeoutMs ||
         !Number.isInteger(maxTextBytes) || maxTextBytes < 1 || maxTextBytes > CONFIG.maxTextBytes ||
-        !Number.isInteger(maxWords) || maxWords < 1 || maxWords > CONFIG.maxWords) return { error: "INVALID_LIMIT" };
-    return { signal, timeoutMs, maxTextBytes, maxWords };
+        !Number.isInteger(maxWords) || maxWords < 1 || maxWords > CONFIG.maxWords ||
+        (deadlineAtMs !== undefined && (!Number.isFinite(deadlineAtMs) || deadlineAtMs < 0 || deadlineAtMs > Number.MAX_SAFE_INTEGER))) return { error: "INVALID_LIMIT" };
+    return { signal, timeoutMs, maxTextBytes, maxWords, deadlineAtMs };
   } catch { return { error: "INVALID_OPTIONS" }; }
 }
 
@@ -317,9 +319,12 @@ export async function readLocalOcr(input, options) {
   const normalized = optionsFrom(options);
   if (normalized.error) return rejected(normalized.error);
   if (normalized.signal && isAborted.call(normalized.signal)) return rejected("CANCELLED");
+  // An orchestrator can carry its exact same-process monotonic deadline across
+  // handoffs; this lower-only cap never renews the standalone duration limit.
+  const deadline = Math.min(started + normalized.timeoutMs, normalized.deadlineAtMs ?? Infinity);
+  if (performance.now() >= deadline) return rejected("TIMEOUT");
   const snapshot = inputFrom(input);
   if (snapshot.error) return rejected(snapshot.error);
-  const deadline = started + normalized.timeoutMs;
   if (performance.now() >= deadline) return rejected("TIMEOUT", snapshot.provenance);
   if (process.versions.node !== CONFIG.nodeVersion) return rejected("OCR_UNAVAILABLE", snapshot.provenance);
   const runtime = runtimeFromDisk();

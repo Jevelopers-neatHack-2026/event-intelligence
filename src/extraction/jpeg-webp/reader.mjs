@@ -41,7 +41,7 @@ function record(value, allowed) {
 }
 function optionsFrom(options) {
   try {
-    const descriptors = record(options === undefined ? {} : options, ["signal", "timeoutMs", "maxOutputBytes"]);
+    const descriptors = record(options === undefined ? {} : options, ["signal", "timeoutMs", "deadlineAtMs", "maxOutputBytes"]);
     if (!descriptors) return { error: "INVALID_OPTIONS" };
     const signal = descriptors.signal?.value;
     if (signal !== undefined) {
@@ -50,10 +50,13 @@ function optionsFrom(options) {
     }
     const timeoutMs = descriptors.timeoutMs?.value ?? RASTER_LIMITS.defaultTimeoutMs;
     const maxOutputBytes = descriptors.maxOutputBytes?.value ?? RASTER_LIMITS.maxOutputBytes;
+    const deadlineAtMs = descriptors.deadlineAtMs?.value;
+    if (deadlineAtMs !== undefined && (!Number.isFinite(deadlineAtMs) || deadlineAtMs < 0 ||
+        deadlineAtMs > Number.MAX_SAFE_INTEGER)) return { error: "INVALID_LIMIT" };
     if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > RASTER_LIMITS.maxTimeoutMs ||
         !Number.isInteger(maxOutputBytes) || maxOutputBytes < 1 || maxOutputBytes > RASTER_LIMITS.maxOutputBytes ||
         descriptors.timeoutMs?.value === null || descriptors.maxOutputBytes?.value === null) return { error: "INVALID_LIMIT" };
-    return { signal, timeoutMs, maxOutputBytes };
+    return { signal, timeoutMs, maxOutputBytes, deadlineAtMs };
   } catch { return { error: "INVALID_OPTIONS" }; }
 }
 function snapshot(input) {
@@ -285,9 +288,10 @@ export function createStaticJpegWebpReader(configuration) {
       const refuse = (code, sha) => Promise.resolve(rejected(code, sha));
       if (normalized.error) return refuse(normalized.error);
       if (normalized.signal && isAborted.call(normalized.signal)) return refuse("CANCELLED");
+      const deadline = Math.min(started + normalized.timeoutMs, normalized.deadlineAtMs ?? Infinity);
+      if (performance.now() >= deadline) return refuse("TIMEOUT");
       const copied = snapshot(input);
       if (copied.error) return refuse(copied.error);
-      const deadline = started + normalized.timeoutMs;
       const inspected = inspectStaticRasterProfile(copied.bytes);
       if (performance.now() >= deadline) return refuse("TIMEOUT", copied.sourceSha256);
       if (inspected.kind === "rejected") return refuse(inspected.code, copied.sourceSha256);
