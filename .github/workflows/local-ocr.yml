@@ -1,0 +1,76 @@
+name: bounded local OCR reader
+
+on:
+  push:
+    paths:
+      - src/extraction/local-ocr/**
+      - tests/extraction/local-ocr/**
+      - tools/local-ocr/**
+      - tools/verify-local-ocr.mjs
+      - docs/extraction/local-ocr.md
+      - .github/workflows/local-ocr.yml
+      - package.json
+      - package-lock.json
+      - tsconfig.types.json
+  pull_request:
+    paths:
+      - src/extraction/local-ocr/**
+      - tests/extraction/local-ocr/**
+      - tools/local-ocr/**
+      - tools/verify-local-ocr.mjs
+      - docs/extraction/local-ocr.md
+      - .github/workflows/local-ocr.yml
+      - package.json
+      - package-lock.json
+      - tsconfig.types.json
+
+permissions:
+  contents: read
+
+jobs:
+  local-ocr:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 22.23.3
+          cache: npm
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: 3.12.14
+          architecture: x64
+      - name: Install the exact reviewed native and English model archives and bind the local host closure
+        run: python tools/local-ocr/install.py
+      - run: npm ci
+      - name: Install the locked host TypeScript compiler
+        run: node tools/install-typescript-host.mjs
+      - name: Require every native, lifecycle, negative, recovery and consumer-boundary case
+        run: node tools/verify-local-ocr.mjs
+      - name: Typecheck the private OCR consumer
+        run: >-
+          ./node_modules/.bin/tsc --noEmit --strict --target ES2022 --module NodeNext
+          --moduleResolution NodeNext --lib ES2022,DOM --types node --skipLibCheck false
+          --noErrorTruncation tests/extraction/local-ocr/types-consumer.mts
+      - run: npm run typecheck
+      - name: Preserve all attempt results, source identities, notices and runtime receipts
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: local-ocr-verification
+          path: |
+            tools/local-ocr/lock.json
+            tools/local-ocr/provenance.json
+            tools/local-ocr/notices/
+            src/extraction/local-ocr/profile.json
+            tools/local-ocr/runtime/manifest.json
+            tools/local-ocr/runtime/host-provenance.json
+            tools/local-ocr/runtime/host-notices/
+            tools/local-ocr/runtime/verification.json
+            tools/local-ocr/runtime/verification/
+            tools/local-ocr/runtime/initialization-attempts/
+          if-no-files-found: error
+          retention-days: 90
