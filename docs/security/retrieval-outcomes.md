@@ -87,8 +87,11 @@ HTTP 206 rejection, MIME/magic mismatch, wire and gzip limits, shared request an
 concurrency limits, active/queued cancellation, actual response closure and
 recovery. Four separate verifier controls prove missing, reduced and skipped
 required inventory cannot pass. Strict fixtures cover this private API and the
-unchanged package API. The existing security verifier and its 110-case inventory
-are not edited.
+unchanged package API. The original 110 security cases and existing verifier source are preserved.
+Recursive security discovery additionally selects these 35 cases and four
+verifier controls: the current aggregate is 149 cases across nine files. The
+synthetic verifier failure controls are expected negative subcommands, not
+product failures or required skips.
 
 Commands:
 

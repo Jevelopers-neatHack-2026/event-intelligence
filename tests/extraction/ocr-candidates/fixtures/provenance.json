@@ -1,0 +1,13 @@
+{
+  "mode": "synthetic pixels generated locally; no actual event or rights claim",
+  "generator": "Pillow12.3.0 Image.new RGB1200x340 white; DejaVuSans.ttf48 black at35,25+100*i; PNG compression9",
+  "fontSha256": "ae7b7855e115a5966d8b1b3f80f254ccc117ec86f9965e202ee2940453837280",
+  "fontNotice": "../../local-ocr/fixtures/font-notice.txt",
+  "lines": [
+    "Title: Community Night",
+    "Date: 03/04/2026",
+    "Venue: Sample Hall"
+  ],
+  "bytes": 20511,
+  "sha256": "2bd746b0551b9f91c1d524c692a1866262e1374784611765d9c35634b2a23212"
+}
