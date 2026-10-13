@@ -178,6 +178,13 @@ export function decodeStaticPngForWorker(bytes, maxOutputBytes) {
       SIGNATURE, chunk("IHDR", ihdr), chunk("IDAT", compressed), chunk("IEND", Buffer.alloc(0)),
     ]);
     if (normalized.length > maxOutputBytes) fail("OUTPUT_LIMIT");
+    // The raw payload comes from the same normalized sample rows. Keep the
+    // established PNG encoder and its hashes unchanged; omit only filter bytes.
+    const rgba = Buffer.alloc(image.width * image.height * 4);
+    for (let row = 0; row < image.height; row += 1) {
+      const from = row * rgbaStride + 1;
+      normalizedRows.copy(rgba, row * image.width * 4, from, from + image.width * 4);
+    }
     return {
       kind: "decoded",
       width: image.width,
@@ -187,6 +194,7 @@ export function decodeStaticPngForWorker(bytes, maxOutputBytes) {
       rgbaSha256: pixelHash.digest("hex"),
       normalizedSha256: createHash("sha256").update(normalized).digest("hex"),
       normalized,
+      rgba,
     };
   } catch (error) {
     return { kind: "rejected", code: error instanceof PngFailure ? error.code : "DECODER_FAILURE" };

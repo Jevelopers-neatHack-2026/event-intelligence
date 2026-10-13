@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const fixture = fileURLToPath(new URL("./lifecycle-fixture.mjs", import.meta.url));
 for (const mode of ["profile", "cancel", "timeout", "queued-cancel", "saturation",
-  "queued-deadline", "late-return", "cancel-delayed-close"]) {
+  "queued-deadline", "late-return", "cancel-delayed-close", "raw-copy-timeout", "raw-copy-cancel"]) {
   test("actual child lifecycle: " + mode, () => {
     assert.equal(process.platform, "linux", "Required Linux process cases may not be skipped.");
     const result = spawnSync(process.execPath, [fixture, mode], {
