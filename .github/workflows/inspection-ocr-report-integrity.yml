@@ -1,0 +1,88 @@
+name: local OCR inspection report integrity
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  inspection-ocr-report-integrity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Set runner-local inspection paths
+        shell: bash
+        run: |
+          : "${RUNNER_TEMP:?}" "${GITHUB_ENV:?}"
+          printf '%s\n' \
+            "EI_JPEG_WEBP_TEST_RUNTIME=$RUNNER_TEMP/ei-inspection-ocr-jpeg-runtime" \
+            "EI_STATIC_IMAGE_OCR_RASTER_RUNTIME=$RUNNER_TEMP/ei-inspection-ocr-jpeg-runtime" \
+            "EI_INSPECTION_OCR_REPORT_CAPTURE=$RUNNER_TEMP/ei-inspection-ocr-evidence" \
+            "EI_JPEG_WEBP_TEST_WHEEL=$RUNNER_TEMP/ei-inspection-ocr-wheels/pillow-12.3.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl" \
+            "EI_INSPECTION_MEDIA_REPORT_CAPTURE=$RUNNER_TEMP/ei-inspection-media-evidence" >> "$GITHUB_ENV"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 22.23.3
+          cache: npm
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12.14'
+          architecture: x64
+      - run: npm ci
+      - name: Install the locked host TypeScript compiler
+        run: node tools/install-typescript-host.mjs
+      - name: Acquire the two existing hash-pinned development wheels
+        run: >-
+          python -I -m pip --isolated download --disable-pip-version-check
+          --only-binary=:all: --no-deps --require-hashes
+          --dest "$RUNNER_TEMP/ei-inspection-ocr-wheels"
+          -r tools/static-raster/requirements.txt -r tools/scanned-pdf/requirements.txt
+      - name: Install both declared runtimes offline
+        run: |
+          python -I -S -B tools/static-raster/install.py --wheel "$EI_JPEG_WEBP_TEST_WHEEL" --destination "$EI_JPEG_WEBP_TEST_RUNTIME"
+          python -I -S -B tools/scanned-pdf/install.py --wheel "$RUNNER_TEMP/ei-inspection-ocr-wheels/pypdfium2-5.14.0-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+      - name: Install the exact local OCR native dependencies and model
+        run: python -I -S -B tools/local-ocr/install.py
+      - name: Verify actual OCR caller bindings and retain all raw evidence
+        run: |
+          mkdir -p "$EI_INSPECTION_OCR_REPORT_CAPTURE"
+          if node tools/verify-inspection-ocr-report.mjs --mode mock > "$EI_INSPECTION_OCR_REPORT_CAPTURE/wrapper.stdout" 2> "$EI_INSPECTION_OCR_REPORT_CAPTURE/wrapper.stderr"; then result=0; else result=$?; fi
+          cat "$EI_INSPECTION_OCR_REPORT_CAPTURE/wrapper.stdout"
+          cat "$EI_INSPECTION_OCR_REPORT_CAPTURE/wrapper.stderr" >&2
+          exit "$result"
+      - name: Compile the report and actual component consumers
+        run: >-
+          node node_modules/typescript/bin/tsc --noEmit --strict --target ES2022
+          --module NodeNext --moduleResolution NodeNext --lib ES2022,DOM
+          --types node --skipLibCheck false --noErrorTruncation
+          tests/inspection-report/ocr/types-consumer.mts
+          tests/extraction/static-image-ocr/types-consumer.mts
+          tests/extraction/scanned-pdf-ocr/types-consumer.mts
+          tests/inspection-report/types-consumer.mts
+          tests/inspection-report/media/types-consumer.mts
+          tests/extraction/types-consumer.mts
+          tests/extraction/pdf/types-consumer.mts
+          tests/extraction/png/types-consumer.mts
+          tests/extraction/jpeg-webp/types-consumer.mts
+          tests/extraction/scanned-pdf/types-consumer.mts
+      - run: npm run typecheck
+      - name: Preserve local source, output and failure evidence without native libraries
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: inspection-ocr-report-evidence
+          path: |
+            ${{ runner.temp }}/ei-inspection-media-evidence/
+            ${{ runner.temp }}/ei-inspection-ocr-evidence/
+            tools/local-ocr/runtime/manifest.json
+            tools/local-ocr/runtime/initialization-attempts/
+            tools/scanned-pdf/runtime/manifest.json
+          if-no-files-found: error
+          retention-days: 90
