@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { evaluateInspectionCompletion } from '../../../tools/verify-inspection-report.mjs';
+import { OCR_CANDIDATE_EXPECTED_CASES, OCR_CANDIDATE_TEST_FILES } from '../../../tools/verify-ocr-candidates.mjs';
+const summary=(counts={passed:41,failed:0,skipped:0,todo:0,cancelled:0})=>[{success:true,counts}];
+test('required inventory is fixed41 in one maintained file, independent of observed count',()=>{assert.equal(OCR_CANDIDATE_EXPECTED_CASES,41);assert.deepEqual(OCR_CANDIDATE_TEST_FILES,['tests/extraction/ocr-candidates/candidates.test.mjs']);assert.equal(evaluateInspectionCompletion(summary(),41,41).complete,true);});
+for(const kind of ['failed','skipped','todo','cancelled'])test('checker refuses '+kind+' terminal result',()=>assert.equal(evaluateInspectionCompletion(summary({passed:40,failed:0,skipped:0,todo:0,cancelled:0,[kind]:1}),41,41).complete,false));
+test('checker refuses missing, reduced, extra and duplicate aggregate evidence',()=>{for(const [ss,n]of [[[],41],[summary(),40],[summary(),42],[summary().concat(summary()),41]])assert.equal(evaluateInspectionCompletion(ss,n,41).complete,false);});
+for(const mode of ['live','sandbox','unknown'])test('unsupported '+mode+' is nonzero before native work',()=>{const r=spawnSync(process.execPath,['tools/verify-ocr-candidates.mjs','--mode',mode],{encoding:'utf8'});assert.equal(r.status,1);const line=r.stdout.trim().split('\n').at(-1);const v=JSON.parse(line.slice(line.indexOf('=')+1));assert.equal(v.testFiles,0);assert.equal(v.terminalCases,0);assert.equal(v.status,mode==='live'?'blocked':'failed');});
+test('unknown argument grammar refuses rather than silently selecting mock',()=>{const r=spawnSync(process.execPath,['tools/verify-ocr-candidates.mjs','--mode','mock','extra'],{encoding:'utf8'});assert.equal(r.status,1);assert.match(r.stdout,/"testFiles":0/);});

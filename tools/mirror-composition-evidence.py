@@ -21,6 +21,10 @@ FLAGS = os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC
 BEFORE_AFTER = ("source-before.json", "source-after.json")
 INITIALIZER = ("started.json", *BEFORE_AFTER, "stdout.txt", "stderr.txt", "summary.json")
 VERIFICATION = ("source-map.json", "stdout.tap", "stderr.txt", "summary.json")
+CANDIDATE_FILES = ("wrapper.stdout", "wrapper.stderr", "labelled.native-result.json",
+                   "doors.native-result.json", "labelled-pdf.native-result.json",
+                   "native-cancel-recovery.json", "native-fixture-origin.json",
+                   "candidate-report.json", "question-preparation.json")
 
 
 def directory(root, relative=""):
@@ -117,8 +121,8 @@ def notice_refs(raw):
     return sorted(notices.items())
 
 
-def mirror(root, mode, emit, raster_root=None):
-    if mode not in ("scanned-pdf", "static-image"):
+def mirror(root, mode, emit, raster_root=None, candidate_root=None):
+    if mode not in ("scanned-pdf", "static-image", "ocr-candidates"):
         raise ValueError("invalid_mode")
     root = Path(root)
     members, errors, total = [], [], 0
@@ -210,11 +214,25 @@ def mirror(root, mode, emit, raster_root=None):
     # A composed route does not execute the standalone OCR verifier.
     one(root, "tools/local-ocr/runtime/verification.json", False)
     attempts("tools/local-ocr/runtime/initialization-attempts", INITIALIZER, BEFORE_AFTER)
-    component = mode + "-ocr"
-    one(root, "src/extraction/" + component + "/profile.mjs")
-    one(root, "tools/" + component + "/runtime/verification.json")
-    attempts("tools/" + component + "/runtime/verification", VERIFICATION)
-    if mode == "scanned-pdf":
+    if mode == "ocr-candidates":
+        one(root, "tests/extraction/ocr-candidates/fixtures/provenance.json")
+        for name in CANDIDATE_FILES:
+            label = "ocr-candidate-evidence/" + name
+            if candidate_root is None:
+                members.append({"file": label, "required": True, "status": "unavailable_root"})
+                problem(label, "missing_or_invalid_runner_evidence")
+            else:
+                one(candidate_root, name, label=label)
+        if raster_root is None:
+            problem("ocr-candidate-jpeg-runtime/runtime.json", "missing_or_invalid_runner_runtime")
+        else:
+            one(raster_root, "runtime.json", label="ocr-candidate-jpeg-runtime/runtime.json")
+    else:
+        component = mode + "-ocr"
+        one(root, "src/extraction/" + component + "/profile.mjs")
+        one(root, "tools/" + component + "/runtime/verification.json")
+        attempts("tools/" + component + "/runtime/verification", VERIFICATION)
+    if mode in ("scanned-pdf", "ocr-candidates"):
         for name in ("src/extraction/scanned-pdf/profile.json", "tools/scanned-pdf/lock.json",
                      "tools/scanned-pdf/runtime/manifest.json"):
             one(root, name)
@@ -262,12 +280,30 @@ def raster_from_environment(root):
     return raster
 
 
+def candidate_runner_child(root, variable, basename):
+    """Admit only one of the two fixed candidate paths, never a caller-selected tree."""
+    if (variable, basename) not in (
+            ("EI_OCR_CANDIDATE_CAPTURE", "ei-ocr-candidate-evidence"),
+            ("EI_STATIC_IMAGE_OCR_RASTER_RUNTIME", "ei-ocr-candidate-jpeg-runtime")):
+        raise ValueError("invalid_candidate_path_selector")
+    temporary = Path(os.environ["RUNNER_TEMP"])
+    selected = Path(os.environ[variable])
+    if (not temporary.is_absolute() or temporary.is_symlink()
+            or temporary.resolve(strict=True) != temporary
+            or not selected.is_absolute() or selected.is_symlink()
+            or selected.resolve(strict=True) != selected
+            or selected != temporary / basename
+            or temporary == root or root in temporary.parents):
+        raise ValueError("invalid_candidate_runner_path")
+    return selected
+
+
 def main():
-    if len(sys.argv) != 2 or sys.argv[1] not in ("scanned-pdf", "static-image"):
+    if len(sys.argv) != 2 or sys.argv[1] not in ("scanned-pdf", "static-image", "ocr-candidates"):
         raise SystemExit("choose one fixed composition mode")
     root = Path(__file__).resolve().parents[1]
     started = datetime.datetime.now(datetime.timezone.utc).isoformat()
-    source, source_error, raster = None, False, None
+    source, source_error, raster, candidate = None, False, None, None
     try:
         source = source_identity(root)
     except (OSError, ValueError, subprocess.SubprocessError):
@@ -277,7 +313,16 @@ def main():
             raster = raster_from_environment(root)
         except (KeyError, OSError, ValueError):
             pass
-    result = mirror(root, sys.argv[1], lambda line: print(line, flush=True), raster)
+    if sys.argv[1] == "ocr-candidates":
+        try:
+            candidate = candidate_runner_child(root, "EI_OCR_CANDIDATE_CAPTURE", "ei-ocr-candidate-evidence")
+        except (KeyError, OSError, ValueError, RuntimeError):
+            pass
+        try:
+            raster = candidate_runner_child(root, "EI_STATIC_IMAGE_OCR_RASTER_RUNTIME", "ei-ocr-candidate-jpeg-runtime")
+        except (KeyError, OSError, ValueError, RuntimeError):
+            pass
+    result = mirror(root, sys.argv[1], lambda line: print(line, flush=True), raster, candidate)
     result.update(startedAt=started, finishedAt=datetime.datetime.now(datetime.timezone.utc).isoformat(),
                   source=source, productReadiness="not_evaluated")
     if source_error:

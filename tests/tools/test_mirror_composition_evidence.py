@@ -242,9 +242,127 @@ class MirrorControls(unittest.TestCase):
             os.close(fd)
 
 
+    def candidate_fixture(self):
+        self.fixture("scanned-pdf")  # Reuse the exact common OCR/PDF inputs.
+        self.put("tests/extraction/ocr-candidates/fixtures/provenance.json")
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        runner = Path(temporary.name)
+        candidate = runner / "ei-ocr-candidate-evidence"
+        raster = runner / "ei-ocr-candidate-jpeg-runtime"
+        candidate.mkdir()
+        raster.mkdir()
+        for name in M.CANDIDATE_FILES:
+            (candidate / name).write_bytes(("synthetic " + name + "\n").encode())
+        (raster / "runtime.json").write_bytes(b"{}\n")
+        return runner, candidate, raster
+
+    def candidate_capture(self, candidate, raster):
+        return M.mirror(self.root, "ocr-candidates", self.lines.append, raster, candidate)
+
+    def test_18_candidate_mode_has_exact_nine_files_and_shared_native_receipts(self):
+        runner, candidate, raster = self.candidate_fixture()
+        (candidate / "unrequested-private-input").write_bytes(b"DO_NOT_CAPTURE")
+        result = self.candidate_capture(candidate, raster)
+        self.assertTrue(result["captureComplete"])
+        expected_names = ("wrapper.stdout", "wrapper.stderr", "labelled.native-result.json",
+                          "doors.native-result.json", "labelled-pdf.native-result.json",
+                          "native-cancel-recovery.json", "native-fixture-origin.json",
+                          "candidate-report.json", "question-preparation.json")
+        self.assertEqual(M.CANDIDATE_FILES, expected_names)
+        rows = [x for x in result["members"] if x["file"].startswith("ocr-candidate-evidence/")]
+        self.assertEqual([x["file"].split("/", 1)[1] for x in rows], list(expected_names))
+        self.assertTrue(all(x["required"] and x["status"] == "captured" for x in rows))
+        expected = ("tools/local-ocr/runtime/manifest.json", "tools/scanned-pdf/runtime/manifest.json",
+                    "ocr-candidate-jpeg-runtime/runtime.json",
+                    "tests/extraction/ocr-candidates/fixtures/provenance.json")
+        self.assertTrue(all(any(x["file"] == name and x["status"] == "captured"
+                                for x in result["members"]) for name in expected))
+        self.assertFalse(any("unrequested-private-input" in x["file"] for x in result["members"]))
+        self.assertFalse(any("scanned-pdf-ocr/runtime/verification" in x["file"]
+                             for x in result["members"]))
+        self.assertEqual(result["acceptanceAuthority"], "none")
+
+    def test_19_candidate_missing_file_preserves_later_evidence_and_recovers(self):
+        runner, candidate, raster = self.candidate_fixture()
+        selected = candidate / "labelled.native-result.json"
+        raw = selected.read_bytes()
+        selected.unlink()
+        result = self.candidate_capture(candidate, raster)
+        self.assertFalse(result["captureComplete"])
+        self.assertTrue(any(x["file"] == "ocr-candidate-evidence/labelled.native-result.json"
+                            and x["status"] == "missing_required" for x in result["members"]))
+        self.assertTrue(any(x["file"] == "ocr-candidate-evidence/question-preparation.json"
+                            and x["status"] == "captured" for x in result["members"]))
+        selected.write_bytes(raw)
+        self.assertTrue(self.candidate_capture(candidate, raster)["captureComplete"])
+
+    def test_20_candidate_leaf_and_raster_symlinks_refuse_then_recover(self):
+        runner, candidate, raster = self.candidate_fixture()
+        target = runner / "private"
+        target.write_bytes(b"DO_NOT_MIRROR_TARGET")
+        for selected in (candidate / "candidate-report.json", raster / "runtime.json"):
+            original = selected.read_bytes()
+            selected.unlink()
+            selected.symlink_to(target)
+            self.lines.clear()
+            self.assertFalse(self.candidate_capture(candidate, raster)["captureComplete"])
+            encoded = base64.b64encode(target.read_bytes()).decode()
+            self.assertFalse(any(encoded in line for line in self.lines))
+            selected.unlink()
+            selected.write_bytes(original)
+            self.assertTrue(self.candidate_capture(candidate, raster)["captureComplete"])
+
+    def test_21_candidate_environment_paths_are_fixed_canonical_and_outside_checkout(self):
+        runner, candidate, raster = self.candidate_fixture()
+        selectors = (("EI_OCR_CANDIDATE_CAPTURE", "ei-ocr-candidate-evidence", candidate),
+                     ("EI_STATIC_IMAGE_OCR_RASTER_RUNTIME", "ei-ocr-candidate-jpeg-runtime", raster))
+        for variable, basename, selected in selectors:
+            with self.subTest(variable=variable), patch.dict(M.os.environ,
+                    {"RUNNER_TEMP": str(runner), variable: str(selected)}):
+                self.assertEqual(M.candidate_runner_child(self.root, variable, basename), selected)
+                for bad in (basename, str(runner), str(selected / ".." / basename)):
+                    with patch.dict(M.os.environ, {variable: bad}), self.assertRaises(ValueError):
+                        M.candidate_runner_child(self.root, variable, basename)
+                link = runner / ("linked-" + basename)
+                link.symlink_to(selected, target_is_directory=True)
+                with patch.dict(M.os.environ, {variable: str(link)}), self.assertRaises(ValueError):
+                    M.candidate_runner_child(self.root, variable, basename)
+                for parent in (self.root, self.root / "runner"):
+                    nested = parent / basename
+                    nested.mkdir(parents=True)
+                    with patch.dict(M.os.environ, {"RUNNER_TEMP": str(parent), variable: str(nested)}):
+                        with self.assertRaises(ValueError):
+                            M.candidate_runner_child(self.root, variable, basename)
+                with patch.dict(M.os.environ, {"RUNNER_TEMP": "relative"}), self.assertRaises(ValueError):
+                    M.candidate_runner_child(self.root, variable, basename)
+                temporary_link = self.root / ("temporary-link-" + basename)
+                temporary_link.symlink_to(runner, target_is_directory=True)
+                with patch.dict(M.os.environ, {"RUNNER_TEMP": str(temporary_link),
+                                              variable: str(temporary_link / basename)}):
+                    with self.assertRaises(ValueError):
+                        M.candidate_runner_child(self.root, variable, basename)
+        with self.assertRaises(ValueError):
+            M.candidate_runner_child(self.root, "UNRELATED_VARIABLE", "arbitrary")
+
+    def test_22_candidate_unavailable_root_lists_every_required_file_without_fallback(self):
+        runner, candidate, raster = self.candidate_fixture()
+        result = self.candidate_capture(None, raster)
+        self.assertFalse(result["captureComplete"])
+        rows = [x for x in result["members"] if x["file"].startswith("ocr-candidate-evidence/")]
+        self.assertEqual(len(rows), 9)
+        self.assertTrue(all(x["required"] and x["status"] == "unavailable_root" for x in rows))
+        self.assertTrue(any(x["file"] == "ocr-candidate-jpeg-runtime/runtime.json"
+                            and x["status"] == "captured" for x in result["members"]))
+        result = self.candidate_capture(candidate, None)
+        self.assertFalse(result["captureComplete"])
+        self.assertTrue(any(x["file"] == "ocr-candidate-evidence/question-preparation.json"
+                            and x["status"] == "captured" for x in result["members"]))
+
+
 if __name__ == "__main__":
     suite = unittest.defaultTestLoader.loadTestsFromTestCase(MirrorControls)
-    if suite.countTestCases() != 17:
+    if suite.countTestCases() != 22:
         raise SystemExit("Required helper-only inventory changed")
     outcome = unittest.TextTestRunner(verbosity=2).run(suite)
-    raise SystemExit(0 if outcome.wasSuccessful() and outcome.testsRun == 17 and not outcome.skipped else 1)
+    raise SystemExit(0 if outcome.wasSuccessful() and outcome.testsRun == 22 and not outcome.skipped else 1)
