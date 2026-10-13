@@ -59,10 +59,11 @@ jobs:
       - run: npm run typecheck
       - name: Strict scoped reuse declaration consumer
         run: ./node_modules/.bin/tsc --noEmit --strict --target ES2022 --module NodeNext --moduleResolution NodeNext --lib ES2022,DOM --types node --skipLibCheck false tests/cache/reuse/types-consumer.mts
-      - name: Strict private revalidation and correction/history consumers
+      - name: Strict conditional revalidation and correction/history consumers
         run: >-
           ./node_modules/.bin/tsc --noEmit --strict --target ES2022 --module NodeNext
           --moduleResolution NodeNext --lib ES2022,DOM --types node --skipLibCheck false
           tests/cache/reuse/revalidation-types-consumer.mts
+          tests/cache/reuse/public-revalidation-types-consumer.mts
           tests/review/history/types-consumer.mts
           tests/integration/review-cache-binding/types-consumer.mts
