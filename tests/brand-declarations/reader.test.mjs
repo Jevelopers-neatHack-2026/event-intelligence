@@ -307,3 +307,22 @@ test('ordinary rejected synchronous authority result stays observed and denies',
   await new Promise((r) => setImmediate(r)); f.state.onCurrent = null;
   assert.equal((await f.reader.read(f.input())).declarations.length, 4);
 });
+
+test('SVG foreignObject HTML integration descendants stay excluded while HTML siblings remain', async () => {
+  const r = await parse('<!doctype html><svg><foreignObject><p style="color:#123">foreign</p></foreignObject></svg><p style="color:#456">ordinary</p>');
+  assert.deepEqual(r.declarations.map((d) => d.value), ['#445566']);
+});
+test('MathML annotation-xml HTML integration descendants stay excluded while HTML siblings remain', async () => {
+  const r = await parse('<!doctype html><math><annotation-xml encoding="text/html"><p style="color:#abc">foreign</p></annotation-xml></math><p style="color:#456">ordinary</p>');
+  assert.deepEqual(r.declarations.map((d) => d.value), ['#445566']);
+});
+test('actual retained mixed document emits only the ordinary HTML declaration and exact source range', async (t) => {
+  const raw = '<!doctype html><svg><foreignObject><p style="color:#123">foreign</p></foreignObject></svg>'
+    + '<math><annotation-xml encoding="text/html"><p style="color:#abc">foreign</p></annotation-xml></math>'
+    + '<p style="color:#456">ordinary</p>';
+  const f = await fixture(t, { raw }); const r = await f.reader.read(f.input());
+  assert.equal(r.declarations.length, 1); const d = r.declarations[0];
+  assert.equal(d.value, '#445566'); assert.equal(d.rawDeclaration, 'color:#456');
+  assert.equal(Buffer.from(raw).subarray(d.locator.startByte, d.locator.endByte).toString(), 'color:#456');
+  assert.equal(r.completeness, 'incomplete-supported-subset');
+});

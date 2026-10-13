@@ -22,6 +22,8 @@ jobs:
         run: node tools/install-typescript-host.mjs
       - name: Verify private source declarations with synthetic authority
         run: node tools/verify-brand-declarations.mjs
+      - name: Verify required inventory rejects missing, reduced and skipped cases
+        run: node --test tests/brand-declarations/verifier.test.mjs
       - name: Type-check strict private consumer
         run: >-
           ./node_modules/.bin/tsc --noEmit --strict --target ES2022 --module NodeNext

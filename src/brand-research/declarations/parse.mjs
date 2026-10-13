@@ -108,9 +108,10 @@ export async function parseDeclarations(bytes, contentType, { signal, check, fai
     const { node, inert } = stack.pop();
     if (++nodes > DECLARATION_LIMITS.nodes) fail('RESOURCE_LIMIT');
     if (nodes % 128 === 0) { await new Promise((resolve) => setImmediate(resolve)); check(); }
-    const hidden = inert || ['template', 'noscript', 'script'].includes(node.tagName);
-    if (node.tagName === 'style' && !inert) unsupportedAt('STYLESHEET_NOT_EVALUATED', node);
-    if (node.tagName === 'link' && node.attrs?.some((a) => a.name === 'rel' && a.value.toLowerCase().split(/\s+/).includes('stylesheet'))) {
+    const foreign = Boolean(node.tagName && node.namespaceURI !== 'http://www.w3.org/1999/xhtml');
+    const hidden = inert || foreign || ['template', 'noscript', 'script'].includes(node.tagName);
+    if (node.tagName === 'style' && !hidden) unsupportedAt('STYLESHEET_NOT_EVALUATED', node);
+    if (!hidden && node.tagName === 'link' && node.attrs?.some((a) => a.name === 'rel' && a.value.toLowerCase().split(/\s+/).includes('stylesheet'))) {
       unsupportedAt('EXTERNAL_STYLESHEET_NOT_FETCHED', node);
     }
     if (node.tagName && !hidden && node.namespaceURI === 'http://www.w3.org/1999/xhtml') {
@@ -160,8 +161,8 @@ export async function parseDeclarations(bytes, contentType, { signal, check, fai
         }
       }
     }
-    // Template contents are never evaluated. Foreign SVG/MathML descendants
-    // retain their namespaces and do not become HTML style declarations.
+    // Carry exclusion through foreign subtrees: integration points can put
+    // descendants back into the HTML namespace without leaving that subtree.
     const children = node.childNodes ?? [];
     for (let i = children.length - 1; i >= 0; i -= 1) stack.push({ node: children[i], inert: hidden });
   }

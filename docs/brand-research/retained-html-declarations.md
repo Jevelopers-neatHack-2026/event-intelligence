@@ -64,8 +64,10 @@ official brand is selected.
 
 No stylesheet, selector, cascade, inheritance, media query, CSS variable, URL,
 function, escape, comment or `!important` is evaluated. Scripts, noscript and
-template contents are not evaluated; foreign SVG/MathML elements do not become
-HTML declarations. Stylesheet blocks and external stylesheet links receive fixed
+template contents are not evaluated. Entire foreign SVG/MathML subtrees are
+excluded, including HTML-namespace descendants under integration points such as
+SVG `foreignObject` and MathML `annotation-xml`. Ordinary HTML siblings remain
+eligible. Stylesheet blocks and external stylesheet links receive fixed
 unsupported observations and are never fetched. Other unrelated CSS properties
 do not become brand observations. Complex or malformed style attributes receive
 an unsupported observation, not a repaired partial CSS interpretation. Duplicate
@@ -128,13 +130,17 @@ Use pinned Node22.23.3 and the locked host TypeScript compiler:
 
 ```sh
 node tools/verify-brand-declarations.mjs
+node --test tests/brand-declarations/verifier.test.mjs
 ./node_modules/.bin/tsc --noEmit --strict --target ES2022 --module NodeNext --moduleResolution NodeNext --lib ES2022,DOM --types node --skipLibCheck false tests/brand-declarations/types-consumer.mts
 npm run typecheck
 ```
 
 The dedicated workflow runs those commands after fresh locked dependency setup.
-The dedicated verifier rejects failures, cancellations, skips, TODO and incomplete
-case counts. Fixtures use actual native SQLite and the actual pinned HTML parser,
+The dedicated verifier requires exactly57 maintained reader cases, independently
+of the number that enqueued, and rejects failures, cancellations, skips, TODO and
+incomplete case counts. A separate four-case verifier-only suite runs disposable
+synthetic complete/missing/reduced/skipped inventories; it does not recursively
+run itself and its synthetic passes are not reader behavior evidence. Fixtures use actual native SQLite and the actual pinned HTML parser,
 with synthetic sources, encryption keys, retention and host authority. Grammar
 unit cases and explicitly labeled parser-phase cancellation instrumentation are
 separate from native-time deadline cases. These are local mock-mode results.
