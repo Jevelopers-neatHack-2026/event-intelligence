@@ -49,9 +49,10 @@ alpha byte must be 255 under the admitted profile. `pageWidthPoints` and
 describe the raster. No OCR words, text confidence, visual boxes, orientation,
 event fact or evidence permission is inferred from these fields.
 
-The existing text-PDF report keeps its native byte-position information in its
-own domain. The media layer does not convert that information to pixel boxes or
-merge native text and scanned pixels into fabricated text recognition.
+The existing text-PDF report retains approximate page geometry and derived-text
+UTF-8 hashes in their own domains. It does not claim original PDF byte offsets.
+The media layer does not convert that geometry to pixel boxes or merge native
+text and scanned pixels into fabricated text recognition.
 
 ### Pure data projections
 
