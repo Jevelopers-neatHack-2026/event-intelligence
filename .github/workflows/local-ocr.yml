@@ -71,5 +71,6 @@ jobs:
             tools/local-ocr/runtime/host-notices/
             tools/local-ocr/runtime/verification.json
             tools/local-ocr/runtime/verification/
+            tools/local-ocr/runtime/initialization-attempts/
           if-no-files-found: error
           retention-days: 90

@@ -131,12 +131,58 @@ def emit(value):
     sys.stdout.buffer.write(data)
     sys.stdout.buffer.flush()
 
+def initialization_diagnostic(error, phase):
+    # This runs only for the trusted, pre-input --describe-runtime operation.
+    # Never stringify an exception or retain arbitrary messages. Known source
+    # frame identifiers are useful for diagnosis without exposing locals,
+    # paths, filenames supplied by a caller, environment, model bytes or media.
+    exception_types = {"Rejection", "OSError", "FileNotFoundError", "PermissionError", "MemoryError",
+                       "ImportError", "ModuleNotFoundError", "ValueError", "TypeError", "RuntimeError",
+                       "UnicodeError", "UnicodeDecodeError", "JSONDecodeError", "OverflowError", "RecursionError"}
+    source_files = {"worker.py", "native.py", "isolation.py", "errors.py", "__init__.py", "pathlib.py"}
+    source_functions = {"main", "initialize", "verify_dependencies", "describe_runtime", "__init__",
+                        "reject", "read_bytes", "read_text", "open", "stat", "resolve", "strict"}
+    if isinstance(error, Rejection):
+        classification = "fixed_policy_rejection"
+    elif isinstance(error, OSError):
+        classification = "operating_system_error"
+    elif isinstance(error, ImportError):
+        classification = "module_import_error"
+    elif isinstance(error, MemoryError):
+        classification = "memory_error"
+    else:
+        classification = "initialization_error"
+    error_number = error.errno if isinstance(error, OSError) else None
+    if type(error_number) is not int or not 1 <= error_number <= 4095:
+        error_number = None
+    exception_type = type(error).__name__
+    if exception_type not in exception_types:
+        exception_type = "Exception"
+    frames = []
+    trace = error.__traceback__
+    while trace is not None and len(frames) < 8:
+        name = pathlib.Path(trace.tb_frame.f_code.co_filename).name
+        function = trace.tb_frame.f_code.co_name
+        frames.append({"file": name if name in source_files else "other_source",
+                       "function": function if function in source_functions else "other_function",
+                       "line": trace.tb_lineno if 0 <= trace.tb_lineno <= 1000000 else 0})
+        trace = trace.tb_next
+    value = {"initializationDiagnostic": {"schema": 2, "phase": phase,
+             "exceptionType": exception_type, "classification": classification, "errno": error_number, "frames": frames}}
+    data = json.dumps(value, separators=(",", ":"), ensure_ascii=True).encode("ascii")
+    if len(data) <= 8192:
+        sys.stderr.buffer.write(data + b"\n")
+        sys.stderr.buffer.flush()
+
 def main():
     engine, closure, raster_sha, controls = None, None, None, 0
+    initialization_phase = "options"
     try:
         if len(sys.argv) != 2 or sys.argv[1] not in ("--recognize", "--describe-runtime"):
             reject("INVALID_OPTIONS")
+        initialization_phase = "initialize"
         engine = initialize()
+        initialization_phase = "describe_runtime"
         descriptor = describe_runtime()
         closure = sha(json.dumps(descriptor, sort_keys=True, separators=(",", ":")).encode())
         if sys.argv[1] == "--describe-runtime":
@@ -156,6 +202,8 @@ def main():
               "rasterSha256":raster_sha, "width":header["width"], "height":header["height"], "format":header["format"],
               "maxTextBytes":header["maxTextBytes"], "maxWords":header["maxWords"], "tokenUtf8Bytes":count, "words":words})
     except Exception as error:
+        if len(sys.argv) == 2 and sys.argv[1] == "--describe-runtime":
+            initialization_diagnostic(error, initialization_phase)
         code = error.code if isinstance(error, Rejection) else "OCR_FAILURE"
         emit({"kind":"rejected", "protocol":PROFILE["protocol"], "profile":PROFILE["profile"],
               "code":code, "rasterSha256":raster_sha, "closureSha256":closure if controls == 8 else None,

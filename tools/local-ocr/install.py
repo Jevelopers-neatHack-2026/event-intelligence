@@ -12,6 +12,10 @@ import tarfile
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(HERE))
+from initialization_evidence import run_initializer
+
 LOCK = json.loads((HERE/"lock.json").read_text())
 RUNTIME = HERE/"runtime"
 WORKER = ROOT/"src/extraction/local-ocr/worker.py"
@@ -114,10 +118,8 @@ def main():
             target.chmod(0o444)
     command = ["/usr/bin/prlimit", "--as=1073741824:1073741824", "--cpu=5:5", "--core=0:0", "--nofile=64:64", "--",
                str(pathlib.Path(sys.executable).resolve()), "-I", "-S", "-B", str(WORKER), "--describe-runtime"]
-    result = subprocess.run(command, cwd=ROOT, env=ENV, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20, check=True)
-    manifest = json.loads(result.stdout)
-    if set(manifest) != {"descriptor", "closureSha256"}:
-        raise ValueError("Runtime initialization failed. Preserve this intake and inspect its fixed error code.")
+    manifest = run_initializer(command, cwd=ROOT, env=ENV,
+                               attempts_root=RUNTIME/"initialization-attempts")
     if options.check:
         if json.loads((RUNTIME/"manifest.json").read_text()) != manifest:
             raise ValueError("Loaded runtime closure differs from its trusted installation receipt.")
