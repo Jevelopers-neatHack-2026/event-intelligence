@@ -11,7 +11,7 @@ export const INSPECTION_REPORT_TEST_FILES = Object.freeze([
   "tests/inspection-report/report.test.mjs",
   "tests/inspection-report/runner.test.mjs",
 ]);
-export const INSPECTION_REPORT_EXPECTED_CASES = 59;
+export const INSPECTION_REPORT_EXPECTED_CASES = 65;
 
 export function evaluateInspectionCompletion(summaries, enqueued, expectedCases) {
   const roots = summaries.filter((summary) => summary.file === undefined);

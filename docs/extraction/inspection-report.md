@@ -57,6 +57,8 @@ The supported vocabulary additionally includes `xhtml` and `json-ld`. Required f
 
 The report contains hashes, counts, statuses, limits and locators, not source URLs, raw extracted text or original source bytes. It is still private local evidence: hashes and geometry are not an authorization or anonymization guarantee. Retention/disclosure of original bytes, results and reports remains the host's responsibility.
 
+The component views project only declared fields. Extra deterministic locator and native PDF limit metadata is omitted from the report; the complete original component result, including that metadata, remains bound by its separate result digest. Unknown fields in selected pins, including nested package/schema/matrix records, are rejected at expected-selection, execution and observation boundaries. Allowed inventory IDs and selected pin identifiers/version strings remain explicit caller-selected data; the projection does not classify or scrub their content.
+
 The extractor currently does not echo its effective limits. Its `declaredLimits` are validated against the checked-in ceilings and labeled caller-declared; the composer does not claim to reconstruct an execution's settings. The native PDF output does echo checked limits and these must match the current fixed ceilings and permitted lower text/output caps. Its zero network counter is reader API evidence, not production native-host containment.
 
 ## Execution outcomes
@@ -116,7 +118,7 @@ node node_modules/typescript/bin/tsc --noEmit --strict --target ES2022 \
 npm run typecheck
 ```
 
-The dedicated `local inspection report integrity` workflow requires Linux/Node22.23.3, **59 cases in two explicit test files**, no skipped/canceled/TODO/failed cases, the three strict consumers and project types. Fixtures obtain real output from the existing deterministic runner **50/50** and existing text-PDF suite **14/14**, and consume actual deterministic HTML/text and native PDF results. These nested counts overlap other component gates; do not add them as independent global acceptance cases. The selected `dc97...` fixture pin and candidate schema selection are labeled synthetic host inputs, not a claim that the report function attested a Git checkout.
+The dedicated `local inspection report integrity` workflow requires Linux/Node22.23.3, **65 cases in two explicit test files**, no skipped/canceled/TODO/failed cases, the three strict consumers and project types. Fixtures obtain real output from the existing deterministic runner **50/50** and existing text-PDF suite **14/14**, and consume actual deterministic HTML/text and native PDF results. These nested counts overlap other component gates; do not add them as independent global acceptance cases. The selected `dc97...` fixture pin and candidate schema selection are labeled synthetic host inputs, not a claim that the report function attested a Git checkout.
 
 The machine line is `INSPECTION_REPORT_VERIFY_JSON=` with case `inspection-report-integrity` and `fullInspectionAdaptersAcceptance:false`. Missing/extra cases, duplicate root summaries, unavailable Linux/Node runtime and test failures exit nonzero. `--mode live` is blocked without starting a child. No existing generic runner case, package export, dependency, media reader or owner's source is changed.
 

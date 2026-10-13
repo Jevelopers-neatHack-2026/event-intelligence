@@ -41,6 +41,47 @@ test("reordered inventory and repeated composition produce exact deterministic b
   assert.deepEqual(composeInspectionReport(base).copyBytes(), first.copyBytes());
 });
 
+for (const [name, index, addMetadata] of [
+  ["deterministic locator", 0, (result, marker) => { result.visibleText[0].source.locator.privateText = marker; }],
+  ["native PDF limits", 2, (result, marker) => { result.limits.privateText = marker; }],
+]) test(`unknown ${name} metadata is omitted while the complete original result stays bound`, () => {
+  const input = copy(base);
+  const prior = composeInspectionReport(base);
+  const marker = `EI_SYNTHETIC_PRIVATE_METADATA_${index}`;
+  addMetadata(input.observations[index].result, marker);
+  const originalResultBytes = jsonBytes(input.observations[index].result);
+  const artifact = composeInspectionReport(input);
+  const id = input.observations[index].id;
+  const before = prior.report.observations.find((observation) => observation.id === id);
+  const after = artifact.report.observations.find((observation) => observation.id === id);
+  assert.deepEqual(after.view, before.view);
+  assert.notEqual(after.result.sha256, before.result.sha256);
+  assert.equal(Buffer.from(artifact.copyBytes()).toString("utf8").includes(marker), false);
+  assert.deepEqual(jsonBytes(input.observations[index].result), originalResultBytes);
+  assert.equal(validateInspectionReport(artifact.copyBytes(), artifact.sha256, input).sha256, artifact.sha256);
+  reject(() => validateInspectionReport(prior.copyBytes(), prior.sha256, input), "REPORT_BYTES_MISMATCH");
+  assert.equal(artifact.report.overall, "incomplete");
+});
+
+for (const recordName of ["root", "package", "evidenceSchema", "supportMatrix"]) {
+  test(`unknown ${recordName} pin fields refuse at every selection boundary`, () => {
+    for (const boundary of ["consistent selection", "execution", "observation"]) {
+      const input = copy(base);
+      const pins = copy(input.expectedPins);
+      const target = recordName === "root" ? pins : pins[recordName];
+      target.privateText = "EI_SYNTHETIC_PRIVATE_PIN_METADATA";
+      if (boundary === "consistent selection") {
+        input.expectedPins = pins;
+        for (const execution of input.executions) execution.pins = pins;
+        for (const observation of input.observations) observation.pins = pins;
+      } else if (boundary === "execution") input.executions[0].pins = pins;
+      else input.observations[0].pins = pins;
+      reject(() => composeInspectionReport(input), "INVALID_INPUT");
+      assert.equal(composeInspectionReport(base).report.overall, "incomplete");
+    }
+  });
+}
+
 test("copies, returned views and prior failure receipts cannot be overwritten by retry", () => {
   const failed = copy(base); const count = failed.executions[0].expectedCases;
   failed.executions[0].exitCode = 1;

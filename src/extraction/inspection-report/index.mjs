@@ -193,9 +193,13 @@ function parseJson(input, maximum) {
 function validatePins(pins) {
   const p = jsonCopy(pins, INSPECTION_REPORT_LIMITS.maxArtifactBytes);
   record(p);
+  requireThat(equal(Object.keys(p).sort(), ["evidenceSchema", "package", "sourceRevision", "supportMatrix"]));
   requireThat(matches(REVISION, p.sourceRevision));
   for (const key of ["package", "evidenceSchema", "supportMatrix"]) {
-    record(p[key]); requireThat(matches(HASH, p[key].sha256) && typeof p[key].version === "string" && p[key].version.length > 0 && p[key].version.length <= 128);
+    record(p[key]);
+    const fields = key === "evidenceSchema" ? ["id", "sha256", "version", "versionPointer"] : ["sha256", "version"];
+    requireThat(equal(Object.keys(p[key]).sort(), fields));
+    requireThat(matches(HASH, p[key].sha256) && typeof p[key].version === "string" && p[key].version.length > 0 && p[key].version.length <= 128);
   }
   requireThat(typeof p.evidenceSchema.id === "string" && p.evidenceSchema.id.length > 0 && p.evidenceSchema.id.length <= 512);
   requireThat(typeof p.evidenceSchema.versionPointer === "string" && p.evidenceSchema.versionPointer.length <= 256);
@@ -307,7 +311,10 @@ function deterministic(result, sourceBytes, format, sourceMetadata, declaredLimi
     record(candidate); record(candidate.source);
     const raw = range(candidate.source.locator, sourceBytes);
     requireThat(typeof candidate.rawValue === "string" && raw.equals(Buffer.from(candidate.rawValue, "utf8")), "SOURCE_SLICE_MISMATCH");
-    return { ...candidate.source.locator, rawSha256: sha256(raw) };
+    // The complete result remains separately hashed. Only the declared byte
+    // range may enter this view; extra input metadata must not be disclosed.
+    const { kind, startByte, endByte } = candidate.source.locator;
+    return { kind, startByte, endByte, rawSha256: sha256(raw) };
   });
   for (const entity of [...result.events, ...result.organizations]) if (entity.source !== null) range(entity.source.locator, sourceBytes);
   for (const block of result.jsonLdBlocks) range(block.locator, sourceBytes);
@@ -345,7 +352,8 @@ function pdf(result, sourceBytes, format) {
   requireThat(textUnits <= limits.maxTextCodeUnits && items <= limits.maxTextItems, "RESOURCE_LIMIT");
   requireThat((result.kind === "no-text") === (items === 0), "INVALID_COMPLETENESS");
   if (result.kind === "no-text") requireThat(result.code === "NO_EMBEDDED_TEXT", "INVALID_COMPLETENESS");
-  return { componentVersion: "ei-text-pdf/1", decoder: result.decoder, status: result.kind, nativeSourceHash: result.documentSha256, completeness: "incomplete-text-only", requiresInspection: true, limits, networkAttemptCount: 0, networkEvidence: "reader API counter; not native-host attestation", pages };
+  const projectedLimits = { ...fixed, maxTextCodeUnits: limits.maxTextCodeUnits, maxOutputBytes: limits.maxOutputBytes };
+  return { componentVersion: "ei-text-pdf/1", decoder: result.decoder, status: result.kind, nativeSourceHash: result.documentSha256, completeness: "incomplete-text-only", requiresInspection: true, limits: projectedLimits, networkAttemptCount: 0, networkEvidence: "reader API counter; not native-host attestation", pages };
 }
 
 /** Compose local integrity evidence. Input origins and source revisions are
