@@ -75,6 +75,8 @@ export interface StaticJpegWebpOptions {
   readonly signal?: AbortSignal;
   /** Lower-only acceptance deadline, including source validation, queue and final result. */
   readonly timeoutMs?: number;
+  /** Lower-only absolute deadline in this Node process's performance.now() timebase. */
+  readonly deadlineAtMs?: number;
   /** Lower-only normalized PNG byte limit; not a provider or monetary allowance. */
   readonly maxOutputBytes?: number;
 }

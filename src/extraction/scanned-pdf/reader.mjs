@@ -51,7 +51,7 @@ function optionsFrom(options) {
         ![Object.prototype, null].includes(Object.getPrototypeOf(options))) return { error: "INVALID_OPTIONS" };
     const descriptors = Object.getOwnPropertyDescriptors(options);
     for (const key of Reflect.ownKeys(descriptors)) {
-      if (!["signal", "timeoutMs", "maxOutputBytes"].includes(key) ||
+      if (!["signal", "timeoutMs", "maxOutputBytes", "deadlineAtMs"].includes(key) ||
           !Object.hasOwn(descriptors[key], "value")) return { error: "INVALID_OPTIONS" };
     }
     const signal = descriptors.signal?.value;
@@ -61,10 +61,12 @@ function optionsFrom(options) {
     }
     const timeoutMs = descriptors.timeoutMs?.value ?? CONFIG.defaultTimeoutMs;
     const maxOutputBytes = descriptors.maxOutputBytes?.value ?? CONFIG.maxOutputBytes;
+    const deadlineAtMs = descriptors.deadlineAtMs?.value;
     if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > CONFIG.maxTimeoutMs ||
         !Number.isInteger(maxOutputBytes) || maxOutputBytes < 1 || maxOutputBytes > CONFIG.maxOutputBytes ||
-        descriptors.timeoutMs?.value === null || descriptors.maxOutputBytes?.value === null) return { error: "INVALID_LIMIT" };
-    return { signal, timeoutMs, maxOutputBytes };
+        descriptors.timeoutMs?.value === null || descriptors.maxOutputBytes?.value === null ||
+        (deadlineAtMs !== undefined && (!Number.isFinite(deadlineAtMs) || deadlineAtMs < 0 || deadlineAtMs > Number.MAX_SAFE_INTEGER))) return { error: "INVALID_LIMIT" };
+    return { signal, timeoutMs, maxOutputBytes, deadlineAtMs };
   } catch {
     return { error: "INVALID_OPTIONS" };
   }
@@ -313,9 +315,12 @@ export async function readScannedPdf(input, options) {
   const normalized = optionsFrom(options);
   if (normalized.error) return rejected(normalized.error);
   if (normalized.signal && isAborted.call(normalized.signal)) return rejected("CANCELLED");
+  // Same-process performance.now() deadline is lower-only, including a delayed
+  // caller handoff. It never grants a fresh duration to the next component.
+  const deadline = Math.min(started + normalized.timeoutMs, normalized.deadlineAtMs ?? Infinity);
+  if (performance.now() >= deadline) return rejected("TIMEOUT");
   const snapshot = inputFrom(input);
   if (snapshot.error) return rejected(snapshot.error);
-  const deadline = started + normalized.timeoutMs;
   if (performance.now() >= deadline) return rejected("TIMEOUT", snapshot.sourceSha256);
   if (process.versions.node !== CONFIG.nodeVersion) return rejected("DECODER_UNAVAILABLE", snapshot.sourceSha256);
   const runtime = runtimeFromDisk();

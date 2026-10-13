@@ -39,7 +39,7 @@ function optionsFrom(options) {
         ![Object.prototype, null].includes(Object.getPrototypeOf(options))) return { error: "INVALID_OPTIONS" };
     const descriptors = Object.getOwnPropertyDescriptors(options);
     for (const key of Reflect.ownKeys(descriptors)) {
-      if (!["signal", "timeoutMs", "maxOutputBytes"].includes(key) ||
+      if (!["signal", "timeoutMs", "deadlineAtMs", "maxOutputBytes"].includes(key) ||
           !Object.hasOwn(descriptors[key], "value")) return { error: "INVALID_OPTIONS" };
     }
     const signal = descriptors.signal?.value;
@@ -49,12 +49,15 @@ function optionsFrom(options) {
     if (signal !== undefined) isAborted.call(signal); // Native brand, no caller getter.
     const timeoutMs = descriptors.timeoutMs?.value ?? PNG_LIMITS.defaultTimeoutMs;
     const maxOutputBytes = descriptors.maxOutputBytes?.value ?? PNG_LIMITS.maxOutputBytes;
+    const deadlineAtMs = descriptors.deadlineAtMs?.value;
+    if (deadlineAtMs !== undefined && (!Number.isFinite(deadlineAtMs) || deadlineAtMs < 0 ||
+        deadlineAtMs > Number.MAX_SAFE_INTEGER)) return { error: "INVALID_LIMIT" };
     if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > PNG_LIMITS.maxTimeoutMs ||
         !Number.isInteger(maxOutputBytes) || maxOutputBytes < 1 || maxOutputBytes > PNG_LIMITS.maxOutputBytes ||
         descriptors.timeoutMs?.value === null || descriptors.maxOutputBytes?.value === null) {
       return { error: "INVALID_LIMIT" };
     }
-    return { signal, timeoutMs, maxOutputBytes };
+    return { signal, timeoutMs, maxOutputBytes, deadlineAtMs };
   } catch {
     return { error: "INVALID_OPTIONS" };
   }
@@ -304,9 +307,10 @@ export async function readStaticPng(input, options) {
   const normalized = optionsFrom(options);
   if (normalized.error) return rejected(normalized.error);
   if (normalized.signal && isAborted.call(normalized.signal)) return rejected("CANCELLED");
+  const deadline = Math.min(started + normalized.timeoutMs, normalized.deadlineAtMs ?? Infinity);
+  if (performance.now() >= deadline) return rejected("TIMEOUT");
   const snapshot = inputFrom(input);
   if (snapshot.error) return rejected(snapshot.error);
-  const deadline = started + normalized.timeoutMs;
   if (performance.now() >= deadline) return rejected("TIMEOUT", snapshot.sourceSha256);
   if (process.versions.node !== PNG_NODE_VERSION || process.versions.zlib !== PNG_ZLIB_VERSION) {
     return rejected("DECODER_UNAVAILABLE", snapshot.sourceSha256);
