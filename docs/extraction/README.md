@@ -49,3 +49,13 @@ npm run typecheck
 ```
 
 The name-filtered command intentionally skips unrelated top-level tests and is only a focused diagnostic. Required full-route qualification must separately execute all selected cases with zero required skips. This local measurement contributes to issue8 AC5; it does not close the full issue, establish provider/canonical/consumer authority or supply a public-source journey.
+
+## Visible date and venue disagreements
+
+The synthetic `visible-date-venue-conflict.html` fixture is exercised inside the existing cancellation/conflicting-metadata test. It puts a visible date and venue alongside disagreeing JSON-LD and Open Graph values, with two structured event editions that share an `@id`. The assertions retain both editions, their original structured paths and values, the unassigned page metadata, and the generic `visibleText` candidates. They check decoded/whitespace-normalized values against exact raw UTF-8 byte ranges, including a non-ASCII prefix, an encoded ampersand and an emoji. A hidden decoy remains excluded by the existing visibility policy.
+
+This fixture does not introduce a visible date/venue grammar, assign the notice to either edition, resolve the disagreement, or promote any source into an accepted fact. It extends the fixed three-file, 50-case mock extraction route without adding a top-level test. Passing that route establishes this bounded extraction fixture only; issue #11, the release gate and downstream accountable acceptance remain separate.
+
+## Byte-identical JSON-LD blocks
+
+The existing bounded-metadata test also supplies two byte-identical JSON-LD scripts after a non-ASCII prefix. It requires a single `DUPLICATE_JSONLD_BLOCK` diagnostic, the second block's explicit `duplicateOfBlockIndex`, `duplicate_parsed` status, and separate block/entity provenance with exact UTF-8 ranges. Both repeated values remain source candidates and the overall result stays `PARTIAL`; the test does not collapse the blocks, establish two independent occurrences or promote complete facts. This inline synthetic fixture leaves the three-file, 50-case route and all original assertions unchanged.

@@ -88,6 +88,81 @@ test("retains visible cancellation and reschedule copy alongside conflicting met
   assert.ok(result.conflicts.some((conflict) => conflict.scope === result.events[0].entityId && conflict.field === "name"));
   assert.equal(result.visibleText.some((candidate) => /secret announcement/i.test(candidate.normalizedValue)), false);
   assertExactRanges(result, input.bytes);
+
+  // Synthetic date/venue copy stays positioned, generic and unassigned even
+  // when two structured editions and page-level metadata disagree with it.
+  const conflictInput = await fixture("visible-date-venue-conflict.html");
+  const conflictResult = await extractDeterministically(conflictInput);
+  const conflictText = conflictInput.bytes.toString("utf8");
+  assert.equal(conflictResult.status, "PARTIAL");
+  assert.equal(conflictResult.events.length, 2);
+  assert.equal(conflictResult.organizations.length, 1);
+  assert.deepEqual(conflictResult.events.map((event) => event.ordinal), [0, 1]);
+  assert.deepEqual(conflictResult.events.map((event) => event.jsonPointer), ["/@graph/0", "/@graph/1"]);
+  assert.notEqual(conflictResult.events[0].entityId, conflictResult.events[1].entityId);
+
+  const expectedEditions = [
+    { name: "Café Night — autumn edition", startDate: "2026-10-12", venue: "Archive Hall & Annex" },
+    { name: "Café Night — winter edition", startDate: "2027-01-10", venue: "Winter Hall" },
+  ];
+  for (const [index, event] of conflictResult.events.entries()) {
+    const expected = expectedEditions[index];
+    assert.equal(event.candidates.find((candidate) => candidate.field === "@id").normalizedValue,
+      "https://events.example.test/cafe-night");
+    for (const [field, value, pointerSuffix] of [
+      ["name", expected.name, "/name"],
+      ["startDate", expected.startDate, "/startDate"],
+      ["location.name", expected.venue, "/location/name"],
+    ]) {
+      const candidate = event.candidates.find((item) => item.field === field);
+      assert.equal(candidate.normalizedValue, value);
+      assert.equal(candidate.source.kind, "jsonld");
+      assert.equal(candidate.source.jsonPointer, `/@graph/${index}${pointerSuffix}`);
+      assert.equal(candidate.rawValue, JSON.stringify(value));
+    }
+    assert.equal(event.candidates.some((candidate) => candidate.field === "visibleText"
+      || candidate.source.kind === "visible-text" || candidate.source.kind === "open-graph"), false);
+    assert.equal(event.candidates.some((candidate) => /14 October|Lantern Hall/.test(candidate.normalizedValue)), false);
+  }
+
+  const pageDescription = conflictResult.pageMetadata.find((candidate) => candidate.property === "og:description");
+  assert.equal(pageDescription.normalizedValue, "Date: 12 October 2026; Venue: Archive Hall & Annex");
+  assert.equal(pageDescription.rawValue, "Date: 12 October 2026; Venue: Archive Hall &amp; Annex");
+  for (const [rawValue, normalizedValue] of [
+    ["Date:  14 October 2026", "Date: 14 October 2026"],
+    ["Venue:  Café &amp; Lantern Hall 🧭", "Venue: Café & Lantern Hall 🧭"],
+  ]) {
+    const candidates = conflictResult.visibleText.filter((candidate) => candidate.normalizedValue === normalizedValue);
+    assert.equal(candidates.length, 1);
+    const [candidate] = candidates;
+    assert.equal(candidate.field, "visibleText");
+    assert.equal(candidate.source.kind, "visible-text");
+    assert.equal(candidate.source.jsonPointer, undefined);
+    assert.equal(candidate.rawValue, rawValue);
+    const characterOffset = conflictText.indexOf(rawValue);
+    assert.ok(characterOffset >= 0);
+    assert.equal(conflictText.indexOf(rawValue, characterOffset + 1), -1);
+    const startByte = Buffer.byteLength(conflictText.slice(0, characterOffset), "utf8");
+    assert.ok(startByte > characterOffset, "non-ASCII prefix distinguishes UTF-8 bytes from string offsets");
+    assert.deepEqual(candidate.source.locator, {
+      kind: "text-range",
+      startByte,
+      endByte: startByte + Buffer.byteLength(rawValue, "utf8"),
+    });
+    assert.equal(conflictInput.bytes.subarray(candidate.source.locator.startByte,
+      candidate.source.locator.endByte).toString("utf8"), rawValue);
+  }
+  assert.equal(conflictResult.visibleText.some((candidate) => /1900|Hidden Decoy Hall/.test(candidate.normalizedValue)), false);
+  assert.deepEqual(conflictResult.ambiguities.find((item) => item.kind === "multiple_event_occurrences"), {
+    kind: "multiple_event_occurrences",
+    entityIds: conflictResult.events.map((event) => event.entityId),
+    resolution: "kept_separate",
+  });
+  assert.deepEqual(conflictResult.ambiguities.find((item) => item.kind === "page_metadata_not_assigned_to_event"), {
+    kind: "page_metadata_not_assigned_to_event",
+    candidateCount: conflictResult.pageMetadata.length,
+  });
+  assertExactRanges(conflictResult, conflictInput.bytes);
 });
 
 test("does not infer JS_REQUIRED from an arbitrary script tag", async () => {
@@ -977,6 +1052,47 @@ test("bounds page metadata, canonical suggestions, JSON-LD blocks, and entity ca
   assert.equal(blockLimited.status, "PARTIAL");
   assert.equal(blockLimited.termination, "RESOURCE_LIMIT");
   assert.ok(blockLimited.diagnostics.some((item) => item.code === "JSONLD_BLOCK_LIMIT"));
+
+
+  // Byte-identical blocks are repeated source observations, not one conflated entity.
+  const duplicateJson = '{"@type":"Event","name":"Café Night 🎵","startDate":"2026-10-12"}';
+  const duplicateInput = document(Buffer.from('<html><body><p>Préface 🧭</p>'
+    + '<script type="application/ld+json">' + duplicateJson + '</script>'
+    + '<script type="application/ld+json">' + duplicateJson + '</script>'
+    + '</body></html>'));
+  const duplicated = await extractDeterministically(duplicateInput);
+  assert.equal(duplicated.status, "PARTIAL");
+  assert.equal(duplicated.termination, null);
+  assert.equal(duplicated.sourceHash,
+    "sha256:" + createHash("sha256").update(duplicateInput.bytes).digest("hex"));
+  assert.deepEqual(duplicated.jsonLdBlocks.map((block) => block.status), ["parsed", "duplicate_parsed"]);
+  assert.deepEqual(duplicated.jsonLdBlocks.map((block) => block.blockIndex), [0, 1]);
+  assert.equal(Object.hasOwn(duplicated.jsonLdBlocks[0], "duplicateOfBlockIndex"), false);
+  assert.equal(duplicated.jsonLdBlocks[1].duplicateOfBlockIndex, 0);
+  const duplicateWarnings = duplicated.diagnostics.filter((item) => item.code === "DUPLICATE_JSONLD_BLOCK");
+  assert.equal(duplicateWarnings.length, 1);
+  assert.equal(duplicateWarnings[0].blockIndex, 1);
+  assert.equal(duplicateWarnings[0].duplicateOfBlockIndex, 0);
+  assert.deepEqual(duplicateWarnings[0].locator, duplicated.jsonLdBlocks[1].locator);
+  assert.equal(duplicated.events.length, 2);
+  assert.deepEqual(duplicated.events.map((event) => event.blockIndex), [0, 1]);
+  assert.deepEqual(duplicated.events.map((event) => event.jsonPointer), ["", ""]);
+  assert.notEqual(duplicated.events[0].entityId, duplicated.events[1].entityId);
+  assert.deepEqual(duplicated.events.map((event) =>
+    event.candidates.find((candidate) => candidate.field === "name").normalizedValue),
+  ["Café Night 🎵", "Café Night 🎵"]);
+  assert.deepEqual(duplicated.events.map((event) =>
+    event.candidates.find((candidate) => candidate.field === "startDate").normalizedValue),
+  ["2026-10-12", "2026-10-12"]);
+  assert.equal(duplicated.ambiguities.find((item) => item.kind === "multiple_event_occurrences").resolution,
+    "kept_separate");
+  for (const block of duplicated.jsonLdBlocks) {
+    assert.equal(duplicateInput.bytes.subarray(block.locator.startByte, block.locator.endByte).toString("utf8"),
+      duplicateJson);
+  }
+  assert.ok(duplicated.jsonLdBlocks[0].locator.endByte < duplicated.jsonLdBlocks[1].locator.startByte);
+  assert.ok(duplicated.events[0].source.locator.endByte < duplicated.events[1].source.locator.startByte);
+  assertExactRanges(duplicated, duplicateInput.bytes);
 
   const candidateLimited = await extractDeterministically(document(
     Buffer.from('{"@type":"Event","name":"One","startDate":"2026-10-12"}'),
