@@ -1,0 +1,440 @@
+{
+  "schema": 1,
+  "package": "pypdfium2",
+  "version": "5.14.0",
+  "pythonVersion": "3.12.14",
+  "platform": "linux-x86_64",
+  "wheel": "pypdfium2-5.14.0-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+  "wheelBytes": 3799581,
+  "wheelSha256": "11f281613fa22313d9c7ab89947665e84eccf8ebe40e1198a84a88352305648d",
+  "pdfiumVersion": "156.0.8076.0",
+  "pdfiumFlags": [],
+  "files": [
+    {
+      "path": "pypdfium2/__init__.py",
+      "bytes": 637,
+      "sha256": "d9df3b168e9e4fdc936fc42006c9a7d0c9dc682ee2564bfed76c0e51d56ba8cc",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2/__main__.py",
+      "bytes": 897,
+      "sha256": "1fa1222f691b29143a1f135e294fb07876f78dae1f9a57162e3ee1a5408acbf5",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2/_lazy.py",
+      "bytes": 843,
+      "sha256": "0620fb7e50b2e84e48eed21206f20965f616e36c00a2ee8b7883c417cc0ce8f4",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2/_library_scope.py",
+      "bytes": 2277,
+      "sha256": "e9c89014250f7ed85b995f630788a67a5353681aab1b5550c4c3c230381116ba",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2/raw.py",
+      "bytes": 268,
+      "sha256": "34390a3e3e0f7c20ad9cf699c569c97212838f7f08584ea44bebabf40b4880da",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2/version.json",
+      "bytes": 161,
+      "sha256": "5b7842f5110adcf3202b291d3f65492fc27aaa707bf08084f53fd1e5e1e626f0",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2/version.py",
+      "bytes": 2707,
+      "sha256": "61a9a45801e7afcf8a59bb4b3a740df5fb782142b11b7fac811302937f56aedf",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2/_helpers/__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2/_helpers/attachment.py",
+      "bytes": 7522,
+      "sha256": "20e57c328d582213c278a9e128e7f168cbdaa9626c447709252d02a101b419c4",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2/_helpers/bitmap.py",
+      "bytes": 20390,
+      "sha256": "ddb2143ea6865ba030aa1d0f668b11f9b51689678aa25849bd0aba9479304204",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2/_helpers/document.py",
+      "bytes": 29654,
+      "sha256": "e3c4828943b9961601276e0debcc8e69a01561f1e2de4def05ba47c50ed44dfc",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2/_helpers/matrix.py",
+      "bytes": 6435,
+      "sha256": "8866395a615baf73ce0d5bab839df5ec4b70f3e6f1912e323ec3d182ea12f724",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2/_helpers/misc.py",
+      "bytes": 1538,
+      "sha256": "2be55133d3defe64992d8f6d7d9276722ac3a05f26c26a81e70a4d51c7ac8457",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2/_helpers/page.py",
+      "bytes": 23581,
+      "sha256": "447690f7b2cbf788e0a463a851f75df0bb6762b4f1b8f62e0c901e5f38255fcb",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2/_helpers/pageobjects.py",
+      "bytes": 26785,
+      "sha256": "b29852d92ac3bc48da8afb42e98b641cce22a9908ffb7dfb798d27755f715dde",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2/_helpers/sysfontinfo.py",
+      "bytes": 12204,
+      "sha256": "a197cab5eb076d42969a7027ddeefc3e4e30418a9459a2c9854c6817a6e5a5c1",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2/_helpers/textpage.py",
+      "bytes": 13724,
+      "sha256": "fd76e47093831b666f7b8f28ce76810917e1b1fc9b23a2c5e311e96567add0f1",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2/_helpers/unsupported.py",
+      "bytes": 2582,
+      "sha256": "b7df3f0d4ff42a146d79cc8cdd06847287376a8063ad2764e264119b3898a4d2",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2/internal/__init__.py",
+      "bytes": 236,
+      "sha256": "4275d69011d28d2fc540ed106e8e4f7305122f16c57e9beb4271733165c05911",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2/internal/bases.py",
+      "bytes": 6677,
+      "sha256": "b37b938fd8c4e3397755f0dfd7323b24e700ec0f10c46836a3cf49e3a92a729d",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2/internal/consts.py",
+      "bytes": 7871,
+      "sha256": "392066ae4081cf603658849f79fcddbdb1869619b1e4bf18de8d4c548e83b56b",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2/internal/utils.py",
+      "bytes": 2968,
+      "sha256": "4575735eabb3ab14da4fb0a6ebd75b6bebc7c8dc3b4819bd74d9cd2b727de1eb",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2-5.14.0.dist-info/licenses/LICENSES/Apache-2.0.txt",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2-5.14.0.dist-info/licenses/LICENSES/BSD-3-Clause.txt",
+      "bytes": 1459,
+      "sha256": "a6d11f0694c0137e9b02924b9d33a159f6c72f220fa4655bb2e1ea3654377d39",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2-5.14.0.dist-info/licenses/LICENSES/CC-BY-4.0.txt",
+      "bytes": 14527,
+      "sha256": "419896aea50c15d6e40c5b4baf4bd346f78223b9a354c7357ad00262afdc08ec",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2-5.14.0.dist-info/licenses/data/linux_x64/BUILD_LICENSES/abseil.txt",
+      "bytes": 11361,
+      "sha256": "c79a7fea0e3cac04cd43f20e7b648e5a0ff8fa5344e644b0ee09ca1162b62747",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2-5.14.0.dist-info/licenses/data/linux_x64/BUILD_LICENSES/agg23.txt",
+      "bytes": 725,
+      "sha256": "c110d3ea2ad77467ce0dcff7d3337e6c8be8049a5103f4b9bd5fd911a77972e5",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2-5.14.0.dist-info/licenses/data/linux_x64/BUILD_LICENSES/fast_float.txt",
+      "bytes": 1079,
+      "sha256": "e562f3f974ced7e69dd1db77b820b36bcf8f30377f1aa105723fba449c53c4e6",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2-5.14.0.dist-info/licenses/data/linux_x64/BUILD_LICENSES/freetype.txt",
+      "bytes": 6741,
+      "sha256": "f4b133e25df1f86ad3ffea453aa0e613f0474f34778dbbb3e437e7b2724937d8",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2-5.14.0.dist-info/licenses/data/linux_x64/BUILD_LICENSES/icu.txt",
+      "bytes": 27718,
+      "sha256": "e55522d81edc687a341a4411e0776e54ca654e90147f354a90458aaced4116af",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2-5.14.0.dist-info/licenses/data/linux_x64/BUILD_LICENSES/lcms.txt",
+      "bytes": 1353,
+      "sha256": "7312b68c5b25e9bf2b828706fb4e29588f22705112f411fd42e1f7d84c3d139a",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2-5.14.0.dist-info/licenses/data/linux_x64/BUILD_LICENSES/libjpeg_turbo.ijg",
+      "bytes": 12799,
+      "sha256": "75815e3bf6484201a3c3d17a1bbf10f2e8e3237f84df10a2357ea896db2a81d6",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2-5.14.0.dist-info/licenses/data/linux_x64/BUILD_LICENSES/libjpeg_turbo.md",
+      "bytes": 5620,
+      "sha256": "96f5b328adbb78eeaaec6980d73fd558cb1e4d62560ed615646bc3cf5e532430",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2-5.14.0.dist-info/licenses/data/linux_x64/BUILD_LICENSES/libopenjpeg.txt",
+      "bytes": 1794,
+      "sha256": "c5ab0890a737c2dfa7ba675036554f6d17741d98629b0c2a145354d00617e6b2",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2-5.14.0.dist-info/licenses/data/linux_x64/BUILD_LICENSES/libpng.txt",
+      "bytes": 5345,
+      "sha256": "bdb0a645ea18c60507d0368379b1ac5474b92255fcc2d115e07486a7672ba526",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2-5.14.0.dist-info/licenses/data/linux_x64/BUILD_LICENSES/llvm-libc.txt",
+      "bytes": 15140,
+      "sha256": "ebcd9bbf783a73d05c53ba4d586b8d5813dcdf3bbec50265860ccc885e606f47",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2-5.14.0.dist-info/licenses/data/linux_x64/BUILD_LICENSES/pdfium-binaries.txt",
+      "bytes": 1177,
+      "sha256": "ba26c1263131696b86c10496b5066b918a20b7161822a80c274d0080105f6c93",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2-5.14.0.dist-info/licenses/data/linux_x64/BUILD_LICENSES/pdfium.txt",
+      "bytes": 12818,
+      "sha256": "961eacd9633fff6d051db7208b755e9210e30efac7adec3e6a6d52798f0ccf0e",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2-5.14.0.dist-info/licenses/data/linux_x64/BUILD_LICENSES/simdutf.txt",
+      "bytes": 1059,
+      "sha256": "fc8dbc04e03ad4efc08a647ffe7f995b811a95bc04c0e85a56d5277c6593fa5f",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2-5.14.0.dist-info/licenses/data/linux_x64/BUILD_LICENSES/zlib.txt",
+      "bytes": 1332,
+      "sha256": "33fd641c9f3b0e0be64bc78fea9e94807674cdd70c48477599226cb8956565fe",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2_cfg/__init__.py",
+      "bytes": 528,
+      "sha256": "08e1fd984eb2b8d5c9e2838c4f22647019e9210f9299f018fb1cc4bb7dc1444b",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2_cfg/stl.py",
+      "bytes": 166,
+      "sha256": "f18f13de0311a634e740ffc9794c232d909720cf11d171dfc4f954de944584c8",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2_cfg/_shared/__init__.py",
+      "bytes": 156,
+      "sha256": "0aa8cd1cad92711b8c037b5c4f16a9931b2c5c2e7a6e187924ba2ee72342f195",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2_cfg/_shared/stl.py",
+      "bytes": 4703,
+      "sha256": "05383563e4efb79b9c82711e4c3c512e52a60d07b0968f933321bc4a8965c6d6",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2_cli/__init__.py",
+      "bytes": 117,
+      "sha256": "587554d9bb466792447cd75832d0932f1fe82ae3d747931725711c505156cbd8",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2_cli/__main__.py",
+      "bytes": 3837,
+      "sha256": "fb4530de3cf1359efe6ddc6b78912467be663ebf6d05df92b7f3e1beeb5cdc48",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2_cli/_parsers.py",
+      "bytes": 2954,
+      "sha256": "d36018e00d4c69adc1334fa7638022b677611c80c514a710e8bc52e490df2a8e",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2_cli/_setup.py",
+      "bytes": 2254,
+      "sha256": "c768870cc0484322d548849e1986e24f3a59a9dbe303427e398ddfee4947c995",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2_cli/_sysfonts.py",
+      "bytes": 3181,
+      "sha256": "c34a738e23ea3be051d1468d0e86b609b68a94f86015651f490b45c7987fc9d8",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2_cli/arrange.py",
+      "bytes": 1473,
+      "sha256": "14466c1886519fdb6958c778ebb9557cb8c567b65175a633f4c95c66ca2e8ce6",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2_cli/attachments.py",
+      "bytes": 3082,
+      "sha256": "dd94f1c6302299f253c326346ee63c3957d0eee68e164275eca95bfbcfb032a9",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2_cli/default_fonts.py",
+      "bytes": 1871,
+      "sha256": "c4069271abc4db07c589ef812d769fcdcfa3b0e2a38352e4c4edcf5403c01904",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2_cli/extract_images.py",
+      "bytes": 3005,
+      "sha256": "29b8b96ccb120d6e977dbca957c6fe1f6c964c7883876a9175794e9b98051555",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2_cli/extract_text.py",
+      "bytes": 1341,
+      "sha256": "cc280df41541d501eea48794b33e509e0b326e176d0f9562c3192e7cd145398c",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2_cli/fonts.py",
+      "bytes": 2752,
+      "sha256": "cde6b760afe11f27fc704ed879605e16570b774d5f70ebbf650a07e199a563a3",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2_cli/imgtopdf.py",
+      "bytes": 1962,
+      "sha256": "bc16ed4daf4b462badb2f8c18ebb15279cade1db4a314025e2c20a72c4c6047b",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2_cli/pageobjects.py",
+      "bytes": 3906,
+      "sha256": "9995a6789f732a7f0c33f12e11f502714f85f86c992794dccbce0a08aa0faf99",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2_cli/pdfinfo.py",
+      "bytes": 1891,
+      "sha256": "ca009a0f29d0b657e915d3da085d98f3badbffad4684fa58489507ef95f87f55",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2_cli/render.py",
+      "bytes": 20483,
+      "sha256": "d6d7deb4c2da761bf3975ed0ad99cf234035fd6d1250615c0c65aca6cbbe74d0",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2_cli/tile.py",
+      "bytes": 2242,
+      "sha256": "8c732a12b97ae67116c0e9010ed775f0ac192df95a26b02e16534f7ddaaa86d0",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2_cli/toc.py",
+      "bytes": 2664,
+      "sha256": "970475e1c3f9ae0f2d46742bc8079248754a1ca12e676a1ddc8640852184799a",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2_raw/__init__.py",
+      "bytes": 826,
+      "sha256": "6a794fed6419c21f801de1a0ca185e4f8637b8ef0665d95160d916fdf6307578",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2_raw/bindings.py",
+      "bytes": 148296,
+      "sha256": "21b6918802362910128ab2ab1b147544dde39c640aac0f4b57d6035ba0284ace",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2_raw/libpdfium.so",
+      "bytes": 7834920,
+      "sha256": "fd4de9f91f183476d04b1bc3fd17dacd95aba349c55d2c376512d95e082b441e",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2_raw/version.json",
+      "bytes": 143,
+      "sha256": "3d5823a04ac7e0dfd9074c27ac98a5c699aad8c933e12e705483aedaa92754bf",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2_raw/version.py",
+      "bytes": 2573,
+      "sha256": "873743f830681b1070c5a6e3ad48298ede926ba87e5527e65beafe5cf5409ee4",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2-5.14.0.dist-info/METADATA",
+      "bytes": 62414,
+      "sha256": "3e1628ac6c4cf1dc173e9441f972d9324f8f9ff92d6930c340efceb8175e37e8",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2-5.14.0.dist-info/WHEEL",
+      "bytes": 145,
+      "sha256": "da12836689f7cdbffda29fd845cc9b1a43aab5963f176852e7420edffadd7641",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2-5.14.0.dist-info/entry_points.txt",
+      "bytes": 62,
+      "sha256": "39f3e2f656f1c386b806c26ecf2b9f92dd0e1927b6db2d496c8ddd014d779a27",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2-5.14.0.dist-info/top_level.txt",
+      "bytes": 52,
+      "sha256": "07e2cb6d8ff0e395a284a74697fa4ceab81bfb3dbe45886aca406b5d7fc90fc5",
+      "mode": "0o100644"
+    },
+    {
+      "path": "pypdfium2-5.14.0.dist-info/RECORD",
+      "bytes": 6769,
+      "sha256": "a32919abd59429545428955238795c8463b18b9a05de7e6cf6cf411aa94ccb7e",
+      "mode": "0o100664"
+    }
+  ]
+}

@@ -15,7 +15,11 @@ const CASES = Object.freeze({
   "pdf-derived-evidence": ["tests/evidence", "tests/extraction/pdf", "tests/integration/pdf-evidence"],
   "asset-source-discovery": ["tests/brand-research", "tests/integration/asset-source/core"],
   "asset-source-discovery-linux": ["tests/integration/asset-source/linux"],
-  "deterministic-extraction": ["tests/extraction"],
+  // Raster readers have dedicated platform/profile gates; keep this text route scoped.
+  "deterministic-extraction": [
+    Object.freeze({ directory: "tests/extraction", recursive: false }),
+    "tests/extraction/pdf",
+  ],
   evals: ["tests/evals"],
   "research-api": ["tests/api"],
   "question-preparation": ["tests/decisions/questions", "tests/discovery/source-identity"],
@@ -43,7 +47,7 @@ function optionsFromCli(args) {
 
 async function collectTestFiles(relativeDirectories) {
   const files = [];
-  async function visit(directory) {
+  async function visit(directory, recursive = true) {
     let entries;
     try { entries = await readdir(directory, { withFileTypes: true }); }
     catch (error) {
@@ -52,11 +56,15 @@ async function collectTestFiles(relativeDirectories) {
     }
     for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name))) {
       const full = path.join(directory, entry.name);
-      if (entry.isDirectory()) await visit(full);
+      if (entry.isDirectory() && recursive) await visit(full);
       else if (entry.isFile() && entry.name.endsWith(".test.mjs")) files.push(full);
     }
   }
-  for (const directory of relativeDirectories) await visit(path.join(ROOT, directory));
+  for (const selection of relativeDirectories) {
+    const directory = typeof selection === "string" ? selection : selection.directory;
+    const recursive = typeof selection === "string" || selection.recursive;
+    await visit(path.join(ROOT, directory), recursive);
+  }
   return [...new Set(files)].sort();
 }
 
