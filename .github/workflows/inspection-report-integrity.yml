@@ -1,0 +1,33 @@
+name: local inspection report integrity
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  inspection-report-integrity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 22.23.3
+          cache: npm
+      - run: npm ci
+      - name: Install the locked host TypeScript compiler
+        run: node tools/install-typescript-host.mjs
+      - name: Validate actual component report bindings and required negative cases
+        run: node tools/verify-inspection-report.mjs --mode mock
+      - name: Compile strict report and actual extraction consumers
+        run: >-
+          node node_modules/typescript/bin/tsc --noEmit --strict --target ES2022
+          --module NodeNext --moduleResolution NodeNext --lib ES2022,DOM
+          --types node --skipLibCheck false --noErrorTruncation
+          tests/inspection-report/types-consumer.mts
+          tests/extraction/types-consumer.mts
+          tests/extraction/pdf/types-consumer.mts
+      - run: npm run typecheck

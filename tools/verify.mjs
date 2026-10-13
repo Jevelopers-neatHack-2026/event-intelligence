@@ -23,6 +23,7 @@ const CASES = Object.freeze({
   evals: ["tests/evals"],
   "research-api": ["tests/api"],
   "question-preparation": ["tests/decisions/questions", "tests/discovery/source-identity"],
+  "cache-invalidation": ["tests/cache/reuse", "tests/review/history", "tests/integration/review-cache-binding"],
   "verify-runner": ["tests/runner"],
   "eval-policy-unit": [],
 });
@@ -349,6 +350,11 @@ async function main() {
   }
   if (caseName === "asset-source-discovery-linux") {
     await executeMock(caseName, CASES[caseName], mode, "pinned merged-v2 evidence-store binary with real PDF bytes and the actual v3 SQLite migration path");
+    return;
+  }
+  if (caseName === "cache-invalidation") {
+    await executeMock(caseName, CASES[caseName], mode,
+      "local cache/history/invalidations, real controlled loopback conditional HTTP and encrypted retained evidence; synthetic host/permission/Finance authority only");
     return;
   }
   await executeMock(caseName, CASES[caseName]);

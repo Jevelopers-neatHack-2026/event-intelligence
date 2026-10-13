@@ -67,7 +67,10 @@
     "All accepted revisions, owner acknowledgements, account access, budget authority and execution evidence remain pending.",
     "Creative main 65b8036194b3b962e1fd34f7193d54791cf07c88 contains local proposals; its 12 owner agreements are pending and it is not canonical acceptance.",
     "Harness PR25 source head b3a18bb4748e0cabe39e392973658a5e20b2d97e merged into main 29a9e2084e6d14c2cf35c7f4297c66687c1f32e5; the merged work is internal Node 22 durability/configuration/error work only, with no public ports, JEV adapter or finance authority.",
-    "No credentials, customer data, provider calls or charges are included."
+    "No credentials, customer data, provider calls or charges are included.",
+    "2026-10-13 observation addendum: the 2026-10-10 audit_date, observed pins, proposal counts and pending records above remain historical and are preserved for the closed handoff consumer. They are not claims about current repository heads.",
+    "Dated EI-private release/evidence-index.json records later observed pins and scoped actual-main evidence through 2026-10-13T02:50:00Z at d984c6de4b55ccf9c220692c949b80b3a922edbe, including separate retained failures, owner work and missing inputs. It is navigation, not a canonical release manifest or trusted evidence verifier.",
+    "All accepted revisions, pin evidence, provider authority and consumer ACKs in this inventory remain pending/null. The new index grants no acceptance, source rights, spending authority or closure of issue22/epic1."
   ],
   "peer_candidates": [
     {

@@ -1,0 +1,730 @@
+{
+  "schema": "event-intelligence/private-provisional-evidence-index",
+  "schema_version": 1,
+  "snapshot_id": "2026-10-13T02:50:00Z-d984c6d",
+  "status": "PROVISIONAL_BLOCKED",
+  "scope": "Repository-private bookkeeping schema in a public repository. Human navigation only; not a canonical contract, trusted verifier, release manifest, approval or instruction to execute referenced data.",
+  "evidence_cutoff_utc": "2026-10-13T02:50:00Z",
+  "verified_repository_revision": "d984c6de4b55ccf9c220692c949b80b3a922edbe",
+  "verified_repository_tree": "d51d2cd3820a6ce840477804a3144a7aa655e1a4",
+  "accepted_release_revision": null,
+  "accountable_release_acceptance": null,
+  "canonical_status_source": "https://github.com/Jevelopers-neatHack-2026/integration-evals/blob/13bde39399a09d4a14cc97d72cd769b51da83e00/planning/acceptance-checklist.json",
+  "local_gate": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/22",
+  "local_epic": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/1",
+  "reading_rules": [
+    "This is a dated partial evidence index, not a claim that d984 is forever current. Rebind any later main or candidate before using a component proof.",
+    "Observed commits, matching digests, model reviews and fixture passes confer no canonical, provider, Finance or consumer authority.",
+    "Read each immutable report and its limits before using its scoped result. Source, candidate, local execution, hosted checkout and resulting main identities stay distinct.",
+    "Do not sum nested suites, native diagnostics, checks, stages or artifact counts. A required skip remains missing and a historical failure remains a failure.",
+    "Local deterministic fixture criteria do not acquire an extra deployment or consumer-ACK gate. Whole-issue and master acceptance require their actual scoped outcomes and accountable review.",
+    "Historical provider usage and unobserved measurements remain unknown, never zero. This documentation change performs no provider operation.",
+    "New source observations and proof belong in additive dated snapshots. Preserve this snapshot, old manifest observations, failure receipts and original acceptance-null fields."
+  ],
+  "evidence_classification": {
+    "modes": {
+      "mock": "Synthetic authorities or fixtures; native local clocks, SQLite, child processes or controlled HTTP do not make the end-to-end journey live.",
+      "recorded": "A retained earlier execution or source observation; its original revision, time and mode remain attached. Reading it is not a new execution.",
+      "sandbox": "Actual provider or consumer sandbox execution; none is supplied by this index.",
+      "live": "An actually authorized external execution. The retained public-source attempts remain incomplete or refused and do not establish a live provider/consumer journey.",
+      "estimated": "An estimate with an explicit basis; no estimated measurement is promoted into actual usage.",
+      "pending": "Required execution, input or acceptance is absent; no pass, zero usage or authorization is inferred."
+    },
+    "usage": {
+      "status": "unknown",
+      "amount": null,
+      "currency": null,
+      "basis_ref": null
+    },
+    "limits": "Modes describe evidence, not grants. This index authoring and validation use no paid/provider request. Historical unobserved cost is unknown; that is separate from the absence of new provider calls."
+  },
+  "historical_inventory": {
+    "path": "release/component-manifest.json",
+    "audit_date": "2026-10-10",
+    "source_revision": "d984c6de4b55ccf9c220692c949b80b3a922edbe",
+    "source_sha256": "6deb8ab78f03a195a5371c29644ccf37a5333cbca6fcfad9220adc684d7e5a96",
+    "meaning": "All original records and first five notes remain unchanged. Its consumer hardcodes the historical observed pins and has no trusted evidence verifier. New observations below do not mutate accepted pins.",
+    "consumer": "tools/verify_handoff.py"
+  },
+  "observed_foreign_pins": [
+    {
+      "repository": "Jevelopers-neatHack-2026/shared-contracts",
+      "observed_revision": "cd961246234f8666303f306ac349c69b8b3236cd",
+      "source": "https://github.com/Jevelopers-neatHack-2026/shared-contracts/commit/cd961246234f8666303f306ac349c69b8b3236cd",
+      "observed_between": [
+        "2026-10-13T02:35:27Z",
+        "2026-10-13T02:35:55Z"
+      ],
+      "accepted_revision": null,
+      "consumer_ack": null,
+      "meaning": "observed main reference, not EI accepted release pin or foreign acceptance review"
+    },
+    {
+      "repository": "Jevelopers-neatHack-2026/getticketstub.com",
+      "observed_revision": "02407db11f974cf9a379ba6e39a11cff4e659c09",
+      "source": "https://github.com/Jevelopers-neatHack-2026/getticketstub.com/commit/02407db11f974cf9a379ba6e39a11cff4e659c09",
+      "observed_between": [
+        "2026-10-13T02:35:27Z",
+        "2026-10-13T02:35:55Z"
+      ],
+      "accepted_revision": null,
+      "consumer_ack": null,
+      "meaning": "observed main reference, not EI accepted release pin or foreign acceptance review"
+    },
+    {
+      "repository": "Jevelopers-neatHack-2026/creative-engine",
+      "observed_revision": "e3df42720b1a864e397244d7f0824353c8e32762",
+      "source": "https://github.com/Jevelopers-neatHack-2026/creative-engine/commit/e3df42720b1a864e397244d7f0824353c8e32762",
+      "observed_between": [
+        "2026-10-13T02:35:27Z",
+        "2026-10-13T02:35:55Z"
+      ],
+      "accepted_revision": null,
+      "consumer_ack": null,
+      "meaning": "observed main reference, not EI accepted release pin or foreign acceptance review"
+    },
+    {
+      "repository": "Jevelopers-neatHack-2026/cost-intelligence",
+      "observed_revision": "45248c766128216c0d7542737d30c0167f5b4f9b",
+      "source": "https://github.com/Jevelopers-neatHack-2026/cost-intelligence/commit/45248c766128216c0d7542737d30c0167f5b4f9b",
+      "observed_between": [
+        "2026-10-13T02:35:27Z",
+        "2026-10-13T02:35:55Z"
+      ],
+      "accepted_revision": null,
+      "consumer_ack": null,
+      "meaning": "observed main reference, not EI accepted release pin or foreign acceptance review"
+    },
+    {
+      "repository": "Jevelopers-neatHack-2026/agent-harness",
+      "observed_revision": "4fc14c508a07e4a7a6fbf3cbc50851a87604dcff",
+      "source": "https://github.com/Jevelopers-neatHack-2026/agent-harness/commit/4fc14c508a07e4a7a6fbf3cbc50851a87604dcff",
+      "observed_between": [
+        "2026-10-13T02:35:27Z",
+        "2026-10-13T02:35:55Z"
+      ],
+      "accepted_revision": null,
+      "consumer_ack": null,
+      "meaning": "observed main reference, not EI accepted release pin or foreign acceptance review"
+    },
+    {
+      "repository": "Jevelopers-neatHack-2026/integration-evals",
+      "observed_revision": "13bde39399a09d4a14cc97d72cd769b51da83e00",
+      "source": "https://github.com/Jevelopers-neatHack-2026/integration-evals/commit/13bde39399a09d4a14cc97d72cd769b51da83e00",
+      "observed_between": [
+        "2026-10-13T02:35:27Z",
+        "2026-10-13T02:35:55Z"
+      ],
+      "accepted_revision": null,
+      "consumer_ack": null,
+      "meaning": "observed main reference, not EI accepted release pin or foreign acceptance review"
+    }
+  ],
+  "foreign_observation_limits": [
+    "The 02:35 refresh read main references and bounded owner-comment deltas; it did not rerun foreign code or acquire all foreign artifacts.",
+    "Product PR134 actually merged at the listed Product pin. Its 12 CLI/39 constructed controls are owner-attributed checker evidence, not an authentic correlated specialist release.",
+    "Product scoped GT-01.5 acceptance in issue7 comment6136696559 belongs to Product and is not transferred to EI.",
+    "The older Creative manifest proposal has 12 pending agreements at its historical pin. The later Creative owner inventory has 15 pending agreements and accepted revision null; neither observation is overwritten."
+  ],
+  "merged_component_evidence": [
+    {
+      "id": "merged-pr-97",
+      "pr": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/97",
+      "revision": "7dd941fa325a8167d32d188c10bf8cd101d1e6ed",
+      "tree": "4152481a5bee51cd2fb31c2e39dc31376b60ae0e",
+      "ordered_parents": [
+        "bf1423cf6b426fe1f3682f86a23ad682fb520b02",
+        "869a71170965447f066a4c8f3d89dc2af17c29de"
+      ],
+      "status": "scoped_actual_main_verified",
+      "criterion_contributions": [
+        "issue14/AC4: bounded follow-up and native-Promise authorization containment"
+      ],
+      "whole_criterion_acceptance": null,
+      "handoff": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/97#issuecomment-6136113893",
+      "runtime": {
+        "mode": "mock",
+        "execution_detail": "synthetic authorities and fixtures with native local processes, clocks and SQLite; no provider calls",
+        "runtime": "Node.js 22.23.3; warnings unsuppressed; locked installed dependencies reused",
+        "result": "2026-10-13 01:25:10.839402–01:25:18.705304 UTC: nine commands exit 0; unchanged strict entry 5/5; maintained authority 75/75 (includes seven native controls); six strict consumers/project types/diff pass. Zero selected failures/skips/cancellations/TODO; 363 source files and 1,833 dependency entries exact and clean.",
+        "artifact_refs": [
+          "main97-runtime-report",
+          "main97-runtime-seal"
+        ]
+      },
+      "hosted": {
+        "mode": "mock",
+        "execution_detail": "original first-attempt hosted fixture jobs on the actual merge; separate from local execution",
+        "result": "17 jobs; 130 required and 68 supplemental steps pass; zero required skips. Do not add nested case or diagnostic counts to their parent suite counts.",
+        "artifact_refs": [
+          "main97-hosted-report",
+          "main97-hosted-seal"
+        ],
+        "limits": "Full raw logs were audited. Artifact ZIP contents were not acquired. Untriggered routes are not passes."
+      }
+    },
+    {
+      "id": "merged-pr-81",
+      "pr": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/81",
+      "revision": "231dff1f40c9dce2a5c1adbc2a6a1fcbf7db765c",
+      "tree": "aa3ee0328ee6eda5f778f3b08d24602552f0bb42",
+      "ordered_parents": [
+        "7dd941fa325a8167d32d188c10bf8cd101d1e6ed",
+        "0cb28329bdd1097108770792d454638efb74a424"
+      ],
+      "status": "scoped_actual_main_verified",
+      "criterion_contributions": [
+        "issue8/AC4: trusted configured tenant aggregation and schema-5 rolling-writer fence"
+      ],
+      "whole_criterion_acceptance": null,
+      "handoff": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/81#issuecomment-6136617159",
+      "runtime": {
+        "mode": "mock",
+        "execution_detail": "synthetic authorities and fixtures with native local processes, clocks and SQLite; no provider calls",
+        "runtime": "Node.js 22.23.3; warnings unsuppressed; locked installed dependencies reused",
+        "result": "Original nine commands at 01:58:19–01:58:22 UTC: eight succeed; legacy group fails 0/3 on missing output-directory writes. Only mkdir, then one unchanged legacy probe at 01:59:46 passes 3/3. Other passed groups were not repeated: strict entry 5/5, seven strict consumers/project types/diff. 368 current/324 historical source paths and 1,833 dependency entries exact and clean. Synthetic tenant/fixed clock, real SQLite/child processes and one disclosed BEGIN scheduling hook.",
+        "artifact_refs": [
+          "main81-runtime-report",
+          "main81-runtime-seal",
+          "main81-original-receipt",
+          "main81-corrective-receipt"
+        ]
+      },
+      "hosted": {
+        "mode": "mock",
+        "execution_detail": "original first-attempt hosted fixture jobs on the actual merge; separate from local execution",
+        "result": "17 jobs; 130 required and 68 supplemental steps pass; zero required skips. Planner 79/private retrieval 97/release 42 and authority 75 are distinct routes. Blocking native fixtures retain their overrun limitations; no unconditional wall-clock guarantee is inferred.",
+        "artifact_refs": [
+          "main81-hosted-report",
+          "main81-hosted-seal"
+        ],
+        "limits": "Full raw logs were audited. Artifact ZIP contents were not acquired. Untriggered routes are not passes."
+      }
+    },
+    {
+      "id": "merged-pr-84",
+      "pr": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/84",
+      "revision": "d984c6de4b55ccf9c220692c949b80b3a922edbe",
+      "tree": "d51d2cd3820a6ce840477804a3144a7aa655e1a4",
+      "ordered_parents": [
+        "231dff1f40c9dce2a5c1adbc2a6a1fcbf7db765c",
+        "74f16afd39a4978189d4f22f56c4b7d9a2d4b7ec"
+      ],
+      "status": "scoped_actual_main_verified",
+      "criterion_contributions": [
+        "issue20/AC2: bounded reviewed-public-profile conditional refresh",
+        "issue20/AC3–AC5: local expiry, invalidation, atomic receipt/outbox and recovery portions"
+      ],
+      "whole_criterion_acceptance": null,
+      "handoff": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/84#issuecomment-6137029206",
+      "runtime": {
+        "mode": "mock",
+        "execution_detail": "synthetic authorities and fixtures with native local processes, clocks and SQLite; no provider calls",
+        "runtime": "Node.js 22.23.3; warnings unsuppressed; locked installed dependencies reused",
+        "result": "2026-10-13 02:35:42.107508–02:35:47.593336 UTC: six commands exit 0 once; unchanged public native 3/3, earliest-expiry 3/3, rollback/separate-process replay 3/3, five strict consumers/project types/diff. Zero selected failures/skips/cancellations/TODO. 374 source files and 1,833 dependency entries exact and clean. No retry.",
+        "artifact_refs": [
+          "main84-runtime-report",
+          "main84-runtime-seal"
+        ]
+      },
+      "hosted": {
+        "mode": "mock",
+        "execution_detail": "original first-attempt hosted fixture jobs on the actual merge; separate from local execution",
+        "result": "19 jobs; 149 required and 76 supplemental steps pass; zero required skips. Cache 415, correction 109/189/117, planner 79/private 97/release 42 and authority 75 retain separate scopes.",
+        "artifact_refs": [
+          "main84-hosted-report",
+          "main84-hosted-seal"
+        ],
+        "limits": "Full raw logs were audited. Artifact ZIP contents were not acquired. Untriggered routes are not passes."
+      }
+    }
+  ],
+  "artifacts": {
+    "main97-runtime-report": {
+      "kind": "scoped report",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/c38749f24c859ab9355036827d4734f6580021b6",
+      "git_blob": "c38749f24c859ab9355036827d4734f6580021b6",
+      "sha256": "1e3fcdcf5d487943797d01d5046f170788048f817d4a068b1507244b056f094d",
+      "access": "public Git blob; referenced raw streams are retained separately, not all uploaded"
+    },
+    "main97-runtime-seal": {
+      "kind": "integrity manifest; a digest is not acceptance authority",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/fd31543abbd9e23bcd26e405d0b0670a175d3a40",
+      "git_blob": "fd31543abbd9e23bcd26e405d0b0670a175d3a40",
+      "sha256": "28ce5abddd8ccef07d0d6e78787394f9628192ac1276077d461ccce704cb824c",
+      "access": "public Git blob; referenced raw streams are retained separately, not all uploaded"
+    },
+    "main97-hosted-report": {
+      "kind": "scoped report",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/807e98627c68ee64236d7bdcf1ae9598520f2db3",
+      "git_blob": "807e98627c68ee64236d7bdcf1ae9598520f2db3",
+      "sha256": "05e5929d6140cf2f7edb3673bb69bc93c2f50d938dcdc1c8e23658630f5d2299",
+      "access": "public Git blob; referenced raw streams are retained separately, not all uploaded"
+    },
+    "main97-hosted-seal": {
+      "kind": "integrity manifest; a digest is not acceptance authority",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/c7ffed20a1187fe77bfe7d82cd62dccf87e45d6b",
+      "git_blob": "c7ffed20a1187fe77bfe7d82cd62dccf87e45d6b",
+      "sha256": "b61c902f37f86eca532b69dd83675f43f1bc2d4533e8c8e724833f4ed859eae2",
+      "access": "public Git blob; referenced raw streams are retained separately, not all uploaded"
+    },
+    "main81-runtime-report": {
+      "kind": "scoped report",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/30ce085db5c7b2489372b80eaaeef27bfc7280e1",
+      "git_blob": "30ce085db5c7b2489372b80eaaeef27bfc7280e1",
+      "sha256": "ff48777feca107719e375d72b0efd8237d2d82e879cc8b43ab07d863b7e17c3e",
+      "access": "public Git blob; referenced raw streams are retained separately, not all uploaded"
+    },
+    "main81-runtime-seal": {
+      "kind": "integrity manifest; a digest is not acceptance authority",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/b9f05e52b1954e4982b9999c126ed25e47f1871f",
+      "git_blob": "b9f05e52b1954e4982b9999c126ed25e47f1871f",
+      "sha256": "81f146e938ea37d766c14f4c7a4f1372ffeb47524d1fc5976441b3827b933627",
+      "access": "public Git blob; referenced raw streams are retained separately, not all uploaded"
+    },
+    "main81-hosted-report": {
+      "kind": "scoped report",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/d449bcab6ffa2aa22e38f694bdd63451cb2ead59",
+      "git_blob": "d449bcab6ffa2aa22e38f694bdd63451cb2ead59",
+      "sha256": "4fdd2548fcb54e9f5f5af04a32dffef0d2fb6c8f6e650b6a6def69601056639e",
+      "access": "public Git blob; referenced raw streams are retained separately, not all uploaded"
+    },
+    "main81-hosted-seal": {
+      "kind": "integrity manifest; a digest is not acceptance authority",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/ea933b1083143f463bf33f977ed0aebc4ebf8d23",
+      "git_blob": "ea933b1083143f463bf33f977ed0aebc4ebf8d23",
+      "sha256": "536329d6d461be1270409924c780fdeda71d9bd6b54480178f4ea0baa0bc39a7",
+      "access": "public Git blob; referenced raw streams are retained separately, not all uploaded"
+    },
+    "main84-runtime-report": {
+      "kind": "scoped report",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/0b617262cb12a0b42de8e7adc70abdcde262d531",
+      "git_blob": "0b617262cb12a0b42de8e7adc70abdcde262d531",
+      "sha256": "3e05a01f22ef8e6261124e21d6078a94f14667b66cc3f6459e282632361a51cb",
+      "access": "public Git blob; referenced raw streams are retained separately, not all uploaded"
+    },
+    "main84-runtime-seal": {
+      "kind": "integrity manifest; a digest is not acceptance authority",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/c4a10e0f699d920fa2eb5fe7fe8144432e62071f",
+      "git_blob": "c4a10e0f699d920fa2eb5fe7fe8144432e62071f",
+      "sha256": "b6d1382d7dc025aa5b881e63a7defd99532f235f5b91c74e67b4934909e4e198",
+      "access": "public Git blob; referenced raw streams are retained separately, not all uploaded"
+    },
+    "main84-hosted-report": {
+      "kind": "scoped report",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/42782a25ffd50ca88821597eae7e92164e24709c",
+      "git_blob": "42782a25ffd50ca88821597eae7e92164e24709c",
+      "sha256": "0f65f6ec90954d9ec73fe5d9d4f122c5eb77206cdde468bea0d1e6757757411d",
+      "access": "public Git blob; referenced raw streams are retained separately, not all uploaded"
+    },
+    "main84-hosted-seal": {
+      "kind": "integrity manifest; a digest is not acceptance authority",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/8f71aa9084d117d8a30b427211e046ad99fcd7a5",
+      "git_blob": "8f71aa9084d117d8a30b427211e046ad99fcd7a5",
+      "sha256": "08713b3bd663a9aeb321438c56bf7bba9f5a92c24ae228adf5784d6fd71e8da7",
+      "access": "public Git blob; referenced raw streams are retained separately, not all uploaded"
+    },
+    "historical-authorization-bf-report": {
+      "kind": "scoped report",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/d0f198d85fb60d9c0eac47bf3157bd4503098889",
+      "git_blob": "d0f198d85fb60d9c0eac47bf3157bd4503098889",
+      "sha256": "bd4532f3f8a5f135fc9b71c9ae5ac1957000c28fedbbaf8d676662cc94be6ad8",
+      "access": "public Git blob; referenced raw streams are retained separately, not all uploaded"
+    },
+    "historical-authorization-bf-seal": {
+      "kind": "integrity manifest; a digest is not acceptance authority",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/c77c62bff1e4a01485f4849498690ad4cc1b4b27",
+      "git_blob": "c77c62bff1e4a01485f4849498690ad4cc1b4b27",
+      "sha256": "e93a792528e75915b0d4155edabc7cefab48a542e7b17a9f919444ed0367424f",
+      "access": "public Git blob; referenced raw streams are retained separately, not all uploaded"
+    },
+    "main81-original-receipt": {
+      "kind": "original receipt including output-directory failure",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/988d3883b0643618246875f3749f367c998077b0",
+      "git_blob": "988d3883b0643618246875f3749f367c998077b0",
+      "sha256": "5ce785435a9ecd86de230a4131f474425455aebd9c4c2c55e3fe448847b8bd76",
+      "access": "public Git blob; referenced raw streams are retained separately, not all uploaded"
+    },
+    "main81-corrective-receipt": {
+      "kind": "separate unchanged-probe execution after output-directory correction",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/35242665882e599e848d7d95760a774469916032",
+      "git_blob": "35242665882e599e848d7d95760a774469916032",
+      "sha256": "e2ad6100bc1ad006df55d5e9ff312df19e7f004cb284a827f5d1121ca5ce7d2a",
+      "access": "public Git blob; referenced raw streams are retained separately, not all uploaded"
+    }
+  },
+  "preserved_failures": [
+    {
+      "id": "authorization-entry-bf",
+      "revision": "bf1423cf6b426fe1f3682f86a23ad682fb520b02",
+      "result": "4 passed / 1 failed; rejected native authorization Promise terminates the strict process after synchronous denial, with zero downstream calls",
+      "artifact_refs": [
+        "historical-authorization-bf-report",
+        "historical-authorization-bf-seal"
+      ],
+      "later_scoped_repair": "merged-pr-97"
+    },
+    {
+      "id": "main81-output-directory",
+      "revision": "231dff1f40c9dce2a5c1adbc2a6a1fcbf7db765c",
+      "result": "Original legacy group 0/3 ENOENT observation writes; original nine-command receipt is 8 successful / 1 failed",
+      "artifact_refs": [
+        "main81-original-receipt",
+        "main81-corrective-receipt"
+      ],
+      "later_result": "Only output-directory setup corrected; one unchanged probe 3/3. No product source change, no other group repeated."
+    },
+    {
+      "id": "public-refresh-original-controls",
+      "result": "Original public native 1/3 and earliest-expiry 1/3 remain retained, separately from current 3/3 results",
+      "artifact_refs": [
+        "main84-runtime-report",
+        "main84-runtime-seal"
+      ],
+      "later_scoped_repair": "merged-pr-84"
+    },
+    {
+      "id": "historical-tenant-and-cleanup",
+      "result": "Original mixed-version writer and old CI private-retrieval failure remain historical; current fixture success does not establish their unobserved scheduling cause",
+      "artifact_refs": [
+        "main81-runtime-report",
+        "main81-runtime-seal",
+        "main81-hosted-report",
+        "main81-hosted-seal"
+      ]
+    }
+  ],
+  "supported_public_source_evidence": {
+    "status": "UNVERIFIED",
+    "historical_pycon": {
+      "source": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/22#issuecomment-6112213489",
+      "revision": "ca252c5d52f150ae21cdfde8917659bd752a52fa",
+      "mode": "one explicitly authorized public request through default SafeFetcher/private retrieval; synthetic local host",
+      "url": "https://us.pycon.org/2026/",
+      "observed": {
+        "transport_admissions": 1,
+        "body_complete_records": 1,
+        "decoded_transport_budget_bytes": 25209,
+        "facts": 0,
+        "sources": 0,
+        "occurrence_candidates": 0,
+        "provider_calls": 0
+      },
+      "outcome": "incomplete; AC22.2 unverified",
+      "limitations": "No retained HTTP status/content-type/final URL/full-source body hash/DNS/socket peer. No source authority/rights evaluation, actual usage cost or successful live fact append/lookup. Reason for no eligible candidates cannot be established. Today fixes do not supply historical root cause.",
+      "report_sha256": "bfff2cfb17e229c4b59b21159a1354d6dcd0a73836aff53ff80cdf6ee6df4cd2",
+      "manifest_sha256": "029254f50495d9edc6c51e87856940ad515d7051ea5507cbf487f97154ae7e5d",
+      "artifact_access": "Historical comment reports local workspace records, not uploaded GitHub release artifacts."
+    },
+    "later_web_observation": {
+      "observed_at": "2026-10-12T17:40:07Z",
+      "url": "https://us.pycon.org/2026/",
+      "mode": "web-rendered read-only observation; not an EI SafeFetcher/API run",
+      "meaning": "Visible dated event content was observed; no original response bytes/hash/positions, accepted fact, permission or historical cause is inferred."
+    },
+    "actual_default_transport": {
+      "latest_source": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/8#issuecomment-6131524055",
+      "latest_revision": "181bb0fab8c0b053dbe745d7cbf6328007f3210b",
+      "latest_tree": "fd39d25f31203fe1a124c99f043c96d66c9619d5",
+      "started_at": "2026-10-12T19:49:25.662421Z",
+      "completed_at": "2026-10-12T19:49:25.858268Z",
+      "url": "https://neatlogs.com/hackathon",
+      "latest_result": "One unmodified production SafeFetcher source-only invocation returned handled RetrievalError/DNS_FAILURE, Node/wrapperexit2, inner109.470728ms/outer0.195524s. Neither10-second caller nor25-second outer bound fired. No HTTP document; extraction uninvoked. Status/body bytes/candidates/facts/provider cost are UNOBSERVED, not zero. No alternate resolver/proxy/test seam/provider/second attempt. Cause/DNS packet count/socket peer remain unknown.",
+      "report_sha256": "465ef6456e4b616466f30c1f0c29140f71474cc65d0a902856ec68167ab22b36",
+      "receipt_sha256": "45f6e05039b41a86784471855364d0e25ea2405cd15bca92376580599a27e408",
+      "attribution": "Actual execution by the source-only owner lane; its full fresh public comment was read in this audit, not rerun. Earlier ef crash, b137 refusal and ca252 PyCon result remain separate."
+    },
+    "next_action": "Existing environment/source owner supplies a working permitted DNS/HTTP environment and supported public source; research owner then records the authorized exact-byte journey and accepted downstream evidence. Do not bypass policy or reinterpret the historical cause."
+  },
+  "installed_contract_diagnostics": {
+    "status": "INCOMPATIBLE_HOLD",
+    "versions": [
+      "0.9.7",
+      "0.10.2"
+    ],
+    "result": "Separate opt-in local installed diagnostics reached 49/49 expected controls, including 34 expected refusals and all four stages on their recorded revisions. No upstream fixtures, handler/result dispatch, adopted wire shape or satisfied acceptance IDs are claimed.",
+    "consumer_ack": null,
+    "satisfied_acceptance_ids": [],
+    "references": [
+      "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/3#issuecomment-6131086697",
+      "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/3#issuecomment-6132497616"
+    ],
+    "separate_requested_artifacts": [
+      {
+        "version": "0.9.8",
+        "requested_revision": "04e506c4bf1d099b8d1638b719eedd1675175caf"
+      },
+      {
+        "version": "Research-a.2",
+        "requested_revision": "a6b3bee948aaf659617a2cec22ce6f3a1600976f"
+      }
+    ],
+    "acquisition_limit": "Earlier exact permitted GitData reads returned 404/NOT_FOUND; no later delivery/election appeared in the bounded prerequisite refresh. Existing diagnostic versions do not silently replace those requests."
+  },
+  "pending_owner_inputs": [
+    {
+      "id": "CONTRACT_WIRE",
+      "owner_role": "shared-contracts maintainer / Agent and research, with affected Product, EI, Creative and Harness consumers",
+      "missing_input": "Accepted request/package/source/fact/correction/invalidation fields; immutable IDs and hash domains; common tenant/project/correlation/producer/time/mode envelope; supported-minor/additive-field policy and typed unsupported-version error.",
+      "next_action": "Decide the exact versioned crosswalk and compatibility rule, supply the accepted artifact and representative producer/consumer fixtures, and record affected-owner acceptance. Do not alias local whole-snapshot hashes or invent issuer authority.",
+      "references": [
+        "https://github.com/Jevelopers-neatHack-2026/shared-contracts/issues/16",
+        "https://github.com/Jevelopers-neatHack-2026/shared-contracts/issues/17",
+        "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/3#issuecomment-6130314846",
+        "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/3#issuecomment-6132497616"
+      ],
+      "accepted_input": null
+    },
+    {
+      "id": "PRIVATE_098",
+      "owner_role": "shared-contracts artifact owner",
+      "missing_input": "The specifically requested immutable0.9.8 source/archive and its accepted diagnostic sequencing, unless the accountable owner explicitly changes that request.",
+      "next_action": "Deliver the specifically requested immutable0.9.8 archive/source through an existing permitted private route, or explicitly change the diagnostic sequencing/scope. Neither installed0.9.7 nor announcedResearch-a.2 substitutes silently.",
+      "references": [
+        "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/3"
+      ],
+      "accepted_input": null
+    },
+    {
+      "id": "PRIVATE_RESEARCH_A2",
+      "owner_role": "Active global root and shared-contracts artifact/account owner; affected consumer owners elect B9 scope",
+      "missing_input": "Accessible immutable Research-a.2 source/archive/maps and the active root/affected owners’ explicit B9 subset, role/count and host-port/consumer sequencing election.",
+      "next_action": "The artifact and affected integration owners select an existing authorized delivery route, provide the immutable source/archive/maps and explicitly elect the B9 subset, roles and consumer/host-port sequencing. EI then verifies acquired identities before a bounded diagnostic; producer results alone are not EI adoption.",
+      "references": [
+        "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/3#issuecomment-6130197751",
+        "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/3#issuecomment-6130314846"
+      ],
+      "accepted_input": null
+    },
+    {
+      "id": "DECISION_PORT",
+      "owner_role": "Harness adapter owner with shared-contracts / Agent and research",
+      "missing_input": "Compatible runnable sole injected DecisionPort, exact primitive/schema/question/state/result/receipt mapping, immutable stage boundaries and typed fallbacks.",
+      "next_action": "Decide and deliver the accepted EI question/target/state/instance/result/receipt mapping with exact public-port/runtime pins and permitted invocation. The real request diagnostic now identifies the first refusal; after owner acceptance EI can implement and test actual eligible unpromoted routing and typed result/fallback consumption. Request refusal or shadow-only results do not meet that behavior.",
+      "references": [
+        "https://github.com/Jevelopers-neatHack-2026/shared-contracts/issues/14",
+        "https://github.com/Jevelopers-neatHack-2026/agent-harness/issues/15",
+        "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/3#issuecomment-6131086697",
+        "https://github.com/Jevelopers-neatHack-2026/agent-harness/issues/5#issuecomment-6132549113"
+      ],
+      "accepted_input": null
+    },
+    {
+      "id": "AUTHORITY",
+      "owner_role": "Product and frontend issuer/authentication owner, with shared-contracts and actual consumers",
+      "missing_input": "Trusted request/job/package/correction identity; issuer, tenant, actor, asset hash/version/use, expiry/revocation and stale-approval bindings.",
+      "next_action": "Supply authenticated host ports and accepted positive/forged/stale/revoked fixtures. Product15 closed/noncanonical UI follow-ups do not supply canonical EI/Creative authority or ACK.",
+      "references": [
+        "https://github.com/Jevelopers-neatHack-2026/getticketstub.com/issues/12",
+        "https://github.com/Jevelopers-neatHack-2026/getticketstub.com/issues/15"
+      ],
+      "accepted_input": null
+    },
+    {
+      "id": "PROVIDER",
+      "owner_role": "Actual provider/account owner with Harness and Agent and research",
+      "missing_input": "Explicit provider API/client/runtime/model/version/parameters, eligible account/project, authorized grant and safe nonbillable readiness procedure or explicit limitation.",
+      "next_action": "Provide the allowed configuration/readiness input and operation-specific execution authority. Revalidate grant and model immediately before any later authorized dispatch; no latest alias or synthetic inference success.",
+      "references": [
+        "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/5",
+        "https://github.com/Jevelopers-neatHack-2026/agent-harness/issues/4",
+        "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/5#issuecomment-6128652796"
+      ],
+      "accepted_input": null
+    },
+    {
+      "id": "FINANCE",
+      "owner_role": "Finance and reliability reservation/ledger owner, with Harness transport and EI observation producers",
+      "missing_input": "Accepted pre-dispatch reservation/billability protocol; direct/trace dedupe; logical/billable/transport/provider IDs; unknown-cost holds, independent finality, cancellation/restart/reconciliation and original-expense allocation.",
+      "next_action": "Existing Finance owners resolve their held runtime and return accepted pre-dispatch reservation, attempt/unknown-hold/finality/reconciliation/allocation fixtures and actual consumer ACKs. Reuse delivered reporting/export source and the narrow structural ACK; neither alone supplies paid adoption or independent finality.",
+      "references": [
+        "https://github.com/Jevelopers-neatHack-2026/cost-intelligence/issues/3",
+        "https://github.com/Jevelopers-neatHack-2026/cost-intelligence/pull/59",
+        "https://github.com/Jevelopers-neatHack-2026/cost-intelligence/pull/47#issuecomment-6128325955"
+      ],
+      "accepted_input": null
+    },
+    {
+      "id": "ASSEMBLY",
+      "owner_role": "getticketstub.com Product/application composition owner, with specialist owners and integration-evals consumer",
+      "missing_input": "Accepted Assembly1.0 with compatible immutable specialist pins, supported invocation/configuration, per-scenario state/request/response/attempt/reservation joins, clock/seed/fault hooks and owned cleanup; actual Research/Creative output and Product/Finance acceptance.",
+      "next_action": "Product/Harness/Finance elect and deliver the allowed narrow Assembly invocation with matching loaded/request pins, trusted identity/current approval and Finance lifecycle, scenario/fault/clock/state/cleanup inputs and actual Research/Creative outputs. The merged host and existing recovery code must be reused; do not require a new host implementation or every foreign epic closure.",
+      "references": [
+        "https://github.com/Jevelopers-neatHack-2026/getticketstub.com/issues/19",
+        "https://github.com/Jevelopers-neatHack-2026/getticketstub.com/pull/123#issuecomment-6134704812",
+        "https://github.com/Jevelopers-neatHack-2026/getticketstub.com/pull/129#issuecomment-6134494063"
+      ],
+      "accepted_input": null
+    },
+    {
+      "id": "CREATIVE",
+      "owner_role": "Creative and fulfillment actual brief consumer owner, with Product stale-approval owner and EI producer",
+      "missing_input": "Agreed representative canonical package/provenance/permissions/correction/invalidation/staleness fixture and real authenticated idempotent consumerACK; exact package/version/hash and affected brief/artifact/approval references.",
+      "next_action": "Shared/EI/Creative/Product accept the exact package/version/hash, producer fields, correction/invalidation, rights/currentness and authenticated consumer/approval staleness ACK. Reuse the existing narrow brief consumer; do not make completion of the whole Creative epic a new prerequisite for its scoped EI consumer check.",
+      "references": [
+        "https://github.com/Jevelopers-neatHack-2026/creative-engine/issues/3",
+        "https://github.com/Jevelopers-neatHack-2026/creative-engine/issues/10",
+        "https://github.com/Jevelopers-neatHack-2026/creative-engine/issues/19#issuecomment-6134914195",
+        "https://github.com/Jevelopers-neatHack-2026/creative-engine/issues/12#issuecomment-6135039270"
+      ],
+      "accepted_input": null
+    },
+    {
+      "id": "NATIVE_HOST",
+      "owner_role": "Harness runtime/verifier owners and explicit proof-contract owner CompleteDotTech",
+      "missing_input": "G1 existing approved operation-time map-writer/pre-exec evidence in both modes; G2 job-bound executing kernel/source/patch/config evidence; G3 versioned proof-contract decision with verifier/runtime co-owner review.",
+      "next_action": "CompleteDotTech with runtime/verifier owners supplies G1 authorized job-correlated operation-time map-writer/setup-child credentials/capabilities/NNP/labels/namespaces, G2 executing kernel/source/config/patch linkage, and G3 the versioned proof-contract decision. Preserve original failures; do not weaken proof or change kernel policy.",
+      "references": [
+        "https://github.com/Jevelopers-neatHack-2026/agent-harness/issues/24#issuecomment-6118280341",
+        "https://github.com/Jevelopers-neatHack-2026/agent-harness/issues/24#issuecomment-6133033383"
+      ],
+      "accepted_input": null
+    },
+    {
+      "id": "BENCHMARK",
+      "owner_role": "Agent and research corpus/question owner, Finance cost-policy owner and integration-evals acceptance owner",
+      "missing_input": "Permission-audited independently adjudicated corpus, frozen families/splits, ratified numeric quality/coverage/latency/full-workflow-cost policy and actual held-out deterministic/JEV/generative comparison.",
+      "next_action": "Complete these after initial deployment and before promotion. Keep failed/missing cases and unknown cost; proposed policy and synthetic corpus are not accepted targets or measurements.",
+      "references": [
+        "https://github.com/Jevelopers-neatHack-2026/integration-evals/issues/15#issuecomment-6117912302",
+        "https://github.com/Jevelopers-neatHack-2026/integration-evals/issues/16#issuecomment-6117912491"
+      ],
+      "accepted_input": null
+    },
+    {
+      "id": "PAIRED_DEMO",
+      "owner_role": "Agent and research + actual application/provider owners, with integration-evals acceptance owner",
+      "missing_input": "Identical permission-approved inputs, immutable baseline/candidate code/configuration, actual owner runs, correlated evidence and measured results for the narrow demonstration.",
+      "next_action": "Produce the scoped paired demonstration once actual assembly/interfaces and execution authority are available. Do not replace it with the deferred full benchmark or infer it from component tests.",
+      "references": [
+        "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/22",
+        "https://github.com/Jevelopers-neatHack-2026/integration-evals/issues/10#issuecomment-6128103473"
+      ],
+      "accepted_input": null
+    },
+    {
+      "id": "RELEASE",
+      "owner_role": "Agent and research for EI gate, Product/Creative/Finance/Harness for their evidence, integration-evals for master acceptance",
+      "missing_input": "Accepted pin/coverage manifest, accessible immutable required checks and real supported-source facts/conflicts, active receipt, immutable correction, actual CreativeACK/fallback and authoritative usage/trace/financial lineage.",
+      "next_action": "Finish enabled local owner lanes and meaningful current-main checks, then obtain exact accepted release pins/coverage, attributable supported public facts, authorized active routing, actual Creative correction/rights ACK and authoritative financial evidence. Close only fully satisfied leaves; close gate22 before epic1 after accountable acceptance.",
+      "references": [
+        "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/22",
+        "https://github.com/Jevelopers-neatHack-2026/integration-evals/issues/10#issuecomment-6128103473",
+        "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/85#issuecomment-6133275000"
+      ],
+      "accepted_input": null
+    },
+    {
+      "id": "PUBLIC_EGRESS",
+      "owner_role": "EI supported-source runtime/network owner with Product/Harness approved-environment owners",
+      "missing_input": "Working approved controlledDNS/HTTP environment for a supported real source, or separately authorized bounded diagnostics identifying its unavailable transport prerequisite.",
+      "next_action": "The approved environment/source owner supplies a working permitted public-source execution environment or diagnoses the exact DNS restriction. Reuse the safe default path; do not change resolver/proxy, retry public requests or assert old cause without authority/evidence.",
+      "references": [
+        "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/7",
+        "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/22",
+        "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/8#issuecomment-6129894011",
+        "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/8#issuecomment-6131524055"
+      ],
+      "accepted_input": null
+    }
+  ],
+  "evaluation_policy": {
+    "priority": "Master P0 demonstration/financial integrity, P1 expansion, Production before live commerce; local labels do not override it.",
+    "required_now": "Authorized narrow paired P0 demonstration and applicable deterministic safety/negative controls remain required; real invocation inputs and owner election remain pending where specified.",
+    "deferred": "Full held-out JEV benchmark is post-deployment and before promotion under the recorded owner decision; deferral does not waive narrower P0 safety/demo obligations.",
+    "canonical_rows": "The inspected master snapshot has 47 rows: 44 planned and three historical verified sponsor rows. Those global sponsor passes are not EI research acceptance.",
+    "epic_item_ids": [
+      "EI-01",
+      "EI-02",
+      "EI-03",
+      "EI-04",
+      "EI-05",
+      "EI-06",
+      "EI-07",
+      "EI-08",
+      "EI-09",
+      "EI-10",
+      "EI-11",
+      "EI-12",
+      "JEV-EI-01",
+      "JEV-EI-02",
+      "JEV-EI-03",
+      "JEV-EI-04",
+      "JEV-EI-05",
+      "JEV-EI-06",
+      "JEV-EI-07"
+    ],
+    "issues": [
+      "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/3",
+      "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/4",
+      "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/5",
+      "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/6",
+      "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/7",
+      "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/8",
+      "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/9",
+      "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/10",
+      "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/11",
+      "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/12",
+      "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/13",
+      "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/14",
+      "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/15",
+      "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/16",
+      "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/17",
+      "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/18",
+      "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/19",
+      "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/20",
+      "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/21",
+      "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/22"
+    ],
+    "closure_claims": []
+  },
+  "active_local_work_at_cutoff": [
+    {
+      "prs": [
+        91
+      ],
+      "owner_role": "Existing inspection-report writer",
+      "state": "Current d984-based integration under independent qualification at the cutoff",
+      "next_action": "Complete current-source and CI guard, normal merge and actual-main closed-projection proof; no source authority/facts/rights inference."
+    },
+    {
+      "prs": [
+        86,
+        87,
+        89,
+        94,
+        96
+      ],
+      "owner_role": "Existing bounded media and report/accessor writers",
+      "state": "Published owner branches; current-main integrations pending",
+      "next_action": "Preserve owner branches and qualify PNG, JPEG/WebP, scanned-PDF, raw-accessor and bounded media/report integrations in their agreed order. Do not require OCR90/99 for the non-OCR96 scope."
+    },
+    {
+      "prs": [
+        90,
+        99
+      ],
+      "owner_role": "Existing OCR/native/composition writers",
+      "state": "Separate active OCR feature stack; immutable historical installer failures retained",
+      "next_action": "Qualify the exact published OCR and composition union and later actual-main integration; source/feature CI does not transfer to a future destination tree."
+    },
+    {
+      "prs": [
+        98
+      ],
+      "owner_role": "Existing dependency-direction guard writer",
+      "state": "Current owned fixture/check repair; original authority74/75 and two required type skips retained",
+      "next_action": "Publish and independently qualify the owner correction; current-main green does not clear the failing candidate."
+    }
+  ],
+  "maintenance": {
+    "append_only_observations": true,
+    "refresh_triggers": [
+      "new merge or source/candidate tree",
+      "new explicit owner scope or acceptance decision",
+      "new actual source/provider/consumer receipt",
+      "changed prerequisite delivery"
+    ],
+    "validation": "Run all four documented tools/verify_handoff.py scopes and the focused handoff unittests. Existing blocked outcomes must remain blocked with zero invalid/mismatched fields. Check JSON duplicates, cross-references, full SHA identities and credential-free public links independently. This index is not consumed as trusted approval by that checker."
+  }
+}
