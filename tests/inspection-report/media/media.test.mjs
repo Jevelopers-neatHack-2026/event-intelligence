@@ -1,0 +1,284 @@
+import assert from "node:assert/strict";
+import test, { before } from "node:test";
+import { composeInspectionMediaReport, validateInspectionMediaReport, INSPECTION_MEDIA_REPORT_LIMITS } from "../../../src/extraction/inspection-report/media.mjs";
+import { InspectionReportError } from "../../../src/extraction/inspection-report/index.mjs";
+import { actualMediaFixture, projectedObservation, changeNativeSummary, changeSnapshot, refreshPrerequisite, copy, hash, jsonBytes } from "./support.mjs";
+
+let fixture;
+before(async () => { fixture = await actualMediaFixture(); });
+const input = () => copy(fixture.input);
+const png = (value) => value.observations.find((o) => o.id === "png-rgba");
+const jpeg = (value) => value.observations.find((o) => o.id === "jpeg-rgb-baseline");
+const pdf = (value) => value.observations.find((o) => o.id === "pdf-scan-two");
+function refused(value, code) { assert.throws(() => composeInspectionMediaReport(value), (error) => error instanceof InspectionReportError && (!code || error.code === code), code); }
+
+test("actual original bytes, native PNG derivatives and raw PDF pixels compose an immutable incomplete aggregate", () => {
+  const f = input(), artifact = composeInspectionMediaReport(f), report = artifact.report;
+  assert.equal(report.overall, "incomplete"); assert.equal(report.acceptance.evaluated, false);
+  assert.deepEqual(report.acceptance.satisfiedIds, []); assert.deepEqual(report.acceptance.ownerAcknowledgements, []);
+  assert.equal(report.ocrOrFactInference, "none"); assert.equal(report.financeAuthority, "none");
+  assert.deepEqual(report.missingFormats, []);
+  assert.equal(report.declaredCoverage, report.source.complete ? "complete" : "incomplete");
+  assert.deepEqual(report.executions.map((e) => e.expectedCases).sort((a, b) => a - b), [93, 99, 158]);
+  assert.ok(report.executions.every((e) => e.nativeDeclaredComplete));
+  assert.equal(report.prerequisite.sha256, f.prerequisite.expectedSha256);
+  const normalized = report.observations.find((o) => o.id === "png-rgba");
+  assert.equal(normalized.derivatives[0].domain, "normalized-png-bytes");
+  assert.equal(normalized.componentReportedRgba.verified, false);
+  const scanned = report.observations.find((o) => o.id === "pdf-scan-two");
+  assert.deepEqual(scanned.derivatives.map((d) => d.page), [1, 2]);
+  assert.equal(scanned.derivatives[0].domain, "scanned-page-opaque-rgba8-bytes");
+  assert.equal(scanned.derivatives[0].pageWidthPoints, 72);
+  assert.equal(scanned.derivatives[0].width, 2);
+  assert.equal(scanned.derivatives[0].rgbaHashVerified, true);
+  assert.equal(artifact.sha256, hash(artifact.copyBytes()));
+  assert.equal(validateInspectionMediaReport(artifact.copyBytes(), artifact.sha256, f).sha256, artifact.sha256);
+  const owned = artifact.copyBytes(); owned.fill(0);
+  assert.equal(hash(artifact.copyBytes()), artifact.sha256);
+  assert.ok(Object.isFrozen(report)); assert.ok(Object.isFrozen(scanned.native.pages[0]));
+  fixture.capture("composed-media-report.json", artifact.copyBytes());
+});
+
+test("stable inputs and reordered independent observations/executions yield identical report bytes", () => {
+  const a = input(), b = input(); b.observations.reverse(); b.executions.reverse(); b.runtimeReceipts.reverse();
+  assert.equal(composeInspectionMediaReport(a).sha256, composeInspectionMediaReport(b).sha256);
+});
+
+test("original source and derivative hashes remain separate even when each expected digest is valid elsewhere", () => {
+  const f = input(); png(f).sourceBytes = png(f).derivatives[0].bytes; png(f).expectedSourceSha256 = hash(png(f).sourceBytes);
+  refused(f, "SOURCE_HASH_MISMATCH");
+});
+
+for (const [name, mutate, code] of [
+  ["source bytes", (f) => { png(f).sourceBytes[0] ^= 1; }, "SOURCE_HASH_MISMATCH"],
+  ["original expected hash", (f) => { png(f).expectedSourceSha256 = "0".repeat(64); }, "SOURCE_HASH_MISMATCH"],
+  ["native source hash", (f) => { png(f).projection.result.sourceSha256 = "0".repeat(64); }, "SOURCE_HASH_MISMATCH"],
+  ["derivative bytes", (f) => { png(f).derivatives[0].bytes[30] ^= 1; }, "DERIVATIVE_HASH_MISMATCH"],
+  ["derivative sidecar hash", (f) => { png(f).derivatives[0].expectedSha256 = "0".repeat(64); }, "DERIVATIVE_HASH_MISMATCH"],
+  ["native normalized hash", (f) => { png(f).projection.result.normalizedSha256 = "0".repeat(64); }, "DERIVATIVE_HASH_MISMATCH"],
+  ["native normalized length", (f) => { png(f).projection.result.normalizedByteLength++; }, "DERIVATIVE_LENGTH_MISMATCH"],
+  ["RGBA count", (f) => { png(f).projection.result.decodedRgbaBytes++; }, "INVALID_PIXELS"],
+  ["PNG dimensions", (f) => { png(f).projection.result.width = 0; }, "INVALID_GEOMETRY"],
+  ["PNG output color type", (f) => { png(f).projection.result.outputColorType = 2; }, "INVALID_PIXELS"],
+  ["PNG role", (f) => { png(f).derivatives[0].role = "page-rgba8"; }, "DERIVATIVE_FORMAT_MISMATCH"],
+  ["PNG page alias", (f) => { png(f).derivatives[0].page = 1; }, "DERIVATIVE_FORMAT_MISMATCH"],
+  ["JPEG format", (f) => { jpeg(f).format = "webp"; }, "FORMAT_MISMATCH"],
+  ["JPEG encoding", (f) => { jpeg(f).projection.result.encoding = "lossless"; }, "FORMAT_MISMATCH"],
+  ["JPEG color mode", (f) => { jpeg(f).projection.result.sourceMode = "CMYK"; }, "FORMAT_MISMATCH"],
+  ["JPEG frame count", (f) => { jpeg(f).projection.result.frames = 2; }, "FORMAT_MISMATCH"],
+  ["JPEG runtime hash", (f) => { jpeg(f).projection.result.runtimeManifestSha256 = "0".repeat(64); }, "RUNTIME_MISMATCH"],
+  ["native decoder version", (f) => { jpeg(f).projection.result.decoder.pillowVersion = "12.4.0"; }, "UNSUPPORTED_VERSION"],
+  ["projection version", (f) => { png(f).projection.schemaVersion = "ei-native-media-data-projection/2"; }, "UNSUPPORTED_VERSION"],
+  ["complete assertion", (f) => { png(f).projection.result.completeness = "complete"; }, "INVALID_COMPLETENESS"],
+  ["network counter", (f) => { png(f).projection.result.networkApiAttemptCount = 1; }, "INVALID_PIXELS"],
+  ["lower-only timeout", (f) => { png(f).projection.result.limits.timeoutMs = 10001; }, "INVALID_LIMITS"],
+  ["fixed native cap", (f) => { png(f).projection.result.limits.maxPixels++; }, "INVALID_LIMITS"],
+  ["zero output limit", (f) => { png(f).projection.result.limits.maxOutputBytes = 0; }, "INVALID_LIMITS"],
+  ["PDF engine version", (f) => { pdf(f).projection.result.engine.version = "future"; }, "UNSUPPORTED_VERSION"],
+  ["PDF zero-based page", (f) => { pdf(f).projection.result.pages[0].page = 0; }, "INVALID_PAGE_SEQUENCE"],
+  ["PDF duplicated page", (f) => { pdf(f).projection.result.pages[1].page = 1; }, "INVALID_PAGE_SEQUENCE"],
+  ["PDF reordered pages", (f) => { pdf(f).projection.result.pages.reverse(); }, "INVALID_PAGE_SEQUENCE"],
+  ["PDF missing later page", (f) => { pdf(f).derivatives.pop(); }, "INVALID_PAGE_SEQUENCE"],
+  ["PDF page source", (f) => { pdf(f).projection.result.pages[1].sourceSha256 = "0".repeat(64); }, "INVALID_PAGE_SEQUENCE"],
+  ["PDF byte stride", (f) => { pdf(f).projection.result.pages[0].stride = 1; }, "DERIVATIVE_FORMAT_MISMATCH"],
+  ["PDF PNG alias", (f) => { pdf(f).projection.result.pages[0].format = "png"; }, "DERIVATIVE_FORMAT_MISMATCH"],
+  ["PDF text coordinate alias", (f) => { pdf(f).projection.result.pages[0].coordinateSystem = "viewport-points-top-left"; }, "DERIVATIVE_FORMAT_MISMATCH"],
+  ["PDF nonfinite points", (f) => { pdf(f).projection.result.pages[0].pageWidthPoints = Infinity; }, "INVALID_INPUT"],
+  ["PDF zero points", (f) => { pdf(f).projection.result.pages[0].pageWidthPoints = 0; }, "INVALID_GEOMETRY"],
+  ["PDF copied length", (f) => { pdf(f).derivatives[1].bytes = pdf(f).derivatives[1].bytes.subarray(1); }, "DERIVATIVE_LENGTH_MISMATCH"],
+  ["PDF copied hash", (f) => { pdf(f).derivatives[1].bytes[0] ^= 1; }, "DERIVATIVE_HASH_MISMATCH"],
+  ["PDF total bytes", (f) => { pdf(f).projection.result.totalRgbaBytes++; }, "RESOURCE_LIMIT"],
+  ["PDF native control count", (f) => { pdf(f).projection.result.enforcementControlsPassed = 7; }, "INVALID_ISOLATION_EVIDENCE"],
+  ["execution binding", (f) => { png(f).executionId = "scanned-pdf"; }, "EXECUTION_BINDING_MISMATCH"],
+  ["duplicate observation ID", (f) => { f.observations[1].id = f.observations[0].id; }, "DUPLICATE_ID"],
+  ["duplicate source/format", (f) => { const o = copy(png(f)); o.id = "another-copy"; f.observations.push(o); }, "DUPLICATE_OBSERVATION"],
+  ["duplicate execution", (f) => { f.executions.push(copy(f.executions[0])); }, "RESOURCE_LIMIT"],
+  ["duplicate runtime receipt", (f) => { f.runtimeReceipts[1] = copy(f.runtimeReceipts[0]); }, "DUPLICATE_COMPONENT"],
+  ["runtime digest", (f) => { f.runtimeReceipts[0].expectedSha256 = "0".repeat(64); }, "ARTIFACT_HASH_MISMATCH"],
+  ["source receipt digest", (f) => { f.source.expectedBeforeSha256 = "0".repeat(64); }, "ARTIFACT_HASH_MISMATCH"],
+]) test("rejects inconsistent " + name + " without producing a partial report", () => { const f = input(); mutate(f); refused(f, code); });
+
+test("hash-consistent transparent PDF bytes still violate the opaque admitted profile", () => {
+  const f = input(), o = pdf(f); o.derivatives[0].bytes[3] = 0;
+  const h = hash(o.derivatives[0].bytes); o.derivatives[0].expectedSha256 = h; o.projection.result.pages[0].sha256 = h;
+  refused(f, "INVALID_ALPHA");
+});
+test("matching derivative digest cannot turn arbitrary bytes into normalized PNG", () => {
+  const f = input(), o = png(f), d = o.derivatives[0]; d.bytes = new Uint8Array(d.bytes.length);
+  d.expectedSha256 = hash(d.bytes); o.projection.result.normalizedSha256 = d.expectedSha256;
+  refused(f, "DERIVATIVE_FORMAT_MISMATCH");
+});
+test("a component-reported RGBA digest is retained explicitly unverified without pretending to decode PNG", () => {
+  const f = input(); png(f).projection.result.rgbaSha256 = "1".repeat(64);
+  const o = composeInspectionMediaReport(f).report.observations.find((o) => o.id === "png-rgba");
+  assert.equal(o.componentReportedRgba.sha256, "1".repeat(64)); assert.equal(o.componentReportedRgba.verified, false);
+});
+
+for (const [name, mutate] of [
+  ["native PNG metadata", (f) => { png(f).projection.result.privateText = "PRIVATE_CANARY"; }],
+  ["native PNG limits", (f) => { png(f).projection.result.limits.privateText = "PRIVATE_CANARY"; }],
+  ["native JPEG metadata", (f) => { jpeg(f).projection.result.privateText = "PRIVATE_CANARY"; }],
+  ["native JPEG limits", (f) => { jpeg(f).projection.result.limits.privateText = "PRIVATE_CANARY"; }],
+  ["native PDF limits", (f) => { pdf(f).projection.result.limits.privateText = "PRIVATE_CANARY"; }],
+  ["native PDF page", (f) => { pdf(f).projection.result.pages[0].privateText = "PRIVATE_CANARY"; }],
+  ["projection envelope", (f) => { png(f).projection.privateText = "PRIVATE_CANARY"; }],
+]) test("does not copy undeclared private fields from " + name, () => { const f = input(); mutate(f); refused(f); });
+
+for (const [name, mutate] of [
+  ["selected pins", (text) => { text.expectedPins.privateText = "PRIVATE_CANARY"; }],
+  ["deterministic locator", (text) => { text.observations[0].result.visibleText[0].source.locator.privateText = "PRIVATE_CANARY"; }],
+  ["native text-PDF limits", (text) => { text.observations[2].result.limits.privateText = "PRIVATE_CANARY"; }],
+]) test("v1 prerequisite cannot disclose undeclared " + name + " in the aggregate", () => {
+  const f = input();
+  try {
+    refreshPrerequisite(f, mutate);
+    assert.equal(Buffer.from(composeInspectionMediaReport(f).copyBytes()).includes(Buffer.from("PRIVATE_CANARY")), false);
+  } catch (error) { if (!(error instanceof InspectionReportError)) throw error; }
+});
+
+test("unused runtime metadata is hashed but never copied into the report", () => {
+  const f = input(), r = f.runtimeReceipts[0], value = JSON.parse(Buffer.from(r.bytes).toString());
+  value.privateText = "PRIVATE_CANARY"; r.bytes = jsonBytes(value); r.expectedSha256 = hash(r.bytes);
+  for (const o of f.observations.filter((o) => o.component === "static-jpeg-webp")) o.projection.result.runtimeManifestSha256 = r.expectedSha256;
+  assert.equal(Buffer.from(composeInspectionMediaReport(f).copyBytes()).includes(Buffer.from("PRIVATE_CANARY")), false);
+});
+
+for (const [name, mutate] of [
+  ["missing required media", (f) => { f.observations = f.observations.filter((o) => o.format !== "webp"); }],
+  ["missing runtime receipt", (f) => { f.runtimeReceipts = []; }],
+  ["source became dirty", (f) => { changeSnapshot(f, "after", (s) => { s.dirty = true; }); }],
+  ["source changed revision", (f) => { changeSnapshot(f, "after", (s) => { s.revision = "0".repeat(40); }); }],
+  ["source changed file", (f) => { changeSnapshot(f, "after", (s) => { s.files[0].sha256 = "0".repeat(64); }); }],
+  ["selected other tree", (f) => { f.source.selectedTree = "0".repeat(40); }],
+  ["unknown wrapper outcome", (f) => { f.executions[0].exitCode = null; f.executions[0].signal = "SIGTERM"; }],
+  ["missing required summary", (f) => { f.executions[0].stdoutBytes = Buffer.alloc(0); f.executions[0].exitCode = 1; }],
+  ["recorded input origin", (f) => { f.executions[0].origin = "recorded"; }],
+  ["live relabel attempt", (f) => { f.executions[0].mode = "live"; }],
+  ["unavailable child stderr", (f) => { f.executions.find((e) => e.component === "scanned-pdf").childStderrBytes = null; }],
+]) test("retains incomplete state for " + name, () => {
+  const f = input(); mutate(f); const r = composeInspectionMediaReport(f).report;
+  assert.equal(r.declaredCoverage, "incomplete"); assert.equal(r.overall, "incomplete"); assert.equal(r.acceptance.evaluated, false);
+});
+
+for (const [name, mutate, code] of [
+  ["traversal source path", (s) => { s.files[0].path = "../escape"; }, "INVALID_SOURCE_PATH"],
+  ["absolute source path", (s) => { s.files[0].path = "/tmp/escape"; }, "INVALID_SOURCE_PATH"],
+  ["duplicate source path", (s) => { s.files[1].path = s.files[0].path; }, "INVALID_SOURCE_PATH"],
+  ["source receipt private field", (s) => { s.privateText = "PRIVATE_CANARY"; }, "INVALID_INPUT"],
+]) test("rejects " + name, () => { const f = input(); changeSnapshot(f, "before", mutate); refused(f, code); });
+
+for (const [name, mutate, code] of [
+  ["lower expected native case count", (s) => { s.expectedTests--; }, "UNSUPPORTED_SUMMARY"],
+  ["omitted required native file", (s) => { s.files.pop(); }, "UNSUPPORTED_SUMMARY"],
+  ["native provider mode rewrite", (s) => { s.mode = "live"; }, "UNSUPPORTED_SUMMARY"],
+  ["false passed count", (s) => { s.counts.pass++; }, "COUNT_MISMATCH"],
+]) test("rejects summary " + name, () => { const f = input(); changeNativeSummary(f, "static-png", mutate); refused(f, code); });
+
+test("duplicate and nonterminal native summaries cannot erase the first outcome", () => {
+  const f = input(), e = f.executions[0], line = Buffer.from(e.stdoutBytes).toString().split("\n").find((x) => x.startsWith("{"));
+  e.stdoutBytes = Buffer.concat([e.stdoutBytes, Buffer.from(line + "\n")]); refused(f, "DUPLICATE_SUMMARY");
+  const g = input(); g.executions[0].stdoutBytes = Buffer.concat([g.executions[0].stdoutBytes, Buffer.from("unexpected later output\n")]); refused(g, "NONTERMINAL_SUMMARY");
+});
+test("an earlier native TAP failure cannot be replaced by a green footer", () => {
+  const f = input(); changeNativeSummary(f, "static-png", () => {}, (tap) => tap.replace(/^ok 1 /m, "not ok 1 "));
+  refused(f, "FALSE_PASS");
+});
+for (const [status, directive] of [["fail", "not ok"], ["skipped", "ok"]]) test("honest raw native " + status + " remains failed/incomplete evidence", () => {
+  const f = input(); changeNativeSummary(f, "static-png", (s) => { s.complete = false; s.counts.pass--; s.counts[status]++; },
+    (tap) => tap.replace(/^ok 1 - ([^\n]*)/m, directive + " 1 - $1" + (status === "skipped" ? " # SKIP required unavailable" : ""))
+      .replace(/^# pass 93$/m, "# pass 92").replace(new RegExp("^# " + status + " 0$", "m"), "# " + status + " 1"));
+  f.executions.find((e) => e.component === "static-png").exitCode = 1;
+  const e = composeInspectionMediaReport(f).report.executions.find((e) => e.component === "static-png");
+  assert.equal(e.counts[status], 1); assert.equal(e.complete, false);
+});
+
+test("PDF child TAP and child stderr retain their own digest domains", () => {
+  const f = input(); changeNativeSummary(f, "scanned-pdf", (s) => { s.stderrSha256 = "0".repeat(64); }); refused(f, "SUMMARY_HASH_MISMATCH");
+  const g = input(), e = g.executions.find((e) => e.component === "scanned-pdf");
+  e.stderrBytes = Buffer.from("wrapper-only diagnostic\n");
+  const r = composeInspectionMediaReport(g).report.executions.find((e) => e.component === "scanned-pdf");
+  assert.notEqual(r.stderr.sha256, r.childStderr.sha256);
+});
+
+for (const location of ["input", "observations", "observation", "projection", "pages", "page", "source", "runtime", "executions", "derivatives", "derivative"]) test("never executes proxy traps at " + location, () => {
+  let f = input(), calls = 0; const proxy = (v) => new Proxy(v, { get() { calls++; throw Error("trap"); }, getPrototypeOf() { calls++; throw Error("trap"); }, ownKeys() { calls++; throw Error("trap"); } });
+  if (location === "input") f = proxy(f);
+  if (location === "observations") f.observations = proxy(f.observations);
+  if (location === "observation") f.observations[0] = proxy(f.observations[0]);
+  if (location === "projection") png(f).projection = proxy(png(f).projection);
+  if (location === "pages") pdf(f).projection.result.pages = proxy(pdf(f).projection.result.pages);
+  if (location === "page") pdf(f).projection.result.pages[0] = proxy(pdf(f).projection.result.pages[0]);
+  if (location === "source") f.source = proxy(f.source);
+  if (location === "runtime") f.runtimeReceipts[0] = proxy(f.runtimeReceipts[0]);
+  if (location === "executions") f.executions = proxy(f.executions);
+  if (location === "derivatives") png(f).derivatives = proxy(png(f).derivatives);
+  if (location === "derivative") png(f).derivatives[0] = proxy(png(f).derivatives[0]);
+  refused(f); assert.equal(calls, 0);
+});
+test("accessor/sparse/custom arrays and native copy functions are refused without execution", () => {
+  let calls = 0;
+  const a = input(); Object.defineProperty(a.observations, "0", { get() { calls++; return png(a); }, enumerable: true }); refused(a);
+  const b = input(); delete b.observations[0]; refused(b);
+  const c = input(); Object.setPrototypeOf(c.observations, class extends Array {}.prototype); refused(c);
+  const d = input(); png(d).projection.result.copyNormalizedBytes = () => { calls++; return new Uint8Array(); }; refused(d);
+  const e = input(); Object.defineProperty(png(e).projection.result, "width", { get() { calls++; return 1; }, enumerable: true }); refused(e);
+  assert.equal(calls, 0);
+});
+test("native byte slots enforce bounds without shadow getters or subclass methods", () => {
+  let calls = 0;
+  const a = input(), shadow = new Uint8Array(INSPECTION_MEDIA_REPORT_LIMITS.maxDerivativeBytes + 1);
+  Object.defineProperty(shadow, "byteLength", { get() { calls++; return 1; } }); png(a).derivatives[0].bytes = shadow; refused(a);
+  const b = input(); class Hostile extends Uint8Array { valueOf() { calls++; return this; } }
+  png(b).derivatives[0].bytes = new Hostile(4); refused(b);
+  const c = input(); png(c).derivatives[0].bytes = new Uint8Array(new SharedArrayBuffer(4)); refused(c);
+  const d = input(), detached = new Uint8Array(4); structuredClone(detached, { transfer: [detached.buffer] }); png(d).derivatives[0].bytes = detached; refused(d);
+  assert.equal(calls, 0);
+});
+test("valid Buffer and Uint8Array subviews bind only their visible bytes", () => {
+  const f = input(), a = composeInspectionMediaReport(f);
+  for (const o of f.observations) {
+    const source = Buffer.concat([Buffer.from([0]), o.sourceBytes, Buffer.from([0])]); o.sourceBytes = new Uint8Array(source.buffer, source.byteOffset + 1, source.length - 2);
+    for (const d of o.derivatives) { const joined = Buffer.concat([Buffer.from([0]), d.bytes, Buffer.from([0])]); d.bytes = joined.subarray(1, -1); }
+  }
+  assert.equal(composeInspectionMediaReport(f).sha256, a.sha256);
+});
+
+test("report bytes, schema, prerequisite and duplicate JSON keys are checked by reconstruction", () => {
+  const f = input(), a = composeInspectionMediaReport(f), corrupted = a.copyBytes(); corrupted[0] ^= 1;
+  assert.throws(() => validateInspectionMediaReport(corrupted, a.sha256, f), { code: "REPORT_HASH_MISMATCH" });
+  const changed = JSON.parse(Buffer.from(a.copyBytes()).toString()); changed.overall = "complete";
+  const b = jsonBytes(changed); assert.throws(() => validateInspectionMediaReport(b, hash(b), f), { code: "REPORT_BYTES_MISMATCH" });
+  changed.schemaVersion = "future"; const c = jsonBytes(changed); assert.throws(() => validateInspectionMediaReport(c, hash(c), f), { code: "UNSUPPORTED_VERSION" });
+  const duplicate = Buffer.from('{"schemaVersion":"ei-local-inspection-media-report/1","schemaVersion":"ei-local-inspection-media-report/1"}');
+  assert.throws(() => validateInspectionMediaReport(duplicate, hash(duplicate), f), { code: "DUPLICATE_KEY" });
+  f.prerequisite.reportBytes[0] ^= 1; refused(f, "REPORT_HASH_MISMATCH");
+});
+
+for (const component of ["static-png", "static-jpeg-webp", "scanned-pdf"]) test("actual " + component + " cancellation, typed refusal, output-limit failure and fresh recovery remain separate", async () => {
+  const f = input(), source = component === "static-png" ? fixture.png() : component === "static-jpeg-webp" ? fixture.fixture("jpeg-rgb-baseline").bytes : fixture.imagePdf();
+  const read = component === "static-png" ? fixture.readStaticPng : component === "static-jpeg-webp" ? fixture.raster.read : fixture.readScannedPdf;
+  const format = component === "static-png" ? "png" : component === "static-jpeg-webp" ? "jpeg" : "scanned-pdf";
+  const controller = new AbortController(); controller.abort();
+  const cancelled = await read(source, { signal: controller.signal }); assert.equal(cancelled.kind, "rejected"); assert.equal(cancelled.code, "CANCELLED");
+  const limited = await read(source, { maxOutputBytes: 1 }); assert.equal(limited.kind, "rejected"); assert.equal(limited.code, "OUTPUT_LIMIT");
+  const malformed = await read(Buffer.from("invalid media")); assert.equal(malformed.kind, "rejected");
+  const fresh = await read(source); assert.equal(fresh.kind, "decoded");
+  const selected = f.prerequisite.input.expectedPins;
+  for (const [label, native, bytes] of [["cancelled", cancelled, source], ["limited", limited, source], ["malformed", malformed, Buffer.from("invalid media")]]) {
+    const attempt = input(); attempt.observations = attempt.observations.filter((o) => o.component !== component);
+    attempt.observations.push(projectedObservation(component, format, component + "-" + label, native, bytes, selected));
+    const report = composeInspectionMediaReport(attempt).report, observation = report.observations.find((o) => o.id === component + "-" + label);
+    assert.equal(report.declaredCoverage, "incomplete"); assert.equal(observation.native.code, native.code); assert.deepEqual(observation.derivatives, []);
+    assert.equal(observation.nativeSource.sha256, native.sourceSha256 ?? null);
+  }
+  const invalidInput = await read(null); assert.equal(invalidInput.kind, "rejected"); assert.equal(invalidInput.code, "INVALID_INPUT");
+  const unknown = input(); unknown.observations = unknown.observations.filter((o) => o.component !== component);
+  unknown.observations.push(projectedObservation(component, format, component + "-nonbyte", invalidInput, null, selected));
+  const absent = composeInspectionMediaReport(unknown).report.observations.find((o) => o.id === component + "-nonbyte");
+  assert.equal(absent.source, null); assert.equal(absent.nativeSource.sha256, null);
+});
+
+test("constructor configuration exceptions are not invented as native decoder result codes", () => {
+  const f = input(); jpeg(f).projection.result = { kind: "rejected", code: "TypeError", sourceSha256: null, decoder: jpeg(f).projection.result.decoder };
+  jpeg(f).derivatives = []; refused(f, "UNSUPPORTED_REFUSAL");
+});
