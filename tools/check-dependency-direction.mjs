@@ -11,6 +11,7 @@ import { NodeFlags, SyntaxKind } from "typescript/unstable/ast";
 const REPOSITORY = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const MODULE_FILE = /\.(?:[cm]?[jt]s|[jt]sx)$/;
 const DEPENDENCY_GROUPS = ["dependencies", "optionalDependencies", "peerDependencies", "devDependencies"];
+const LOADER_NAMES = new Set(["require", "createRequire", "getBuiltinModule"]);
 const NATIVE_GUARD = "src/extraction/pdf/network-guard.mjs";
 const NATIVE_MODULES = [
   ["node:http", ["request", "get"], "http"],
@@ -27,6 +28,34 @@ const identifier = (node, name) => node?.kind === SyntaxKind.Identifier && node.
 const literal = (node) => [SyntaxKind.StringLiteral, SyntaxKind.NoSubstitutionTemplateLiteral].includes(node?.kind) ? node.text : undefined;
 const harnessIdentity = (value) => typeof value === "string" && /(?:^|[/\\:#])agent-harness(?:[/.@?#]|$)/i.test(value);
 const within = (root, target) => target === root || (!path.relative(root, target).startsWith(`..${path.sep}`) && path.relative(root, target) !== ".." && !path.isAbsolute(path.relative(root, target)));
+
+function propertyName(node) {
+  if (node?.kind === SyntaxKind.Identifier) return node.text;
+  if (node?.kind === SyntaxKind.ComputedPropertyName) return literal(node.expression);
+  return literal(node);
+}
+
+function inAssignmentPattern(node) {
+  let current = node;
+  while (current.parent) {
+    const parent = current.parent;
+    if (parent.kind === SyntaxKind.BinaryExpression) return parent.left === current && parent.operatorToken.kind === SyntaxKind.EqualsToken;
+    if ([SyntaxKind.ForOfStatement, SyntaxKind.ForInStatement].includes(parent.kind)) return parent.initializer === current;
+    if (![SyntaxKind.ObjectLiteralExpression, SyntaxKind.ArrayLiteralExpression, SyntaxKind.PropertyAssignment, SyntaxKind.SpreadAssignment, SyntaxKind.SpreadElement, SyntaxKind.ParenthesizedExpression].includes(parent.kind)) return false;
+    current = parent;
+  }
+  return false;
+}
+
+// A removed binding carries no loader, but inline type bindings can still leave
+// a runtime module import. Do not use this predicate to classify module edges.
+function erasedSpecifierBinding(node) {
+  if (![SyntaxKind.ImportSpecifier, SyntaxKind.ExportSpecifier].includes(node.kind)) return false;
+  if (node.isTypeOnly) return true;
+  let parent = node.parent;
+  while (parent && ![SyntaxKind.ImportDeclaration, SyntaxKind.ExportDeclaration, SyntaxKind.SourceFile].includes(parent.kind)) parent = parent.parent;
+  return parent?.importClause?.isTypeOnly === true || parent?.isTypeOnly === true;
+}
 
 function visit(node, callback) {
   callback(node);
@@ -218,20 +247,25 @@ export function checkDependencyDirection(directory = REPOSITORY) {
         } else if (node.kind === SyntaxKind.NewExpression && identifier(node.expression, "Function")) {
           refuse("UNACCOUNTED_CODE_LOADER", node);
         }
-        if (node.kind === SyntaxKind.Identifier && ["require", "createRequire"].includes(node.text) && !exception?.identifiers.has(node)) {
+        if (node.kind === SyntaxKind.Identifier && ["require", "createRequire"].includes(node.text) && !exception?.identifiers.has(node) && !erasedSpecifierBinding(node.parent)) {
           const parent = node.parent;
           const directCall = parent.kind === SyntaxKind.CallExpression && parent.expression === node && node.text === "require";
           const resolveCall = parent.kind === SyntaxKind.PropertyAccessExpression && parent.expression === node && identifier(parent.name, "resolve") && parent.parent.kind === SyntaxKind.CallExpression && parent.parent.expression === parent;
           const moduleCall = node.text === "require" && parent.kind === SyntaxKind.PropertyAccessExpression && parent.name === node && identifier(parent.expression, "module") && parent.parent.kind === SyntaxKind.CallExpression && parent.parent.expression === parent;
           if (!directCall && !resolveCall && !moduleCall) refuse("UNACCOUNTED_MODULE_LOADER", node);
         }
-        if (identifier(node, "module")) {
+        if (identifier(node, "module") && !erasedSpecifierBinding(node.parent)) {
           const parent = node.parent;
           const exports = parent.kind === SyntaxKind.PropertyAccessExpression && parent.expression === node && identifier(parent.name, "exports");
           const directRequire = parent.kind === SyntaxKind.PropertyAccessExpression && parent.expression === node && identifier(parent.name, "require") && parent.parent.kind === SyntaxKind.CallExpression && parent.parent.expression === parent;
           if (!exports && !directRequire) refuse("UNACCOUNTED_MODULE_LOADER", node);
         }
-        if (node.kind === SyntaxKind.ElementAccessExpression && (identifier(node.expression, "require") || identifier(node.expression, "module") || (identifier(node.expression, "process") && literal(node.argumentExpression) === "getBuiltinModule"))) refuse("UNACCOUNTED_MODULE_LOADER", node);
+        // Recognized loader properties remain capabilities when extracted or
+        // selected through an alias. This is a syntax rule, not alias execution.
+        if (node.kind === SyntaxKind.BindingElement && LOADER_NAMES.has(propertyName(node.propertyName ?? node.name))) refuse("UNACCOUNTED_MODULE_LOADER", node);
+        if ([SyntaxKind.PropertyAssignment, SyntaxKind.ShorthandPropertyAssignment].includes(node.kind) && LOADER_NAMES.has(propertyName(node.name)) && inAssignmentPattern(node)) refuse("UNACCOUNTED_MODULE_LOADER", node);
+        if ([SyntaxKind.ImportSpecifier, SyntaxKind.ExportSpecifier].includes(node.kind) && LOADER_NAMES.has(propertyName(node.propertyName ?? node.name)) && !erasedSpecifierBinding(node) && !exception?.identifiers.has(node.name)) refuse("UNACCOUNTED_MODULE_LOADER", node);
+        if (node.kind === SyntaxKind.ElementAccessExpression && (identifier(node.expression, "require") || identifier(node.expression, "module") || LOADER_NAMES.has(literal(node.argumentExpression)))) refuse("UNACCOUNTED_MODULE_LOADER", node);
         if (node.kind === SyntaxKind.ElementAccessExpression && identifier(node.expression, "globalThis") && ["require", "module", "createRequire", "getBuiltinModule"].includes(literal(node.argumentExpression))) refuse("UNACCOUNTED_MODULE_LOADER", node);
         if (node.kind === SyntaxKind.PropertyAccessExpression && identifier(node.name, "getBuiltinModule") && !(identifier(node.expression, "process") && node.parent.kind === SyntaxKind.CallExpression && node.parent.expression === node)) refuse("UNACCOUNTED_MODULE_LOADER", node);
       });

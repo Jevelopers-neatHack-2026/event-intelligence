@@ -220,3 +220,132 @@ test("CLI cannot redirect the evidence root or accept arbitrary options", () => 
   assert.equal(child.stdout, "");
   assert.match(child.stderr, /accepts no arguments/);
 });
+
+const BUILTIN_LOADER_ESCAPES = [
+  ["destructured loader", 'const { getBuiltinModule: load } = process; load("module")["createRequire"](import.meta.url)("agent-harness");'],
+  ["constant bracket loader through an alias", 'const p = process; p["getBuiltinModule"]("module")["createRequire"](import.meta.url)("agent-harness");'],
+  ["constant bracket loader through global process", 'globalThis.process["getBuiltinModule"]("module")["createRequire"](import.meta.url)("agent-harness");'],
+  ["computed destructuring selector", 'const { ["getBuiltinModule"]: load } = process; load("module")["createRequire"](import.meta.url)("agent-harness");'],
+  ["shorthand destructured loader", 'const { getBuiltinModule } = process; getBuiltinModule("module")["createRequire"](import.meta.url)("agent-harness");'],
+  ["imported loader alias", 'import { getBuiltinModule as load } from "node:process"; load("module")["createRequire"](import.meta.url)("agent-harness");'],
+  ["reexported loader alias", 'export { getBuiltinModule as load } from "node:process";'],
+];
+
+for (const [name, source] of BUILTIN_LOADER_ESCAPES) {
+  test(`independent-review regression refuses ${name}`, () => {
+    refuses(fixture({ "src/index.mjs": source }), "UNACCOUNTED_MODULE_LOADER");
+  });
+}
+
+for (const [name, source] of [
+  ["named assignment", 'let load; ({ getBuiltinModule: load } = process); void load;'],
+  ["constant computed assignment", 'let load; ({ ["getBuiltinModule"]: load } = process); void load;'],
+  ["shorthand assignment", 'let getBuiltinModule; ({ getBuiltinModule } = process);'],
+]) {
+  test(`destructuring extraction through ${name} remains an unaccounted loader`, () => {
+    refuses(fixture({ "src/index.mjs": source }), "UNACCOUNTED_MODULE_LOADER");
+  });
+}
+
+test("an inert loader-named object field is not an extraction or module edge", () => {
+  const result = fixture({ "src/index.mjs": 'const descriptor = { getBuiltinModule: "inert data" }; export { descriptor };' });
+  assert.equal(result.status, "passed", JSON.stringify(result.violations));
+  assert.equal(result.edges.length, 0);
+});
+
+for (const [name, source] of BUILTIN_LOADER_ESCAPES.slice(0, 3)) {
+  test(`the finite native loop does not exempt an additional ${name}`, () => {
+    const result = fixture({ [NATIVE_PATH]: `${NATIVE_SOURCE}\n${source}` });
+    refuses(result, "UNACCOUNTED_MODULE_LOADER");
+    assert.equal(result.counts.bounded_native_require_loops, 1);
+    assert.equal(result.edges.filter((edge) => edge.kind === "bounded-native-require").length, 7);
+  });
+}
+
+test("native Node confirms the refused extraction forms can reach harmless builtins", () => {
+  const { getBuiltinModule: load } = process;
+  const p = process;
+  let reassigned;
+  ({ getBuiltinModule: reassigned } = process);
+  assert.equal(typeof load("module")["createRequire"](import.meta.url)("node:fs").readFileSync, "function");
+  assert.equal(typeof p["getBuiltinModule"]("module")["createRequire"](import.meta.url)("node:fs").readFileSync, "function");
+  assert.equal(typeof globalThis.process["getBuiltinModule"]("module")["createRequire"](import.meta.url)("node:fs").readFileSync, "function");
+  assert.equal(typeof reassigned("fs").readFileSync, "function");
+});
+
+function withDevTypes(manifest, lock) {
+  manifest.devDependencies["synthetic-dev-types"] = "0.0.0-synthetic";
+  lock.packages[""].devDependencies["synthetic-dev-types"] = "0.0.0-synthetic";
+  lock.packages["node_modules/synthetic-dev-types"] = { version: "0.0.0-synthetic" };
+}
+
+for (const [name, source] of [
+  ["ordinary type-only import", 'import type { Port } from "synthetic-dev-types"; export type { Port };'],
+  ["named inline type-only import", 'import { type Port } from "synthetic-dev-types"; export type { Port };'],
+  ["named inline type-only reexport", 'export { type Port } from "synthetic-dev-types";'],
+  ["multiple aliased type-only bindings", 'import { type Port as P, type Label as L } from "synthetic-dev-types"; export type { P, L };'],
+  ["erased loader-named type bindings", 'import { type createRequire, type getBuiltinModule, type module } from "synthetic-dev-types"; export type { createRequire, getBuiltinModule, module };'],
+]) {
+  test(`declaration files permit declared locked development types for ${name}`, () => {
+    const result = fixture({ "src/index.d.mts": source }, withDevTypes);
+    assert.equal(result.status, "passed", JSON.stringify(result.violations));
+    assert.equal(result.edges.find((edge) => edge.specifier === "synthetic-dev-types")?.type_only, true);
+    assert.equal(result.acceptance.accepted_contract_pin, "not_asserted");
+  });
+}
+
+test("statement-level import type in executable TypeScript remains erased", () => {
+  const result = fixture({ "src/index.mts": 'import type { Port } from "synthetic-dev-types"; export type { Port };' }, withDevTypes);
+  assert.equal(result.status, "passed", JSON.stringify(result.violations));
+  assert.equal(result.edges.find((edge) => edge.specifier === "synthetic-dev-types")?.type_only, true);
+});
+
+for (const [name, source] of [
+  ["named inline type-only import", 'import { type Port } from "synthetic-dev-types"; export type { Port };'],
+  ["named inline type-only reexport", 'export { type Port } from "synthetic-dev-types";'],
+  ["multiple inline type-only bindings", 'import { type Port as P, type Label as L } from "synthetic-dev-types"; export type { P, L };'],
+  ["inline loader-named type bindings", 'import { type createRequire, type getBuiltinModule, type module } from "synthetic-dev-types"; export type { createRequire, getBuiltinModule, module };'],
+  ["mixed named import", 'import { type Port, value } from "synthetic-dev-types"; export { value };'],
+  ["mixed named reexport", 'export { type Port, value } from "synthetic-dev-types";'],
+  ["default import with inline types", 'import value, { type Port } from "synthetic-dev-types"; export { value };'],
+  ["empty named import", 'import {} from "synthetic-dev-types";'],
+  ["empty named reexport", 'export {} from "synthetic-dev-types";'],
+]) {
+  test(`${name} still requires a declared production dependency`, () => {
+    const files = { "src/index.mts": source };
+    refuses(fixture(files, withDevTypes), "UNDECLARED_ENGINE_DEPENDENCY");
+    const result = fixture(files, (manifest, lock) => {
+      withDevTypes(manifest, lock);
+      manifest.dependencies["synthetic-dev-types"] = "0.0.0-synthetic";
+      lock.packages[""].dependencies["synthetic-dev-types"] = "0.0.0-synthetic";
+    });
+    assert.equal(result.status, "passed", JSON.stringify(result.violations));
+    assert.equal(result.edges.find((edge) => edge.specifier === "synthetic-dev-types")?.type_only, false);
+  });
+}
+
+for (const [name, source, expected] of [
+  ["statement-level import type", 'import type { Port } from "synthetic-dev-types"; export type { Port };', "ENTRY_EXECUTED\n"],
+  ["inline type import", 'import { type Port } from "synthetic-dev-types"; export type { Port };', "SYNTHETIC_DEPENDENCY_EXECUTED\nENTRY_EXECUTED\n"],
+  ["inline type reexport", 'export { type Port } from "synthetic-dev-types";', "SYNTHETIC_DEPENDENCY_EXECUTED\nENTRY_EXECUTED\n"],
+]) {
+  test(`native TypeScript execution preserves the module policy for ${name}`, (t) => {
+    const directory = mkdtempSync(path.join(tmpdir(), "ei-native-type-edge-test-"));
+    try {
+      const dependency = path.join(directory, "node_modules/synthetic-dev-types");
+      mkdirSync(dependency, { recursive: true });
+      writeFileSync(path.join(dependency, "package.json"), JSON.stringify({ name: "synthetic-dev-types", version: "0.0.0-synthetic", type: "module", exports: "./index.mjs" }));
+      writeFileSync(path.join(dependency, "index.mjs"), 'console.log("SYNTHETIC_DEPENDENCY_EXECUTED");\n');
+      const entry = path.join(directory, "entry.mts");
+      writeFileSync(entry, `${source}\nconsole.log("ENTRY_EXECUTED");\n`);
+      const child = spawnSync(process.execPath, ["--unhandled-rejections=strict", entry], { encoding: "utf8", timeout: 5000 });
+      assert.equal(child.error, undefined);
+      assert.equal(child.signal, null);
+      assert.equal(child.status, 0, child.stderr);
+      assert.equal(child.stdout, expected);
+      t.diagnostic(JSON.stringify({ runtime: process.version, mode: "native-synthetic-mts", stdout: child.stdout }));
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+}

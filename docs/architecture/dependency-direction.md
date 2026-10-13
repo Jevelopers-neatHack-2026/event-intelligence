@@ -12,10 +12,26 @@ The check rejects engine imports or reexports of `agent-harness`, including
 scoped names, subpaths, escaped literals, inline type imports, declaration
 references and CommonJS loads. It also rejects Harness identities in dependency
 declarations, npm aliases and lock entries. Runtime package imports must name a
-declared, locked production dependency. Type-only declarations may use declared
-development dependencies. Relative imports must resolve to a scanned file inside
-`src`; symlinks, source traversal, missing modules, package aliases, URL imports,
+declared, locked production dependency. Statement-level `import type` / `export
+type` and declaration files may use declared development dependencies. Outside
+declarations, inline type bindings still require a production dependency: native
+Node execution preserves their module load, as does TypeScript emission with
+`verbatimModuleSyntax`. Mixed, default and empty import/reexport forms also retain
+this runtime rule. Maintained native `.mts` controls verify the difference; the
+project's `noEmit` typecheck does not establish runtime erasure. Relative imports
+must resolve to a scanned file inside `src`; symlinks, source traversal, missing
+modules, package aliases, URL imports,
 unparsed source and unaccounted computed loads fail the check.
+
+Recognized loader properties (`require`, `createRequire`, `getBuiltinModule`)
+remain unaccounted when extracted by binding or assignment destructuring,
+runtime import/reexport bindings or constant bracket access, including access
+through aliases. Inert object fields are not extraction syntax. The
+checker refuses these forms before any scanned code executes. Explicitly erased
+type-only bindings do not acquire runtime loader capabilities; that does not
+erase the surrounding module edge. Maintained tests also execute the relevant
+native Node forms against harmless builtins so that
+the negative fixtures describe real loader access, rather than invented APIs.
 
 The PDF network guard has one intentional computed `require`: a constant loop
 over seven native Node modules. The checker verifies its import, loader binding,
