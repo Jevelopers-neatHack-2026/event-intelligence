@@ -4101,6 +4101,8 @@ for (const { siblingAbortDelayMs, cleanupServiceStallMs = 0 } of [
     let stopEnteredAt;
     let stopAbortedAt;
     let stopCalls = 0;
+    let serviceStallEnteredAt;
+    let serviceStallReturnedAt;
     const unresolvedCalls = [];
     const frontier = frontierWithMethodOverrides(h.frontier, {
       stopRun: async (_scope, _runId, _reason, signal) => {
@@ -4110,6 +4112,14 @@ for (const { siblingAbortDelayMs, cleanupServiceStallMs = 0 } of [
         const observeAbort = () => { stopAbortedAt = performance.now(); };
         if (signal.aborted) observeAbort();
         else signal.addEventListener('abort', observeAbort, { once: true });
+        if (cleanupServiceStallMs) {
+          // Enter the native control in this actual deferred callback. A
+          // separate timer could run only after another synchronous cleanup
+          // callback had already consumed the intended original boundary.
+          serviceStallEnteredAt = performance.now();
+          Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, cleanupServiceStallMs);
+          serviceStallReturnedAt = performance.now();
+        }
         return new Promise(() => {});
       },
       markUnresolved: async (...args) => {
@@ -4157,16 +4167,6 @@ for (const { siblingAbortDelayMs, cleanupServiceStallMs = 0 } of [
       heartbeatTimer = setTimeout(() => { heartbeatServicedAt = performance.now(); resolve(); }, 750);
     });
     t.after(() => clearTimeout(heartbeatTimer));
-    let serviceStallEnteredAt;
-    let serviceStallReturnedAt;
-    if (cleanupServiceStallMs) {
-      const serviceStallTimer = setTimeout(() => {
-        serviceStallEnteredAt = performance.now();
-        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, cleanupServiceStallMs);
-        serviceStallReturnedAt = performance.now();
-      }, siblingAbortDelayMs + 25);
-      t.after(() => clearTimeout(serviceStallTimer));
-    }
     const cancelledAt = performance.now();
     cancellation.abort();
     const result = await running;
@@ -4177,6 +4177,7 @@ for (const { siblingAbortDelayMs, cleanupServiceStallMs = 0 } of [
     t.diagnostic(JSON.stringify({ siblingAbortDelayMs, cleanupServiceStallMs,
       cancelledAt, siblingReturnedAt, returnedAt, originalCleanupBoundaryAt,
       heartbeatScheduledAt, heartbeatRequestedDelayMs: 750, heartbeatServicedAt,
+      serviceStallPhase: cleanupServiceStallMs ? 'deferred-stopRun-entry' : null,
       serviceStallEnteredAt, serviceStallReturnedAt,
       cancellationToReturnMs: returnedAt - cancelledAt,
       withinOriginal850Ms: returnedAt - cancelledAt <= 850,
@@ -4192,6 +4193,8 @@ for (const { siblingAbortDelayMs, cleanupServiceStallMs = 0 } of [
     assert.ok(returnedAt <= cleanupServiceBoundaryAt + 100,
       'cleanup returns within 100ms after the event loop can service the original boundary; deferred entry does not renew its allowance');
     if (cleanupServiceStallMs) {
+      assert.ok(serviceStallEnteredAt >= stopEnteredAt,
+        'the native control enters inside the actual stop callback');
       assert.ok(serviceStallEnteredAt >= siblingReturnedAt && serviceStallEnteredAt < originalCleanupBoundaryAt,
         'the native control starts after deferred entry and before the original cleanup boundary');
       assert.ok(serviceStallReturnedAt >= originalCleanupBoundaryAt,
