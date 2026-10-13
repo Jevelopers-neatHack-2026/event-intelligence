@@ -171,7 +171,7 @@ export async function revalidationFixture(t, overrides = {}) {
     return JSON.parse(Buffer.concat([decipher.update(Buffer.from(envelope.ciphertext, 'base64')), decipher.final()]).toString());
   }
   const env = {
-    directory, state, document, sourceUrl, safeFetcher, evidence, sourceRef, options, profile, lookup, authRequest, bindInput,
+    directory, state, document, sourceUrl, safeFetcher, evidence, evidenceOptions, sourceRef, options, profile, lookup, authRequest, bindInput,
     get store() { return store; }, get scope() { return scope; }, get coordinator() { return coordinator; },
     makeCoordinator, readRetainedSource,
     async bind(extra = {}) { return coordinator.bindSource(scope, authRequest, { ...bindInput, ...extra }); },
