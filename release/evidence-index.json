@@ -1,25 +1,27 @@
 {
   "schema": "event-intelligence/private-provisional-evidence-index",
   "schema_version": 1,
-  "snapshot_id": "2026-10-13T02:50:00Z-d984c6d",
+  "snapshot_id": "ei-local-partial-evidence-20261013-1338",
   "status": "PROVISIONAL_BLOCKED",
   "scope": "Repository-private bookkeeping schema in a public repository. Human navigation only; not a canonical contract, trusted verifier, release manifest, approval or instruction to execute referenced data.",
-  "evidence_cutoff_utc": "2026-10-13T02:50:00Z",
-  "verified_repository_revision": "d984c6de4b55ccf9c220692c949b80b3a922edbe",
-  "verified_repository_tree": "d51d2cd3820a6ce840477804a3144a7aa655e1a4",
+  "evidence_cutoff_utc": "2026-10-13T13:38:14Z",
+  "verified_repository_revision": "2cf59a6e7337a78168dfa6ab70d8a16d60390cbe",
+  "verified_repository_tree": "36c9241e6194da936a4685a2893a9a027890a51a",
   "accepted_release_revision": null,
   "accountable_release_acceptance": null,
   "canonical_status_source": "https://github.com/Jevelopers-neatHack-2026/integration-evals/blob/13bde39399a09d4a14cc97d72cd769b51da83e00/planning/acceptance-checklist.json",
   "local_gate": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/22",
   "local_epic": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/1",
   "reading_rules": [
-    "This is a dated partial evidence index, not a claim that d984 is forever current. Rebind any later main or candidate before using a component proof.",
+    "This is a dated partial evidence index. Its verified_repository_revision names the qualified product-source cut observed before this documentation commit, not a promise that main is unchanged. Rebind a later candidate or main before using a component proof.",
     "Observed commits, matching digests, model reviews and fixture passes confer no canonical, provider, Finance or consumer authority.",
     "Read each immutable report and its limits before using its scoped result. Source, candidate, local execution, hosted checkout and resulting main identities stay distinct.",
     "Do not sum nested suites, native diagnostics, checks, stages or artifact counts. A required skip remains missing and a historical failure remains a failure.",
     "Local deterministic fixture criteria do not acquire an extra deployment or consumer-ACK gate. Whole-issue and master acceptance require their actual scoped outcomes and accountable review.",
     "Historical provider usage and unobserved measurements remain unknown, never zero. This documentation change performs no provider operation.",
-    "New source observations and proof belong in additive dated snapshots. Preserve this snapshot, old manifest observations, failure receipts and original acceptance-null fields."
+    "New source observations and proof belong in additive dated snapshots. Preserve this snapshot, old manifest observations, failure receipts and original acceptance-null fields.",
+    "Missing acceptance and unfinished implementation are distinct: public canonical API/package joins, actual DecisionPort result routing and staged receipts, monetary usage/trace adapters, and authenticated corrected-package/rights delivery still require EI code after the corresponding precise accepted inputs arrive. The fourteen input slots are scoped prerequisites, not blanket gates on independent local development.",
+    "Read individual-criterion-map-20261013-1021 together with individual-criterion-scope-patch. The original blanket OPEN mapping overstates foreign prerequisites on deterministic clauses; the additive patch preserves literal criteria while distinguishing scoped implemented local behavior/evidence selection, truly unfinished integration, and separate whole-issue acceptance. Later local111/104/issue8 deliveries are recorded separately below at their own exact revisions; this mapping does not transfer old runtime results to newer source. Later explicit whole-issue acceptance records below supersede only the dated pending statuses for issues8 and11; all other scoped/foreign/global limitations remain."
   ],
   "evidence_classification": {
     "modes": {
@@ -52,8 +54,8 @@
       "observed_revision": "cd961246234f8666303f306ac349c69b8b3236cd",
       "source": "https://github.com/Jevelopers-neatHack-2026/shared-contracts/commit/cd961246234f8666303f306ac349c69b8b3236cd",
       "observed_between": [
-        "2026-10-13T02:35:27Z",
-        "2026-10-13T02:35:55Z"
+        "2026-10-13T13:24:31Z",
+        "2026-10-13T13:24:48Z"
       ],
       "accepted_revision": null,
       "consumer_ack": null,
@@ -61,11 +63,11 @@
     },
     {
       "repository": "Jevelopers-neatHack-2026/getticketstub.com",
-      "observed_revision": "02407db11f974cf9a379ba6e39a11cff4e659c09",
-      "source": "https://github.com/Jevelopers-neatHack-2026/getticketstub.com/commit/02407db11f974cf9a379ba6e39a11cff4e659c09",
+      "observed_revision": "3ded8581283ba0890b77659c996c1cee107c6cf9",
+      "source": "https://github.com/Jevelopers-neatHack-2026/getticketstub.com/commit/3ded8581283ba0890b77659c996c1cee107c6cf9",
       "observed_between": [
-        "2026-10-13T02:35:27Z",
-        "2026-10-13T02:35:55Z"
+        "2026-10-13T13:24:31Z",
+        "2026-10-13T13:24:48Z"
       ],
       "accepted_revision": null,
       "consumer_ack": null,
@@ -76,8 +78,8 @@
       "observed_revision": "e3df42720b1a864e397244d7f0824353c8e32762",
       "source": "https://github.com/Jevelopers-neatHack-2026/creative-engine/commit/e3df42720b1a864e397244d7f0824353c8e32762",
       "observed_between": [
-        "2026-10-13T02:35:27Z",
-        "2026-10-13T02:35:55Z"
+        "2026-10-13T13:24:31Z",
+        "2026-10-13T13:24:48Z"
       ],
       "accepted_revision": null,
       "consumer_ack": null,
@@ -85,11 +87,11 @@
     },
     {
       "repository": "Jevelopers-neatHack-2026/cost-intelligence",
-      "observed_revision": "45248c766128216c0d7542737d30c0167f5b4f9b",
-      "source": "https://github.com/Jevelopers-neatHack-2026/cost-intelligence/commit/45248c766128216c0d7542737d30c0167f5b4f9b",
+      "observed_revision": "e16f76c2a5e5e5242285d04dfc470c3d586b9455",
+      "source": "https://github.com/Jevelopers-neatHack-2026/cost-intelligence/commit/e16f76c2a5e5e5242285d04dfc470c3d586b9455",
       "observed_between": [
-        "2026-10-13T02:35:27Z",
-        "2026-10-13T02:35:55Z"
+        "2026-10-13T13:24:31Z",
+        "2026-10-13T13:24:48Z"
       ],
       "accepted_revision": null,
       "consumer_ack": null,
@@ -100,8 +102,8 @@
       "observed_revision": "4fc14c508a07e4a7a6fbf3cbc50851a87604dcff",
       "source": "https://github.com/Jevelopers-neatHack-2026/agent-harness/commit/4fc14c508a07e4a7a6fbf3cbc50851a87604dcff",
       "observed_between": [
-        "2026-10-13T02:35:27Z",
-        "2026-10-13T02:35:55Z"
+        "2026-10-13T13:24:31Z",
+        "2026-10-13T13:24:48Z"
       ],
       "accepted_revision": null,
       "consumer_ack": null,
@@ -112,8 +114,8 @@
       "observed_revision": "13bde39399a09d4a14cc97d72cd769b51da83e00",
       "source": "https://github.com/Jevelopers-neatHack-2026/integration-evals/commit/13bde39399a09d4a14cc97d72cd769b51da83e00",
       "observed_between": [
-        "2026-10-13T02:35:27Z",
-        "2026-10-13T02:35:55Z"
+        "2026-10-13T13:24:31Z",
+        "2026-10-13T13:24:48Z"
       ],
       "accepted_revision": null,
       "consumer_ack": null,
@@ -124,7 +126,48 @@
     "The 02:35 refresh read main references and bounded owner-comment deltas; it did not rerun foreign code or acquire all foreign artifacts.",
     "Product PR134 actually merged at the listed Product pin. Its 12 CLI/39 constructed controls are owner-attributed checker evidence, not an authentic correlated specialist release.",
     "Product scoped GT-01.5 acceptance in issue7 comment6136696559 belongs to Product and is not transferred to EI.",
-    "The older Creative manifest proposal has 12 pending agreements at its historical pin. The later Creative owner inventory has 15 pending agreements and accepted revision null; neither observation is overwritten."
+    "The older Creative manifest proposal has 12 pending agreements at its historical pin. The later Creative owner inventory has 15 pending agreements and accepted revision null; neither observation is overwritten.",
+    "08:52:22–08:53:00 refresh confirms six unchanged main pins and47master criteria (44planned,3verifiedSPN01–03), through bounded conversation comments updated since07:35. No inline/private-message coverage or foreign runtime; see foreign-observation-20261013-0853. Finance#62 has an explicitly unqualified test-fixture repair continuation; no new grant/ACK/accepted input.",
+    "10:01:56–10:03:35 UTC refresh: only Finance moved, to e16f76c via four-file test-only PR63 reporting-clock repair. Owner reports actual-main83/83/31steps; raw/ZIP not independently replayed here. Its former58/54/4fail/11skips and PR62 review findings remain. None of fourteen owner inputs acquired new acceptance. Full bounded delta: foreign-observation-20261013-1003.",
+    "10:42:45–10:42:47 UTC: all six exact main pins unchanged and all twelve public issue/comment collections since10:01:58 empty;18 successful native reads, no truncation/new grant or ACK. Read-only limited surface, no inline/private coverage. See foreign-observation-20261013-1043 and full native delta.",
+    "11:21:31–11:21:32 UTC:18 native GETs succeeded; six main pins unchanged, all12 updated public issue/comment collections since10:42:47 empty. No new accepted input, no inline/private coverage, no repeated unavailable-artifact/DNS/provider/package probe. Read foreign-owner-delta-20261013-1121 with foreign-owner-delta-native-20261013-1121 and its seal.",
+    {
+      "at": "2026-10-13T12:02:46Z",
+      "artifact_refs": [
+        "foreign-owner-delta-20261013-1202-report",
+        "foreign-owner-delta-20261013-1202-delta",
+        "foreign-owner-delta-20261013-1202-seal"
+      ],
+      "scope": "18 read-only publicGETs since11:21:31:6 unchangedmainrefs,12 emptyupdated-issue/issue-commentcollections, no pagination continuation. No new owner delivery/grant/ACK observed. No private/comprehensive inline-review coverage; no provider or unavailableartifact reprobe."
+    },
+    {
+      "observed_window": [
+        "2026-10-13T12:02:46Z",
+        "2026-10-13T12:44:47Z"
+      ],
+      "request_count": 18,
+      "unchanged_main_refs": 6,
+      "empty_collections": 12,
+      "artifact_refs": [
+        "foreign-owner-delta-20261013-1244-report",
+        "foreign-owner-delta-20261013-1244-delta",
+        "foreign-owner-delta-20261013-1244-seal"
+      ],
+      "meaning": "Exact bounded public issue/comment/main delta only; no new delivery/grant/ACK/scope election observed. Not private or full inline-review coverage."
+    },
+    {
+      "observed_window": [
+        "2026-10-13T12:44:47Z",
+        "2026-10-13T13:24:48Z"
+      ],
+      "request_count": 18,
+      "unchanged_main_refs": 6,
+      "empty_collections": 12,
+      "artifact_refs": [
+        "foreign-owner-delta-20261013-1324"
+      ],
+      "meaning": "Bounded current public main/issue/comment delta, no new accepted input or scope election. No private or complete inline-review coverage; no provider/package/DNS retry."
+    }
   ],
   "merged_component_evidence": [
     {
@@ -236,6 +279,398 @@
           "main84-hosted-seal"
         ],
         "limits": "Full raw logs were audited. Artifact ZIP contents were not acquired. Untriggered routes are not passes."
+      }
+    },
+    {
+      "id": "merged-pr-108",
+      "pr": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/108",
+      "revision": "51b30210f25df2cb8a190b083a9ac18dd3938d33",
+      "tree": "e2f60624a9f2cb431244dbaa2744c05f6c4a5f41",
+      "ordered_parents": [
+        "5ca8889fda70b20020d6c806737dbceb45ec73d4",
+        "f69f0f62c5a42e00aaf3d9752caa97c929466049"
+      ],
+      "status": "scoped_actual_main_verified",
+      "criterion_contributions": [
+        "issue22/AC1 and AC5: bounded metadata report capture, preserved failures and accessible exact bytes"
+      ],
+      "whole_criterion_acceptance": null,
+      "handoff": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/108#issuecomment-6141501623",
+      "runtime": {
+        "mode": "pending",
+        "execution_detail": "local executor unavailable; no local product execution claimed for this integration",
+        "result": "NOT_RUN locally; actual hosted execution separately recorded"
+      },
+      "hosted": {
+        "mode": "mock",
+        "execution_detail": "permitted synthetic inputs with actual pinned local native, subprocess, HTTP and SQLite behavior where identified; no provider activity",
+        "result": "21 actual-main jobs,162 declared/247 recorded steps all pass;13 capture controls and four actual metadata CLI reports. All four reports remain BLOCKED/exit1/ready:false, required usage unknown.",
+        "artifact_refs": [
+          "main108-hosted-inherited",
+          "main108-hosted-capture"
+        ],
+        "limits": "Full actual hosted reports read; mirrored files inspected where declared. ZIP members and physical host runtime not acquired. Filtered workflows are NOT_TRIGGERED, never passes; nested/repeated case counts remain separate."
+      }
+    },
+    {
+      "id": "merged-pr-110",
+      "pr": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/110",
+      "revision": "2d468d0b619498c943a9c5d2b6012da483d1d221",
+      "tree": "4ee090006d796b4188832ccee5bd79cbfcc46598",
+      "ordered_parents": [
+        "51b30210f25df2cb8a190b083a9ac18dd3938d33",
+        "7c65bb5adefbd9b04bb8e5fec2978472a9aad906"
+      ],
+      "status": "scoped_actual_main_verified",
+      "criterion_contributions": [
+        "issue12/AC1–AC2: bounded native media report binding and format refusal portions only"
+      ],
+      "whole_criterion_acceptance": null,
+      "handoff": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/110#issuecomment-6141844980",
+      "runtime": {
+        "mode": "pending",
+        "execution_detail": "local executor unavailable; no local product execution claimed for this integration",
+        "result": "NOT_RUN locally; actual hosted execution separately recorded"
+      },
+      "hosted": {
+        "mode": "mock",
+        "execution_detail": "permitted synthetic inputs with actual pinned local native, subprocess, HTTP and SQLite behavior where identified; no provider activity",
+        "result": "21 actual-main jobs,169 declared/255 recorded steps all pass;148 report controls including36 high-bit chunk-name refusals/recovery, nestedPNG107/JPEG160/PDF99, strict/project/dependency154;17 mirrored members inspected. Report remains incomplete with held canonical mapping and no accountable acceptance.",
+        "artifact_refs": [
+          "main110-hosted"
+        ],
+        "limits": "Full actual hosted reports read; mirrored files inspected where declared. ZIP members and physical host runtime not acquired. Filtered workflows are NOT_TRIGGERED, never passes; nested/repeated case counts remain separate."
+      }
+    },
+    {
+      "id": "merged-pr-109",
+      "pr": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/109",
+      "revision": "87619907f2865f8717121b5aa9e685b06ab9050f",
+      "tree": "9042c9d8163e3d9134700e485718e89502b44380",
+      "ordered_parents": [
+        "2d468d0b619498c943a9c5d2b6012da483d1d221",
+        "b31313b33edca4b752ab175c97bdbc59a25226af"
+      ],
+      "status": "scoped_actual_main_verified",
+      "criterion_contributions": [
+        "issue12/AC1–AC2: fixed raw-raster OCR recognition/refusal/recovery prerequisite only",
+        "issue8/AC3–AC4: bounded local native lifecycle portions",
+        "issue22/AC1 and AC5: scoped actual-main verification and preserved evidence"
+      ],
+      "whole_criterion_acceptance": null,
+      "handoff": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/109#issuecomment-6142055556",
+      "runtime": {
+        "mode": "pending",
+        "execution_detail": "local executor unavailable; no local product execution claimed for this integration",
+        "result": "NOT_RUN locally; actual hosted execution separately recorded"
+      },
+      "hosted": {
+        "mode": "mock",
+        "execution_detail": "permitted synthetic inputs with actual pinned local native, subprocess, HTTP and SQLite behavior where identified; no provider activity",
+        "result": "23 original actual-main jobs,186 declared/281 recorded steps all pass,3,110,303 acquired raw bytes. OCR188 includes26nested, fresh4archives/46pins/139host closure; inherited media148 plus native107/160/99; capture13 and four BLOCKED reports. Strict/project and dependency154/current108code/2data/330edges/0violations pass. All518source entries preserved; fixed-profile OCR stays unverified/review-required.",
+        "artifact_refs": [
+          "main109-hosted-inherited",
+          "main109-hosted-ocr",
+          "main109-hosted-capture"
+        ],
+        "limits": "Full actual hosted reports read; mirrored files inspected where declared. ZIP members and physical host runtime not acquired. Filtered workflows are NOT_TRIGGERED, never passes; nested/repeated case counts remain separate."
+      }
+    },
+    {
+      "id": "merged-pr-105",
+      "pr": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/105",
+      "revision": "5a215a90a433c70f0300b312a59236eb53ae90cf",
+      "tree": "b83af5284dbdc6f3c28f786cb7c8896ddc0cc7ee",
+      "ordered_parents": [
+        "87619907f2865f8717121b5aa9e685b06ab9050f",
+        "477e72c0339fd8e91fc9d067c42c3040b06f0352"
+      ],
+      "status": "scoped_actual_main_verified",
+      "criterion_contributions": [
+        "issue18/AC1: attributable declarations from retained HTML, private review-only slice"
+      ],
+      "whole_criterion_acceptance": null,
+      "handoff": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/105#issuecomment-6142981036",
+      "runtime": {
+        "mode": "pending",
+        "execution_detail": "Local executor unavailable; no local current product execution claimed.",
+        "result": "NOT_RUN locally; actual hosted execution is separately attributed."
+      },
+      "hosted": {
+        "mode": "mock",
+        "execution_detail": "Synthetic retained source, keys and host authority with actual HTML parsing/native SQLite; actual inherited native-library fixtures, no provider activity.",
+        "result": "22 actual-main attempt1 jobs,177 declared/267 recorded successful steps,2,324,164 original raw bytes. Brand57+4, strict/project; dependency154/current111code+2data/340edges/0violations; media148 with17-member capture and nestedPNG107/JPEG160/PDF99. Reports remain incomplete/held and no ACK.",
+        "artifact_refs": [
+          "main105-hosted-inherited",
+          "main105-hosted-index",
+          "main105-hosted-brand"
+        ],
+        "limits": "Full owner report and exact index/Brand packet acquired. This editor does not independently reacquire all indexed raw streams; owner audit attribution remains. No ZIP inspection/local current execution/global acceptance; untriggered workflows remain NOT_TRIGGERED."
+      }
+    },
+    {
+      "id": "merged-pr-112",
+      "pr": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/112",
+      "revision": "268c61320ed70f2cf0f50369842e15035e1cb7b4",
+      "tree": "3eb87516406fe863b4ce8aec3924fbab890ac964",
+      "ordered_parents": [
+        "5a215a90a433c70f0300b312a59236eb53ae90cf",
+        "0dfbe32491f7087c4605ee9059d75dcd65a95d26"
+      ],
+      "status": "scoped_actual_main_verified",
+      "criterion_contributions": [
+        "issue12/AC1–AC2: bounded scanned-PDF and static-image OCR composition with page/box provenance, private prerequisite only",
+        "issue8/AC3–AC4: original-deadline native composition and cancellation/refusal/recovery portions",
+        "issue22/AC1 and AC5: bounded accessible receipt capture and exact-source verification"
+      ],
+      "whole_criterion_acceptance": null,
+      "handoff": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/112#issuecomment-6143375238",
+      "runtime": {
+        "mode": "pending",
+        "execution_detail": "Local executor unavailable; no current local product execution or physical workspace seal.",
+        "result": "NOT_RUN locally; fresh actual hosted execution separately recorded."
+      },
+      "hosted": {
+        "mode": "mock",
+        "execution_detail": "Permitted synthetic image/PDF/authority inputs with actual pinned native recognition/readers/process lifecycle; protocol/admission controls separately simulated; no provider use.",
+        "result": "26 actual-main attempt1 jobs,226 declared/336 recorded steps all pass,7,125,048 full raw bytes. PDF143/static137/OCR188 includes26nested;34 separate helper executions.153 composition files/3,210,586 bytes plus17 media files/482,720 bytes reconstructed and hash/receipt joined.570 source paths; graph121code+2data/377edges/0violations; Brand57+4 and inherited consumer/negative/recovery/project routes pass. All aggregate acceptance remains open.",
+        "artifact_refs": [
+          "main112-hosted-inherited",
+          "main112-hosted-inventory",
+          "main112-hosted-focused",
+          "main112-hosted-focused-seal",
+          "pr112-candidate-qualification"
+        ],
+        "limits": "Root read full attributed reports and verified inventories; agents acquired full original logs. No ZIP/native binary/model/pixel acquisition or full570-content independent download. Cache/scoped/handoff-capture/offline are NOT_TRIGGERED. The original51-path patch whitespace proof is historical, not a new main command. Original99 ancestry markerdddef is not the delivered qualified main."
+      }
+    },
+    {
+      "id": "merged-pr-111",
+      "pr": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/111",
+      "revision": "6087f359c8f5f12f1db2540f2071d8a3b80b547b",
+      "tree": "4da65b8e4c45744129f605fa654322dcae3d1a6f",
+      "ordered_parents": [
+        "268c61320ed70f2cf0f50369842e15035e1cb7b4",
+        "26a6537a3526de83a3f333fdd69000cd4d8b6618"
+      ],
+      "status": "scoped_actual_main_verified",
+      "criterion_contributions": [
+        "issue12/AC1–AC2 and aggregate prerequisite: source/caller/runtime bound local OCR inspection report; incomplete/held, not accountable aggregate acceptance",
+        "issue22/AC1 and AC5: bounded readable report/startup capture and current actual-main proof"
+      ],
+      "whole_criterion_acceptance": null,
+      "handoff": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/111#issuecomment-6143931793",
+      "runtime": {
+        "mode": "pending",
+        "execution_detail": "Local executor unavailable; no local product run or physical workspace seal.",
+        "result": "NOT_RUN locally; actual hosted execution separately attributed."
+      },
+      "hosted": {
+        "mode": "mock",
+        "execution_detail": "Synthetic media with actual pinned PNG/JPEG/PDF/OCR native execution and child lifecycle; no provider calls.",
+        "result": "23 actual-main attempt1 jobs,191declared/286recorded successful steps,3904813complete raw bytes. OCR report120 plus nested107/160/99/137/143, ten strict consumers/project;46files1079345B/102joins/15freshcriticalhashes; media148 with17files485515B; Brand57+4; dependency154/current123code+2data388edges/2boundedloops/0violations. Exact268c→6087whitespace passes. All579incoming source entries match qualified candidate; original103branch unchanged.",
+        "artifact_refs": [
+          "main111-hosted-focused",
+          "main111-hosted-focused-index",
+          "main111-hosted-focused-seal",
+          "main111-hosted-inherited",
+          "main111-hosted-inherited-index"
+        ],
+        "limits": "Full ownerreports/indices readback/hash verified and23jobunion matched; originalauditors' raw/native evidence attributed, no duplicate raw/physical/ZIP replay. Eight filteredworkflows NOT_TRIGGERED. Entire success/upload metadata only, redirected semantics NOT_INSPECTED. Reports incomplete/held, no acceptedfacts/ACK/Financeauthority."
+      }
+    },
+    {
+      "id": "merged-pr-104",
+      "pr": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/104",
+      "revision": "8f359fbf5574839c01b7ffa0a3d6ff3a04b9531e",
+      "tree": "63daae0bf77092df23cd731141e96f0449a5a50c",
+      "ordered_parents": [
+        "6087f359c8f5f12f1db2540f2071d8a3b80b547b",
+        "be778db4c9c58433283a8058c5d19596be24e56f"
+      ],
+      "status": "scoped_actual_main_verified",
+      "criterion_contributions": [
+        "issue12/AC1: bounded explicitly labelled OCR candidate facts with page/word/box provenance, ambiguous date/doors unknown and mandatory review",
+        "issue22/AC1 and AC5: readable bounded current-source/runtime/candidate/question capture"
+      ],
+      "whole_criterion_acceptance": null,
+      "handoff": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/104#issuecomment-6144490190",
+      "runtime": {
+        "mode": "pending",
+        "execution_detail": "Local executor unavailable; no current local product runtime or physical workspace inventory.",
+        "result": "NOT_RUN locally; fresh actual hosted evidence separately recorded."
+      },
+      "hosted": {
+        "mode": "mock",
+        "execution_detail": "Synthetic PNG/two-page PDF with real pinned native recognition, caller/provenance tamper/refusal controls, pure blocked question preparation; no provider invocation.",
+        "result": "26 original actual-main jobs236declared/346recorded allpass,10858407raw bytes. Candidate41/PDF143/static137 plus10checker/66helper,13strict/3project;234members4872118B fully reconstructed. Other23routes191/286,18project/17strict; OCRreport120/media148 and46/17file captures with102/104joins; graph127source+2data399edges0violations;593pathmap exact.",
+        "artifact_refs": [
+          "main104-hosted-focused",
+          "main104-hosted-focused-index",
+          "main104-hosted-focused-seal",
+          "main104-hosted-inherited",
+          "main104-hosted-inherited-index",
+          "main104-hosted-inherited-seal"
+        ],
+        "limits": "Sourceapproval COMMENT5502429545 is modelnonauthor, notnativehumanAPPROVED. Captures remain incomplete/unverified/mandatoryreview, acceptedfacts[]/ACKs absent/undispatched. StandaloneOCR/PDF/handoffcapture NOT_TRIGGERED; no188/full-input/pixel replay. Entiregeneratedfiles/ZIP NOT_INSPECTED. Historicalfailures/helpercorrections remain."
+      }
+    },
+    {
+      "id": "merged-pr-113",
+      "pr": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/113",
+      "revision": "5468f7e4738c54e6ba7261949fa7b00274072dc2",
+      "tree": "81c9b5da3a3a667c65e1d7e2bc5d224bf67f4a90",
+      "ordered_parents": [
+        "8f359fbf5574839c01b7ffa0a3d6ff3a04b9531e",
+        "7a2b3573083b5bed64c134264569fc229da09d5b"
+      ],
+      "status": "scoped_actual_main_verified",
+      "criterion_contributions": [
+        "issue8/AC1 and AC3: opt-in private actual SafeFetcher outcome categories with detailed reasons, bounded transport and original provenance",
+        "issue8/AC4: retained cancellation/queue/quota/redaction and recovery behavior"
+      ],
+      "whole_criterion_acceptance": null,
+      "handoff": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/113#issuecomment-6144963051",
+      "runtime": {
+        "mode": "pending",
+        "execution_detail": "Local executor unavailable; no local product runtime or physical workspace inventory.",
+        "result": "NOT_RUN locally; fresh actual hosted evidence separately recorded."
+      },
+      "hosted": {
+        "mode": "mock",
+        "execution_detail": "Actual controlled loopback HTTP/stream/decompression/timers/cancellation; synthetic hostile inputs. No public provider or native decoder mapping in this slice.",
+        "result": "26 original actual-main jobs225declared/333recorded allpass;6691820rawUTF8bytes. Dedicated35+4 with strict2/project/dep154/diff and actual30004.605077ms slow-stream closure/recovery. Other25 include security149/planner79/private97/release42/native107/160/reports65/148/120/candidate41+10 and20strict/20project;130code+2data406edges0violations.",
+        "artifact_refs": [
+          "main113-hosted-focused",
+          "main113-hosted-focused-index",
+          "main113-hosted-focused-seal",
+          "main113-hosted-inherited",
+          "main113-hosted-inherited-index",
+          "main113-hosted-inherited-seal"
+        ],
+        "limits": "SOURCECOMMENT5502751966 is independent attributed model review, not native human APPROVED. All602Gitentries match candidate;593incoming preserved. Current unchanged capture inspection is bounded, not full nested replay. Actual late private cleanup wall-clock diagnostics remain disclosed; expected verifier-child failures and historical results preserved. Seven workflows NOT_TRIGGERED; Entire operational success only; no generated artifact/ZIP/native-host proof. No accepted facts, consumer ACK or canonical adoption."
+      }
+    },
+    {
+      "id": "merged-pr-114",
+      "pr": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/114",
+      "revision": "59c8197ddabd5fc3a91877bffdfb22a882e18257",
+      "tree": "5b2c086a3d26488c503fda0e325eb122b622a41b",
+      "ordered_parents": [
+        "5468f7e4738c54e6ba7261949fa7b00274072dc2",
+        "9ef59a214e6d11756205955f6f638ee6dc16a875"
+      ],
+      "status": "scoped_actual_main_verified",
+      "criterion_contributions": [
+        "issue8/AC5: fresh-child fixed Node API request/launch recorder over maintained HTML/XHTML fixtures with explicit positive/negative/recovery controls"
+      ],
+      "whole_criterion_acceptance": null,
+      "handoff": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/114#issuecomment-6145366903",
+      "runtime": {
+        "mode": "pending",
+        "execution_detail": "Local executor unavailable; no local product runtime or physical workspace inventory.",
+        "result": "NOT_RUN locally; fresh actual hosted evidence separately recorded."
+      },
+      "hosted": {
+        "mode": "mock",
+        "execution_detail": "Synthetic HTML/XHTML; actual maintained parser and fresh Node children. API interception guards86hooks with87positivecontrols and11healthyfixtures perchild. No public network/provider operation.",
+        "result": "25 original actual-main jobs217declared/321recorded pass,6841089rawUTF8bytes. Focused3:706overlapping cases,5recorder occurrences20children,3project/1strict. Other22:192/284steps,40strictconsumerfilecompilations17project stages;296chunks→144members3233534B current603source/runtime/candidate/question/media104/OCR102 joins.",
+        "artifact_refs": [
+          "main114-hosted-focused",
+          "main114-hosted-focused-index",
+          "main114-hosted-focused-seal",
+          "main114-hosted-inherited",
+          "main114-hosted-inherited-index",
+          "main114-hosted-inherited-seal"
+        ],
+        "limits": "Expected10negativechildren and syntheticverifierfailure/skips remain explicit. Fixed API interposition is not kernel/native egress. Current candidate49 andinitial46passes retainedseparately. Captured reports remain incomplete/acceptanceunevaluated/ACKabsent; no public-sourcejourney or foreignauthority. Local/ZIP/full-input/physicalsourcechecks NOT_RUN/NOT_INSPECTED; Entireoperationalsuccessonly."
+      }
+    },
+    {
+      "id": "merged-pr-115",
+      "pr": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/115",
+      "revision": "8cfc7e7afdbf755d0918c550f0450c8513cb0559",
+      "tree": "2fad588d68fd6a1b09dfbb780520a9f5bd93d291",
+      "ordered_parents": [
+        "59c8197ddabd5fc3a91877bffdfb22a882e18257",
+        "a8fab545f6f1707c79e7ca22eb44d24cf098d529"
+      ],
+      "status": "scoped_actual_main_verified",
+      "criterion_contributions": [
+        "issue8/AC3: closed private RESOURCE_LIMIT outcome over four actual supported native readers, retaining detailed reason/original result/incomplete provenance"
+      ],
+      "whole_criterion_acceptance": null,
+      "handoff": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/115#issuecomment-6145929608",
+      "runtime": {
+        "mode": "pending",
+        "execution_detail": "Local executor unavailable; no local product runtime.",
+        "result": "NOT_RUN locally; actual hosted results below."
+      },
+      "hosted": {
+        "mode": "mock",
+        "execution_detail": "Synthetic bytes through actual pinned PNG/JPEG-WebP/scanned-PDF/text-PDF readers; actual child cancellation/close/refusal/recovery. No provider activity.",
+        "result": "26 natural actual-main jobs233declared/342recorded allpass;7258369rawUTF8bytes. Dedicated73+5controls,strict5/project/dependency154; other25 has45outerNodesummaries,19strict/20project invocations and actual30s slow-streamclose/recovery.",
+        "artifact_refs": [
+          "main115-hosted-focused",
+          "main115-hosted-focused-index",
+          "main115-hosted-inherited",
+          "main115-hosted-inherited-index",
+          "main115-hosted-focused-seal",
+          "main115-hosted-inherited-seal"
+        ],
+        "limits": "Candidate50/452/664 remains separate. Expected verifier-child fail/skip outcomes preserved. Current graph133code+2data/416edges/2loops/0violations. Runtime emitted receipts and bounded capture framing inspected; ZIP/full physical source/runtime and Entire redirected semantics NOT_INSPECTED. No canonical/provider/public-source/consumer acceptance."
+      }
+    },
+    {
+      "id": "merged-pr-116",
+      "pr": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/116",
+      "revision": "2cf59a6e7337a78168dfa6ab70d8a16d60390cbe",
+      "tree": "36c9241e6194da936a4685a2893a9a027890a51a",
+      "ordered_parents": [
+        "8cfc7e7afdbf755d0918c550f0450c8513cb0559",
+        "4d29fa3460519d19d270bdcac4c06b344115030f"
+      ],
+      "status": "scoped_actual_main_verified",
+      "criterion_contributions": [
+        "issue11/AC1: explicit combined visible date and venue disagreement with structured two editions and exact UTF8positions",
+        "issue11/AC2: identical JSON-LD scripts retain duplicate diagnostic and distinct original positions/entity observations"
+      ],
+      "whole_criterion_acceptance": null,
+      "handoff": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/116#issuecomment-6146780997",
+      "runtime": {
+        "mode": "pending",
+        "execution_detail": "Local executor unavailable; no local product runtime.",
+        "result": "NOT_RUN locally; fresh hosted actual main below."
+      },
+      "hosted": {
+        "mode": "mock",
+        "execution_detail": "SyntheticHTML through actual maintained extraction/consumer routes, Node API recorder/controlled recovery; no provider/public-source operation.",
+        "result": "26natural main checks/runs originalattempt1success. Fullraw five affected/genericjobs:48declared69recorded,754focused+497genericNode repeatedexecutions,31handoff43eval,2strict5project,957419rawB. Both newcontainingtests6passes each, fixed50route/direct34. Allother21routes inspectedmetadataonly.",
+        "artifact_refs": [
+          "main116-hosted-focused-report",
+          "main116-hosted-focused-index",
+          "main116-hosted-focused-seal",
+          "main116-hosted-bounded-report",
+          "main116-hosted-bounded-index",
+          "main116-hosted-bounded-native",
+          "main116-hosted-bounded-seal"
+        ],
+        "limits": "No whole26-route raw/step/test-level claim;21routes metadata-only. Parser6recorder/24children include12expectednegative12healthyrecovery; APIinterposition notkernel. No ZIP/provider/canonicalconsumer/globalacceptance. Root's initial union accessor TypeError was corrected from acquisition wrapper to body, no raw/source change or rerun."
+      },
+      "candidate": {
+        "revision": "4d29fa3460519d19d270bdcac4c06b344115030f",
+        "literal": "cc134ede4623ec20c722815f95dd8c41da3906cb",
+        "result": "50originaljobs452declared664recordedfullaudit;14513459rawB,zero requirednonpasses; sourceCOMMENT5503869326. Candidate execution remains distinct from actualmain.",
+        "artifact_refs": [
+          "pr116-current-focused-report",
+          "pr116-current-focused-index",
+          "pr116-current-focused-seal",
+          "pr116-current-inherited-report",
+          "pr116-current-inherited-index",
+          "pr116-current-inherited-native",
+          "pr116-current-inherited-seal",
+          "pr116-final-merge-guard"
+        ]
       }
     }
   ],
@@ -351,6 +786,870 @@
       "git_blob": "35242665882e599e848d7d95760a774469916032",
       "sha256": "e2ad6100bc1ad006df55d5e9ff312df19e7f004cb284a827f5d1121ca5ce7d2a",
       "access": "public Git blob; referenced raw streams are retained separately, not all uploaded"
+    },
+    "prior-index-20261013-0250": {
+      "kind": "historical provisional snapshot",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/ac53edf7f8f0c5fe74000a85c1bf6c402059a3c2",
+      "git_blob": "ac53edf7f8f0c5fe74000a85c1bf6c402059a3c2",
+      "sha256": "4c3a15b615c9289af9017cc3bbb37eebce25e44ca4086624c39945cce9a7bb99",
+      "bytes": 47693,
+      "access": "public immutable Git blob; full report read and hash checked; referenced raw payload/ZIP limits remain as stated"
+    },
+    "main108-hosted-inherited": {
+      "kind": "actual-main inherited hosted report",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/a20b07d0155397678aa7bca222b06b545d1debab",
+      "git_blob": "a20b07d0155397678aa7bca222b06b545d1debab",
+      "sha256": "f7536ab5e67a5335d4429820db9b2ed7ea41cced369ae729dafd3c92c9baaa80",
+      "bytes": 13089,
+      "access": "public immutable Git blob; full report read and hash checked; referenced raw payload/ZIP limits remain as stated"
+    },
+    "main108-hosted-capture": {
+      "kind": "actual-main capture report",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/75e4a21d0b505d54e38ff7691fafd3f1f3e5f033",
+      "git_blob": "75e4a21d0b505d54e38ff7691fafd3f1f3e5f033",
+      "sha256": "8918f155cc0d36556d5774201af6fc2be443a9c3580a783b5a2e4dac2487a32d",
+      "bytes": 10462,
+      "access": "public immutable Git blob; full report read and hash checked; referenced raw payload/ZIP limits remain as stated"
+    },
+    "main110-hosted": {
+      "kind": "actual-main media report",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/4c8592d08fa52b777c572d61a173adc81aabb830",
+      "git_blob": "4c8592d08fa52b777c572d61a173adc81aabb830",
+      "sha256": "e5d0616292a9eadac73fe4ce56a25f68a940e5f45b842f927fc62c56e39bd0d2",
+      "bytes": 17455,
+      "access": "public immutable Git blob; full report read and hash checked; referenced raw payload/ZIP limits remain as stated"
+    },
+    "main109-hosted-inherited": {
+      "kind": "actual-main inherited hosted report",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/b36d681557073b7443793398ad7d7c631118bcde",
+      "git_blob": "b36d681557073b7443793398ad7d7c631118bcde",
+      "sha256": "cf9027252909d28c52dc6fa2dad7eca925d0dc076084b9480997bd8b02950914",
+      "bytes": 13290,
+      "access": "public immutable Git blob; full report read and hash checked; referenced raw payload/ZIP limits remain as stated"
+    },
+    "main109-hosted-ocr": {
+      "kind": "actual-main OCR hosted report",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/5ef95537a6036abd1d43dc47e199d6ae5352f061",
+      "git_blob": "5ef95537a6036abd1d43dc47e199d6ae5352f061",
+      "sha256": "bb29501c6a0dc08417790d0d87d0049d58919c66b513290d80f9007089aae7a6",
+      "bytes": 3382,
+      "access": "public immutable Git blob; full report read and hash checked; referenced raw payload/ZIP limits remain as stated"
+    },
+    "main109-hosted-capture": {
+      "kind": "actual-main capture report",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/6df6e30a7e8fe8f452127299393e6e1e304f3a09",
+      "git_blob": "6df6e30a7e8fe8f452127299393e6e1e304f3a09",
+      "sha256": "1a046845fac65e591e98e53f0d57a403fc825783864a0fb04da3e748d76daebc",
+      "bytes": 10113,
+      "access": "public immutable Git blob; full report read and hash checked; referenced raw payload/ZIP limits remain as stated"
+    },
+    "original109-capture-failure": {
+      "kind": "retained failed original attempt",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/5a340ff532084d262278deafa7758a7c93c2bdac",
+      "git_blob": "5a340ff532084d262278deafa7758a7c93c2bdac",
+      "sha256": "9b4762171030e958acdecf8d7c0e830fd9a8787a3813e097c54b1c00e0d7739f",
+      "bytes": 9674,
+      "access": "public immutable Git blob; full report read and hash checked; referenced raw payload/ZIP limits remain as stated"
+    },
+    "original109-cache-cancellation": {
+      "kind": "retained cancelled original attempt",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/7043d56d3329295c63c3408e3d30669463d1860b",
+      "git_blob": "7043d56d3329295c63c3408e3d30669463d1860b",
+      "sha256": "16a6cafbc52a13dcd3a8e975d7c936fbd432184cc83004cd8db8a31ad8e56699",
+      "bytes": 3687,
+      "access": "public immutable Git blob; full report read and hash checked; referenced raw payload/ZIP limits remain as stated"
+    },
+    "original109-cache-diagnostic-retry": {
+      "kind": "separate diagnostic retry",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/7217180af51c138fd7937eeab137ee499ac1ed87",
+      "git_blob": "7217180af51c138fd7937eeab137ee499ac1ed87",
+      "sha256": "0d024d7bc01939c9e30a56639373bff56d9ee7edfdad307e22bbdf8e7f6aef6d",
+      "bytes": 2739,
+      "access": "public immutable Git blob; full report read and hash checked; referenced raw payload/ZIP limits remain as stated"
+    },
+    "foreign-observation-20261013-0853": {
+      "kind": "bounded foreign observation",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/be3c746c0ef818466a76339535fc67114263c6f5",
+      "git_blob": "be3c746c0ef818466a76339535fc67114263c6f5",
+      "sha256": "3014b5e2a561b407a511ade1971d58841b990ac24949aa1e8afbabc701751519",
+      "bytes": 8546,
+      "access": "public immutable Git blob; full report read and hash checked; referenced raw payload/ZIP limits remain as stated"
+    },
+    "main105-hosted-inherited": {
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/fa0da286965961292e955a700217783966021ec1",
+      "git_blob": "fa0da286965961292e955a700217783966021ec1",
+      "bytes": 11561,
+      "sha256": "635568bf40acd5a4de3d6a55000cebf9519b8b60f8eabca022f1cbc049897493",
+      "kind": "actual-main inherited hosted report",
+      "access": "public immutable Git blob; exact readback and hash verified; Full actual-main inherited report read and content hash verified."
+    },
+    "main105-hosted-index": {
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/4cd19cdf16876715af42f12df0a7cefcf3d7df37",
+      "git_blob": "4cd19cdf16876715af42f12df0a7cefcf3d7df37",
+      "bytes": 514789,
+      "sha256": "c34d1face344e2f96e65aa3905dd866df345390acfbcbeebec291b56365d3cef",
+      "kind": "actual-main attributed owner audit index",
+      "access": "public immutable Git blob; exact readback and hash verified; Exact readback index of attributed owner audit; all nested raw streams not reacquired by this index editor."
+    },
+    "main105-hosted-brand": {
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/c12320045b4b87bc275eb30c06afc7d9c1a33427",
+      "git_blob": "c12320045b4b87bc275eb30c06afc7d9c1a33427",
+      "bytes": 46757,
+      "sha256": "ce7fffdaed1ec4e037b91bc61faa799ae67effbf30259a19a9b26a12a4dd4887",
+      "kind": "actual-main focused Brand packet",
+      "access": "public immutable Git blob; exact readback and hash verified; Actual Brand raw/current packet readback verified; exact command and synthetic authority remain labeled."
+    },
+    "foreign-observation-20261013-1003": {
+      "kind": "bounded foreign owner delta",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/ae05f64cbdc077ad7286937d26bb554fc42377bb",
+      "git_blob": "ae05f64cbdc077ad7286937d26bb554fc42377bb",
+      "sha256": "db70695103c60bbe7e810a3425b5499613e0774a71a51eda32923633a2750b33",
+      "bytes": 24467,
+      "access": "public immutable Git blob; full readback and hash verified; attributed Finance CI not independently replayed"
+    },
+    "main112-hosted-inherited": {
+      "kind": "actual-main inherited hosted report",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/516423e51d29c454a6ebce298bef7ae9495a2d89",
+      "git_blob": "516423e51d29c454a6ebce298bef7ae9495a2d89",
+      "bytes": 14112,
+      "sha256": "f00f152f45bb363b9b87ab9cc466a26020067242eebe0132f25dabd4280c3e24",
+      "access": "public immutable Git blob; full report or inventory readback/hash verified; underlying native/ZIP/independent-source limits remain explicitly attributed"
+    },
+    "main112-hosted-inventory": {
+      "kind": "actual-main inherited machine/raw inventory",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/e036e01a4aa528aac923e1fb28dc47ffa2834f3d",
+      "git_blob": "e036e01a4aa528aac923e1fb28dc47ffa2834f3d",
+      "bytes": 364031,
+      "sha256": "2dd8a59333f3428a7053287e18729a18408109e63432f48dc0db4a3fa9a66925",
+      "access": "public immutable Git blob; full report or inventory readback/hash verified; underlying native/ZIP/independent-source limits remain explicitly attributed"
+    },
+    "main112-hosted-focused": {
+      "kind": "actual-main composition/OCR focused hosted report",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/bbe02c89ceaed999ee15e87a0ae9079bbf9c2b11",
+      "git_blob": "bbe02c89ceaed999ee15e87a0ae9079bbf9c2b11",
+      "bytes": 6477,
+      "sha256": "f8b5da0a79169a26acf4493901433e1bd73b8234a35876af05ec0618d8f6f25f",
+      "access": "public immutable Git blob; full report or inventory readback/hash verified; underlying native/ZIP/independent-source limits remain explicitly attributed"
+    },
+    "main112-hosted-focused-seal": {
+      "kind": "actual-main focused six-payload seal",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/6a65490be86b3e8dfc6b2146c0b48ec2129cf562",
+      "git_blob": "6a65490be86b3e8dfc6b2146c0b48ec2129cf562",
+      "bytes": 2423,
+      "sha256": "83e073573e74445e307b0f43ddb532ee74557ccaf07064f91cb12f97a3b331b2",
+      "access": "public immutable Git blob; full report or inventory readback/hash verified; underlying native/ZIP/independent-source limits remain explicitly attributed"
+    },
+    "pr112-candidate-qualification": {
+      "kind": "current-candidate qualification and normal-merge guard",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/f93749a0b997217f499abb0ecefe285b8373c818",
+      "git_blob": "f93749a0b997217f499abb0ecefe285b8373c818",
+      "bytes": 11908,
+      "sha256": "09167b7bd0bc446f8730deb009fb86bcf5bde56d90e9e476a9e3409ab4d4fa1b",
+      "access": "public immutable Git blob; full report or inventory readback/hash verified; underlying native/ZIP/independent-source limits remain explicitly attributed"
+    },
+    "remaining-scope-review-20261013-1021": {
+      "kind": "bounded issue-level remaining implementation and ownership review",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/0c4f24dc2c59695ac2b51595069548f9ced75c0e",
+      "git_blob": "0c4f24dc2c59695ac2b51595069548f9ced75c0e",
+      "sha256": "31f3978ebb0c14bacf897e2ca88b9412a9cc7fd52ef5cfed70e803090e95e378",
+      "bytes": 23251,
+      "access": "public immutable Git blob; full report and exact map readback/hash verified; bounded scope assessment, not exhaustive implementation audit or acceptance"
+    },
+    "remaining-scope-map-20261013-1021": {
+      "kind": "issue-level machine map and exact owner/source bindings",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/75e3cb56fc3e2e5e587b9603f3ce3bb947076ac7",
+      "git_blob": "75e3cb56fc3e2e5e587b9603f3ce3bb947076ac7",
+      "sha256": "853867c1584f20667ecb57770058209dbcbe9425efa2edaa51f68217ec813589",
+      "bytes": 102410,
+      "access": "public immutable Git blob; full report and exact map readback/hash verified; bounded scope assessment, not exhaustive implementation audit or acceptance"
+    },
+    "individual-criterion-map-20261013-1021": {
+      "kind": "96 individual ACs plus eight refinements and epic closure; historical10:21cut",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/2b4631b1aa0020ae588ca88fd90a4070dc9ebc54",
+      "git_blob": "2b4631b1aa0020ae588ca88fd90a4070dc9ebc54",
+      "bytes": 242202,
+      "sha256": "6ad681c48f08bc4dac98f6f6bc8d612d856c1281b3107d968d43cd7a7dabffbb",
+      "access": "public immutable Git blob; exact complete readback/hash verified; bounded source/owner mapping, not new execution or exhaustive implementation audit"
+    },
+    "individual-criterion-cover-20261013-1021": {
+      "kind": "individual-criterion addendum scope and local measurement caveat",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/6275442e8bb002fef196fcfc4241875bc4a2b46b",
+      "git_blob": "6275442e8bb002fef196fcfc4241875bc4a2b46b",
+      "bytes": 3990,
+      "sha256": "fa2467b8ac723f530898ab75eced8f28e86a6a7182da85c0acdc10dfc5be2a1a",
+      "access": "public immutable Git blob; exact complete readback/hash verified; bounded source/owner mapping, not new execution or exhaustive implementation audit"
+    },
+    "individual-criterion-seal-20261013-1021": {
+      "kind": "integrity seal; not acceptance authority",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/6fdb7cb1e3a4f77ef2c2aff63075fc582226fb84",
+      "git_blob": "6fdb7cb1e3a4f77ef2c2aff63075fc582226fb84",
+      "bytes": 606,
+      "sha256": "0da716509294aac855917096f3e875c74ab50472dc3b993246f882c469b5d9b2",
+      "access": "public immutable Git blob; exact complete readback/hash verified; bounded source/owner mapping, not new execution or exhaustive implementation audit"
+    },
+    "foreign-observation-20261013-1043": {
+      "kind": "bounded no-change foreign prerequisite refresh",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/b737a8d3bd266f379cdfc0ac51ca911a69024233",
+      "git_blob": "b737a8d3bd266f379cdfc0ac51ca911a69024233",
+      "bytes": 2153,
+      "sha256": "347696fe81dcfad38b957b3c3cefb40936d9aea2466b5d7d1c31df9471146bd9",
+      "access": "public immutable Git blob; full readback/hash verified; no foreign execution. Use this API blob URL; the pathless github.com blob link inside the report is a presentation error."
+    },
+    "foreign-native-delta-20261013-1043": {
+      "kind": "18 original bounded native API responses",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/39e6cc12b0bd6f3cc7ce982233ba2e3b902198e7",
+      "git_blob": "39e6cc12b0bd6f3cc7ce982233ba2e3b902198e7",
+      "bytes": 15542,
+      "sha256": "7699c2e9e299e22f8796da3825b09858f7dca530f8bb04abc71ffb3423d9ba77",
+      "access": "public immutable Git blob; full readback/hash verified; no foreign execution. Use this API blob URL; the pathless github.com blob link inside the report is a presentation error."
+    },
+    "main111-hosted-focused": {
+      "kind": "actual-main OCR report audit",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/9736c424cecd89c67e8687db219f65f2a6166960",
+      "git_blob": "9736c424cecd89c67e8687db219f65f2a6166960",
+      "bytes": 10226,
+      "sha256": "2fe1b2ed9d71d9a58244b7440c46d6c0ec324767a5b64af747409eab2cbc38c5",
+      "access": "public immutable Git blob; exact complete readback/hash verified. Full reports read and all23nativecheckIDunion independently matched. Underlying raw/capture audits remain attributed to original auditors; no root duplicate physical/ZIP inspection."
+    },
+    "main111-hosted-focused-index": {
+      "kind": "actual-main focused source/commands/capture index",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/a0d93392bb8a14e90f8dd77899d68317ba6b30e4",
+      "git_blob": "a0d93392bb8a14e90f8dd77899d68317ba6b30e4",
+      "bytes": 502673,
+      "sha256": "906ad4ba9551b5677f3268cdbf144671322eb745fb0037ad755a66932486643e",
+      "access": "public immutable Git blob; exact complete readback/hash verified. Full reports read and all23nativecheckIDunion independently matched. Underlying raw/capture audits remain attributed to original auditors; no root duplicate physical/ZIP inspection."
+    },
+    "main111-hosted-focused-seal": {
+      "kind": "actual-main focused four-payload seal",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/653a5eab3a675a20c71630eb0511a805d593246a",
+      "git_blob": "653a5eab3a675a20c71630eb0511a805d593246a",
+      "bytes": 1371,
+      "sha256": "6831380beb24074d7227ab2cd05fdd92c6e30bd5c8c49464162d8df04f6e0a3d",
+      "access": "public immutable Git blob; exact complete readback/hash verified. Full reports read and all23nativecheckIDunion independently matched. Underlying raw/capture audits remain attributed to original auditors; no root duplicate physical/ZIP inspection."
+    },
+    "main111-hosted-inherited": {
+      "kind": "actual-main inherited audit",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/3a0c8a395fc5509a95453e89fcea30715c283f46",
+      "git_blob": "3a0c8a395fc5509a95453e89fcea30715c283f46",
+      "bytes": 12055,
+      "sha256": "437427608476eb72be1d315cd5f16f70f7aa412f3e6393c729b70f5afe60fabf",
+      "access": "public immutable Git blob; exact complete readback/hash verified. Full reports read and all23nativecheckIDunion independently matched. Underlying raw/capture audits remain attributed to original auditors; no root duplicate physical/ZIP inspection."
+    },
+    "main111-hosted-inherited-index": {
+      "kind": "actual-main inherited full raw/commands/step inventory",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/338ea4ce319be6a4b4cf6fa900a944450cd5ae15",
+      "git_blob": "338ea4ce319be6a4b4cf6fa900a944450cd5ae15",
+      "bytes": 478777,
+      "sha256": "cf14f67541da9166cdd97fe619f8b6a509496a503384622c75586b38fd3977d7",
+      "access": "public immutable Git blob; exact complete readback/hash verified. Full reports read and all23nativecheckIDunion independently matched. Underlying raw/capture audits remain attributed to original auditors; no root duplicate physical/ZIP inspection."
+    },
+    "individual-criterion-scope-patch": {
+      "kind": "additive per-criterion scope correction; original map preserved",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/85b007e88c1943d97a511ba1feb1999c798fc4a2",
+      "git_blob": "85b007e88c1943d97a511ba1feb1999c798fc4a2",
+      "bytes": 181467,
+      "sha256": "05c6140601d7ec521256d1766479438cd400aad7da7fb708fe7a53acd2ae17fb",
+      "access": "public immutable Git blob; exact readback/hash verified; criterion/evidence mapping corrections are not new runtime passes."
+    },
+    "individual-criterion-scope-cover": {
+      "kind": "additive per-criterion scope correction; original map preserved",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/13ad844627bc71299a20946548a297abba8a8591",
+      "git_blob": "13ad844627bc71299a20946548a297abba8a8591",
+      "bytes": 3048,
+      "sha256": "4382010b697f1079e3c583377228a24238919c9579e8a4b10780a85b7e4336fe",
+      "access": "public immutable Git blob; exact readback/hash verified; criterion/evidence mapping corrections are not new runtime passes."
+    },
+    "individual-criterion-scope-seal": {
+      "kind": "additive per-criterion scope correction; original map preserved",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/271b8b4d8eeb630c711af69f40f399046ac5ab43",
+      "git_blob": "271b8b4d8eeb630c711af69f40f399046ac5ab43",
+      "bytes": 563,
+      "sha256": "68a0f6fe0848c74fc7710045315cc21a611e49c6fb1009b5641a1ad48ccdacd6",
+      "access": "public immutable Git blob; exact readback/hash verified; criterion/evidence mapping corrections are not new runtime passes."
+    },
+    "pr104-current-focused": {
+      "kind": "PR104 exact be778/3b45 current-candidate focused_report",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/a78edb338b3a7fc7b681a99627ee7c10c84a8795",
+      "git_blob": "a78edb338b3a7fc7b681a99627ee7c10c84a8795",
+      "bytes": 11766,
+      "sha256": "7de34f7a85adc71e18a83091106ef592ed884873f8e0b4aa72fe66e69bfe61f5",
+      "access": "public immutable Git blob; root read complete report and hash-verified report/index seal. Full raw/runtime/capture audits separately attributed; candidate results are not actual-main execution."
+    },
+    "pr104-current-focused-index": {
+      "kind": "PR104 exact be778/3b45 current-candidate focused_index",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/ea56320d57c5675cbffab1b23688416a6df39427",
+      "git_blob": "ea56320d57c5675cbffab1b23688416a6df39427",
+      "bytes": 1196840,
+      "sha256": "cc5c473f2bfcc368a82e092cfebce9e446b2c1523bb8a1854ce759d90627dd3d",
+      "access": "public immutable Git blob; root read complete report and hash-verified report/index seal. Full raw/runtime/capture audits separately attributed; candidate results are not actual-main execution."
+    },
+    "pr104-current-focused-seal": {
+      "kind": "PR104 exact be778/3b45 current-candidate focused_seal",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/6eca2630e3197d2e75fd2276698a9db60df71f67",
+      "git_blob": "6eca2630e3197d2e75fd2276698a9db60df71f67",
+      "bytes": 6717,
+      "sha256": "067a5e1c9558614cf2793f935fb499267174d3925631274c9a9bad6413c1da53",
+      "access": "public immutable Git blob; root read complete report and hash-verified report/index seal. Full raw/runtime/capture audits separately attributed; candidate results are not actual-main execution."
+    },
+    "pr104-current-inherited": {
+      "kind": "PR104 exact be778/3b45 current-candidate inherited_report",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/14639d193135622d1d8337177cb1572133dc0c16",
+      "git_blob": "14639d193135622d1d8337177cb1572133dc0c16",
+      "bytes": 10533,
+      "sha256": "d614c457446929fb0d6e25969a67e3e56bb586a10ae8ca4f956a729921ab5206",
+      "access": "public immutable Git blob; root read complete report and hash-verified report/index seal. Full raw/runtime/capture audits separately attributed; candidate results are not actual-main execution."
+    },
+    "pr104-current-inherited-index": {
+      "kind": "PR104 exact be778/3b45 current-candidate inherited_index",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/d67592ca6217399d7220db193020a32ac4600bd7",
+      "git_blob": "d67592ca6217399d7220db193020a32ac4600bd7",
+      "bytes": 1051824,
+      "sha256": "ae3ea1368069260004c9fc911197e287e0128f64c6b23ea49a60537a64a12aad",
+      "access": "public immutable Git blob; root read complete report and hash-verified report/index seal. Full raw/runtime/capture audits separately attributed; candidate results are not actual-main execution."
+    },
+    "pr104-current-inherited-seal": {
+      "kind": "PR104 exact be778/3b45 current-candidate inherited_seal",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/5bc8eb36ee9933ba1ed189afc3f0172de9518293",
+      "git_blob": "5bc8eb36ee9933ba1ed189afc3f0172de9518293",
+      "bytes": 11866,
+      "sha256": "649cdf3b6655d13ed990031176b03dfc8998f3d464384a15c036cfa6966fba56",
+      "access": "public immutable Git blob; root read complete report and hash-verified report/index seal. Full raw/runtime/capture audits separately attributed; candidate results are not actual-main execution."
+    },
+    "main104-hosted-focused": {
+      "kind": "actual-main104 focused hosted evidence",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/3ebd027a3e81d6a9a89aead33b36698f5602b7b2",
+      "git_blob": "3ebd027a3e81d6a9a89aead33b36698f5602b7b2",
+      "bytes": 8265,
+      "sha256": "da02750cd94b11df506840a7273c0e56713905ea6fac332b2805f34e19501988",
+      "access": "public immutable Git blob; full report read and payload identities/root seal joins verified. Original full raw/receipt audits remain attributable to original auditor; no root duplicate runtime or ZIP inspection."
+    },
+    "main104-hosted-focused-index": {
+      "kind": "actual-main104 focused hosted evidence",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/1767c2b98babce2f3e0a2bd6f896676afe32d2f7",
+      "git_blob": "1767c2b98babce2f3e0a2bd6f896676afe32d2f7",
+      "bytes": 598920,
+      "sha256": "8f5a6ed7a89cf5cef204b291749d2cca4ff63f318197e02712a592337976e171",
+      "access": "public immutable Git blob; full report read and payload identities/root seal joins verified. Original full raw/receipt audits remain attributable to original auditor; no root duplicate runtime or ZIP inspection."
+    },
+    "main104-hosted-focused-seal": {
+      "kind": "actual-main104 focused hosted evidence",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/7e48c9a6368162f2d2a9ebaecc9ab9c7712a4c18",
+      "git_blob": "7e48c9a6368162f2d2a9ebaecc9ab9c7712a4c18",
+      "bytes": 2903,
+      "sha256": "e8e70aad10cf6670ba08c47048f0e2680d81df6628619272166d4052a411c724",
+      "access": "public immutable Git blob; full report read and payload identities/root seal joins verified. Original full raw/receipt audits remain attributable to original auditor; no root duplicate runtime or ZIP inspection."
+    },
+    "foreign-owner-delta-20261013-1121": {
+      "kind": "bounded read-only foreign owner input delta",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/397ffee4fb0fda93201678f0efbcf08aece81336",
+      "git_blob": "397ffee4fb0fda93201678f0efbcf08aece81336",
+      "bytes": 2540,
+      "sha256": "a71496c2babb6696678ca5e7f130b84add03878825296fa763b14a504985d254",
+      "access": "public immutable Git blob; full report read and payload identities/root seal joins verified. Original full raw/receipt audits remain attributable to original auditor; no root duplicate runtime or ZIP inspection."
+    },
+    "foreign-owner-delta-native-20261013-1121": {
+      "kind": "bounded read-only foreign owner input delta",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/e10bb993d3e2cedf62d313c10b2af1954a1f7f1f",
+      "git_blob": "e10bb993d3e2cedf62d313c10b2af1954a1f7f1f",
+      "bytes": 15608,
+      "sha256": "70142fda6ef9f81a47c7039a20742e82ada3a90680215e789b01645f05e0f678",
+      "access": "public immutable Git blob; full report read and payload identities/root seal joins verified. Original full raw/receipt audits remain attributable to original auditor; no root duplicate runtime or ZIP inspection."
+    },
+    "foreign-owner-delta-seal-20261013-1121": {
+      "kind": "bounded read-only foreign owner input delta",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/38e75bf3f343dea737d9738b9b5e03245b88f83b",
+      "git_blob": "38e75bf3f343dea737d9738b9b5e03245b88f83b",
+      "bytes": 853,
+      "sha256": "de26bbe8b26284a46a6033edfb016902a1278a8d7464408434487d3034755e3b",
+      "access": "public immutable Git blob; full report read and payload identities/root seal joins verified. Original full raw/receipt audits remain attributable to original auditor; no root duplicate runtime or ZIP inspection."
+    },
+    "main104-hosted-inherited": {
+      "kind": "actual-main104 inherited hosted evidence",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/f5f4c87e603b2453cf38e8c233df0966f74d6e3e",
+      "git_blob": "f5f4c87e603b2453cf38e8c233df0966f74d6e3e",
+      "bytes": 5686,
+      "sha256": "8b1bd3976f615186bbc7e77fcd99a0f91fb501f3ba32513844f05265ee077bc9",
+      "access": "public immutable Git blob; root read complete report, verified report/index seals and26exactnativecheck union. Full raw/native/capture audits remain attributed; no duplicate root runtime/ZIP/full-input replay."
+    },
+    "main104-hosted-inherited-index": {
+      "kind": "actual-main104 inherited hosted evidence",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/8ba5838084c1d3f5aef171a79bafe8e806872ec4",
+      "git_blob": "8ba5838084c1d3f5aef171a79bafe8e806872ec4",
+      "bytes": 520143,
+      "sha256": "e3e6aba11b7739be88a43d565800391b0b0d7926b62561698e6435fab2292f13",
+      "access": "public immutable Git blob; root read complete report, verified report/index seals and26exactnativecheck union. Full raw/native/capture audits remain attributed; no duplicate root runtime/ZIP/full-input replay."
+    },
+    "main104-hosted-inherited-seal": {
+      "kind": "actual-main104 inherited hosted evidence",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/249e43e6d7724b796df95f3567007b220814d070",
+      "git_blob": "249e43e6d7724b796df95f3567007b220814d070",
+      "bytes": 6800,
+      "sha256": "0635b799a5cccdb588babcf756869e4dd8b158452eb50f311d743f5125270581",
+      "access": "public immutable Git blob; root read complete report, verified report/index seals and26exactnativecheck union. Full raw/native/capture audits remain attributed; no duplicate root runtime/ZIP/full-input replay."
+    },
+    "local-criterion-triage-20261013-1144": {
+      "kind": "bounded source-only local criterion triage",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/2b14abd53ae39bfc612713c47301ebef1d5c5b20",
+      "git_blob": "2b14abd53ae39bfc612713c47301ebef1d5c5b20",
+      "bytes": 5389,
+      "sha256": "8b1813b11c809d59f4baac260ded15e6417fdf801dc03c9190f6adfc09ab3a31",
+      "access": "Public immutable Git blob; full report read, Git/SHA256 verified. Source-only audit of37 rows/18 named blobs with stated focused-read limits; preliminary typed-projection interpretation withdrawn. No new execution or repository-wide absence claim."
+    },
+    "main113-hosted-focused": {
+      "kind": "actual-main113 focused hosted evidence",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/660032c974fe49d0fa560006017381db7f737b01",
+      "git_blob": "660032c974fe49d0fa560006017381db7f737b01",
+      "bytes": 7728,
+      "sha256": "9afdb9059e368addc4a0f4afcbca9f6ce5fc3d718f60509c2431233c6ff2cf3b",
+      "access": "Public immutable Git blob. Root read full reports, verified report/index seal joins and26nativejob union; original auditors retain full raw inspection attribution and bounded unchanged-native capture limits. No duplicate local execution/ZIP/full-input replay."
+    },
+    "main113-hosted-focused-index": {
+      "kind": "actual-main113 focused-index hosted evidence",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/ece841123cbf257fa2a3e7cd5df85257971c2eb0",
+      "git_blob": "ece841123cbf257fa2a3e7cd5df85257971c2eb0",
+      "bytes": 309307,
+      "sha256": "afeed80535252c283362d169a83c50f5a5980b6ee36f8f229f050f0e042ba253",
+      "access": "Public immutable Git blob. Root read full reports, verified report/index seal joins and26nativejob union; original auditors retain full raw inspection attribution and bounded unchanged-native capture limits. No duplicate local execution/ZIP/full-input replay."
+    },
+    "main113-hosted-focused-seal": {
+      "kind": "actual-main113 focused-seal hosted evidence",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/28c2e0ca32b93ff02fcae0c4bc43862a49a4b46b",
+      "git_blob": "28c2e0ca32b93ff02fcae0c4bc43862a49a4b46b",
+      "bytes": 985,
+      "sha256": "9906aab364adfac218dfcf6929f8e81e26649c9bcd1d97b02f6845a124a93e69",
+      "access": "Public immutable Git blob. Root read full reports, verified report/index seal joins and26nativejob union; original auditors retain full raw inspection attribution and bounded unchanged-native capture limits. No duplicate local execution/ZIP/full-input replay."
+    },
+    "main113-hosted-inherited": {
+      "kind": "actual-main113 inherited hosted evidence",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/f4c91a9573134993f93476bb4ff120d2ebf91add",
+      "git_blob": "f4c91a9573134993f93476bb4ff120d2ebf91add",
+      "bytes": 18265,
+      "sha256": "32fff3b595546aaa2adab51db7c556a65e1625010260d1be3c3bfacd0327de96",
+      "access": "Public immutable Git blob. Root read full reports, verified report/index seal joins and26nativejob union; original auditors retain full raw inspection attribution and bounded unchanged-native capture limits. No duplicate local execution/ZIP/full-input replay."
+    },
+    "main113-hosted-inherited-index": {
+      "kind": "actual-main113 inherited-index hosted evidence",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/729606bfda27d1d5a59045a6de1ab26bfaf994da",
+      "git_blob": "729606bfda27d1d5a59045a6de1ab26bfaf994da",
+      "bytes": 1364960,
+      "sha256": "ce8375454cf5d5e2831022c3c890cbf91896bbda0ce57eea5c1d67ea801665ad",
+      "access": "Public immutable Git blob. Root read full reports, verified report/index seal joins and26nativejob union; original auditors retain full raw inspection attribution and bounded unchanged-native capture limits. No duplicate local execution/ZIP/full-input replay."
+    },
+    "main113-hosted-inherited-seal": {
+      "kind": "actual-main113 inherited-seal hosted evidence",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/2d5262de1de0498b2c166a61fc1c489d19b4c0b3",
+      "git_blob": "2d5262de1de0498b2c166a61fc1c489d19b4c0b3",
+      "bytes": 1910,
+      "sha256": "d68a41dc18bdf4bc804f33f9128acf973448ce58a3ffb9ce9eb0132afa7b8a77",
+      "access": "Public immutable Git blob. Root read full reports, verified report/index seal joins and26nativejob union; original auditors retain full raw inspection attribution and bounded unchanged-native capture limits. No duplicate local execution/ZIP/full-input replay."
+    },
+    "ei21-six-family-selection-report": {
+      "kind": "ei21-six-family-selection report",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/6d7e6690b19684881ed53a6a7502ebf487925078",
+      "git_blob": "6d7e6690b19684881ed53a6a7502ebf487925078",
+      "bytes": 6242,
+      "sha256": "0ddef65fa215e36fed48ca837a01d6b2e409c90343b1c8d5edab7b2b2feabb4b",
+      "access": "Public immutable Git blob; root full report read, report/data seal joins verified. Scope, acquisition limits and historical execution attribution retained."
+    },
+    "ei21-six-family-selection-matrix": {
+      "kind": "ei21-six-family-selection matrix",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/92d56b2ed02f9f168f03058b6d51ee267fac01b6",
+      "git_blob": "92d56b2ed02f9f168f03058b6d51ee267fac01b6",
+      "bytes": 23449,
+      "sha256": "06c3ca56269bdbaf699f15c04edac832969c672cb75273bacba873038f391102",
+      "access": "Public immutable Git blob; root full report read, report/data seal joins verified. Scope, acquisition limits and historical execution attribution retained."
+    },
+    "ei21-six-family-selection-seal": {
+      "kind": "ei21-six-family-selection seal",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/a6b38ede5173db32aef74ce1e546fdb20cad8812",
+      "git_blob": "a6b38ede5173db32aef74ce1e546fdb20cad8812",
+      "bytes": 474,
+      "sha256": "2bf7685b7bd61757504b66cb08506a7c7c8d5e0e0d922250d2ff5b8480bd3156",
+      "access": "Public immutable Git blob; root full report read, report/data seal joins verified. Scope, acquisition limits and historical execution attribution retained."
+    },
+    "foreign-owner-delta-20261013-1202-report": {
+      "kind": "foreign-owner-delta-20261013-1202 report",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/a21c253c3e45ba7bea7af831e5c7e274b0212dd4",
+      "git_blob": "a21c253c3e45ba7bea7af831e5c7e274b0212dd4",
+      "bytes": 3385,
+      "sha256": "d3ae5703d428ec73b6b105920dc13fbddf598c0f944556ce027661a1539e6a7c",
+      "access": "Public immutable Git blob; root full report read, report/data seal joins verified. Scope, acquisition limits and historical execution attribution retained."
+    },
+    "foreign-owner-delta-20261013-1202-delta": {
+      "kind": "foreign-owner-delta-20261013-1202 delta",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/ae9396e4c73bba5f034b8e9aa76be5d9a348d4c1",
+      "git_blob": "ae9396e4c73bba5f034b8e9aa76be5d9a348d4c1",
+      "bytes": 19898,
+      "sha256": "76c09c39adf331da3239d88959d4c828ff31346579c85466f4a64d74e4d097ed",
+      "access": "Public immutable Git blob; root full report read, report/data seal joins verified. Scope, acquisition limits and historical execution attribution retained."
+    },
+    "foreign-owner-delta-20261013-1202-seal": {
+      "kind": "foreign-owner-delta-20261013-1202 seal",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/5e138d8c07cf2c24cfd25b0182ba4584ce438533",
+      "git_blob": "5e138d8c07cf2c24cfd25b0182ba4584ce438533",
+      "bytes": 1030,
+      "sha256": "cf9b8f105cca12f5642b2d64d221f4253722ee721da90fa7347f38c1d2dc24bd",
+      "access": "Public immutable Git blob; root full report read, report/data seal joins verified. Scope, acquisition limits and historical execution attribution retained."
+    },
+    "main114-hosted-focused": {
+      "kind": "actual-main114 focused report",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/0d80ab76a202f9b848281824448bc3a56a23d049",
+      "git_blob": "0d80ab76a202f9b848281824448bc3a56a23d049",
+      "bytes": 7191,
+      "sha256": "3ac7523b4672ae92891130a5a4c7fca3913a0f41945ade47d351ab4eed3e4ebc",
+      "access": "Public immutable Git blob; root full reports read, report/index seal joins and25nativeID union verified. Original author/component-author full raw/capture audits retain attribution; independent root source review applies unchanged exacttree. No local/ZIP/full-input replay."
+    },
+    "main114-hosted-focused-index": {
+      "kind": "actual-main114 focused index",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/68c0278d34697a9c53b6347e80cf5bc31d9f3555",
+      "git_blob": "68c0278d34697a9c53b6347e80cf5bc31d9f3555",
+      "bytes": 28017,
+      "sha256": "83ba0e1858f35f69b0182a4a3a6d5921e26744cc053da104bac5284a0aa00cd9",
+      "access": "Public immutable Git blob; root full reports read, report/index seal joins and25nativeID union verified. Original author/component-author full raw/capture audits retain attribution; independent root source review applies unchanged exacttree. No local/ZIP/full-input replay."
+    },
+    "main114-hosted-focused-seal": {
+      "kind": "actual-main114 focused seal",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/a1be68dc0624a160d94dbc823a43dc2d6ba4c70b",
+      "git_blob": "a1be68dc0624a160d94dbc823a43dc2d6ba4c70b",
+      "bytes": 5065,
+      "sha256": "358e47715e473c4e2f8baddf558e7e69ba3a366cee15e7efb15379a42f936836",
+      "access": "Public immutable Git blob; root full reports read, report/index seal joins and25nativeID union verified. Original author/component-author full raw/capture audits retain attribution; independent root source review applies unchanged exacttree. No local/ZIP/full-input replay."
+    },
+    "main114-hosted-inherited": {
+      "kind": "actual-main114 inherited report",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/932fb123cd2b61d823ff062ef90e319b13e60f39",
+      "git_blob": "932fb123cd2b61d823ff062ef90e319b13e60f39",
+      "bytes": 5376,
+      "sha256": "551ef7767597f134ae80906ad87e5744db6afbf3ba239b99a4055a518fc41e5d",
+      "access": "Public immutable Git blob; root full reports read, report/index seal joins and25nativeID union verified. Original author/component-author full raw/capture audits retain attribution; independent root source review applies unchanged exacttree. No local/ZIP/full-input replay."
+    },
+    "main114-hosted-inherited-index": {
+      "kind": "actual-main114 inherited index",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/920ac789410b3b868e601b1596d10d5dbcfb9c03",
+      "git_blob": "920ac789410b3b868e601b1596d10d5dbcfb9c03",
+      "bytes": 196835,
+      "sha256": "b656e20965e5fae18faf02b5265ba18ddba264b0e502a655de1083fe42cc3d6e",
+      "access": "Public immutable Git blob; root full reports read, report/index seal joins and25nativeID union verified. Original author/component-author full raw/capture audits retain attribution; independent root source review applies unchanged exacttree. No local/ZIP/full-input replay."
+    },
+    "main114-hosted-inherited-seal": {
+      "kind": "actual-main114 inherited seal",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/5f7f491517ab20878f0e1944e2c2d071313b1eba",
+      "git_blob": "5f7f491517ab20878f0e1944e2c2d071313b1eba",
+      "bytes": 10880,
+      "sha256": "0249ab23992bef328c470a0b8a71e1b139c552c46445c5ee809fb09f9be5ad67",
+      "access": "Public immutable Git blob; root full reports read, report/index seal joins and25nativeID union verified. Original author/component-author full raw/capture audits retain attribution; independent root source review applies unchanged exacttree. No local/ZIP/full-input replay."
+    },
+    "whole-issue-eligibility-interim-report": {
+      "kind": "bounded whole-issue eligibility report",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/e2a284028d161bd245a1d139a4c88fd1ac87fd02",
+      "git_blob": "e2a284028d161bd245a1d139a4c88fd1ac87fd02",
+      "bytes": 12435,
+      "sha256": "7c8dfefb3f5b296234253788bdd2e5347ca1317693bc43b441eeae99202396c2",
+      "access": "Public immutable Git blob; full reportread, exact report/data SHA256SUMS seal joinsverified. Dated interim with9surfacecheck/11fixture/115stillpending; no immediateclosure, extra human-onlysignoff orglobalexhaustion inferred."
+    },
+    "whole-issue-eligibility-interim-matrix": {
+      "kind": "bounded whole-issue eligibility matrix",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/199e8a12bf453a83af92f61626fe61e011e532fd",
+      "git_blob": "199e8a12bf453a83af92f61626fe61e011e532fd",
+      "bytes": 26762,
+      "sha256": "120afe770b6500908ff9f983b60b8c5521ee901d43c9f9a23720a88b1098f1d6",
+      "access": "Public immutable Git blob; full reportread, exact report/data SHA256SUMS seal joinsverified. Dated interim with9surfacecheck/11fixture/115stillpending; no immediateclosure, extra human-onlysignoff orglobalexhaustion inferred."
+    },
+    "whole-issue-eligibility-interim-seal": {
+      "kind": "bounded whole-issue eligibility seal",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/7da1c1512a8cdff3aac7b5cf667d6cec422d1a58",
+      "git_blob": "7da1c1512a8cdff3aac7b5cf667d6cec422d1a58",
+      "bytes": 288,
+      "sha256": "fbe25752e5c7d81cb97130e37c804902e5135b5c4876852b9df5d6e063b60b10",
+      "access": "Public immutable Git blob; full reportread, exact report/data SHA256SUMS seal joinsverified. Dated interim with9surfacecheck/11fixture/115stillpending; no immediateclosure, extra human-onlysignoff orglobalexhaustion inferred."
+    },
+    "issue9-five-clause-selection-report": {
+      "kind": "bounded issue9 five-clause report",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/13716ff48cd540441c82853fdb8af912e1dfc489",
+      "git_blob": "13716ff48cd540441c82853fdb8af912e1dfc489",
+      "bytes": 7509,
+      "sha256": "44d5035048405061ce6c59e8ed9ea32584054bf9b0fd72f9841a0baafcfc8a9e",
+      "access": "Public immutable Git blob; root read report and five clauses, verified exact bytes, Git blobs and SHA256SUMS joins. Actual59c privacy/context plus same-tree candidate cache remain distinguished."
+    },
+    "issue9-five-clause-selection-matrix": {
+      "kind": "bounded issue9 five-clause matrix",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/910dc5e903ec7396cf7a4ea9d4062735e5e74958",
+      "git_blob": "910dc5e903ec7396cf7a4ea9d4062735e5e74958",
+      "bytes": 27151,
+      "sha256": "2bb201ce5c0a6f65d437db9b065aba53fac1d07dd26fa30f42db65c1c9eb87fd",
+      "access": "Public immutable Git blob; root read report and five clauses, verified exact bytes, Git blobs and SHA256SUMS joins. Actual59c privacy/context plus same-tree candidate cache remain distinguished."
+    },
+    "issue9-five-clause-selection-seal": {
+      "kind": "bounded issue9 five-clause seal",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/d582bc7c8ad047b2853ea7ee98f21e2b66c18efc",
+      "git_blob": "d582bc7c8ad047b2853ea7ee98f21e2b66c18efc",
+      "bytes": 294,
+      "sha256": "192984c75746202da8b15ddba13484f3506978544eefc32511d2eb6c6015f59b",
+      "access": "Public immutable Git blob; root read report and five clauses, verified exact bytes, Git blobs and SHA256SUMS joins. Actual59c privacy/context plus same-tree candidate cache remain distinguished."
+    },
+    "issue11-all-five-selection-report": {
+      "kind": "bounded issue11 all-five selection",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/6eee43ac0924c9cf9a34b6bdddbe13e9088ebda4",
+      "git_blob": "6eee43ac0924c9cf9a34b6bdddbe13e9088ebda4",
+      "bytes": 10522,
+      "sha256": "e753e0ba96e48df33714b1140770194494cfabdc9d8023eae068daa09acaab4f",
+      "access": "Source-author evidence selection; root read full report and verified all3 members plus seal. Current fixture execution and explicit predecessor interpretation remain pending; no whole-issue closure."
+    },
+    "issue11-all-five-selection-matrix": {
+      "kind": "bounded issue11 all-five selection",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/bf253e7123922dfebb16f2473c7939f8d9e448a0",
+      "git_blob": "bf253e7123922dfebb16f2473c7939f8d9e448a0",
+      "bytes": 41619,
+      "sha256": "cc374e21c4277ddcd02b97438a885a8dd1ef54dace8c470d059ac0cb18870dfb",
+      "access": "Source-author evidence selection; root read full report and verified all3 members plus seal. Current fixture execution and explicit predecessor interpretation remain pending; no whole-issue closure."
+    },
+    "issue11-all-five-selection-native": {
+      "kind": "bounded issue11 all-five selection",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/9b994f906b85fc33443ec83a415470b96c64a2e1",
+      "git_blob": "9b994f906b85fc33443ec83a415470b96c64a2e1",
+      "bytes": 118751,
+      "sha256": "e71528af39a06da4523c58b00ceca404d3cb6eb653e77b9aab49df5296f3d363",
+      "access": "Source-author evidence selection; root read full report and verified all3 members plus seal. Current fixture execution and explicit predecessor interpretation remain pending; no whole-issue closure."
+    },
+    "issue11-all-five-selection-seal": {
+      "kind": "bounded issue11 all-five selection",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/490140aa279ddb146cb293ee2c5215c5447d0649",
+      "git_blob": "490140aa279ddb146cb293ee2c5215c5447d0649",
+      "bytes": 1503,
+      "sha256": "b6f5722d2358bd92d49cef56a4ebe1641755b3c1b2142d8bdc52c45f28c5897f",
+      "access": "Source-author evidence selection; root read full report and verified all3 members plus seal. Current fixture execution and explicit predecessor interpretation remain pending; no whole-issue closure."
+    },
+    "foreign-owner-delta-20261013-1244-report": {
+      "kind": "bounded public foreign-owner delta",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/4b57c2cbc66745c4e044648c6cab8b33b32eb4f2",
+      "git_blob": "4b57c2cbc66745c4e044648c6cab8b33b32eb4f2",
+      "bytes": 3087,
+      "sha256": "a898118e5e6143a342cc4650e8190fecb96c378bcae884434f348a49b3530e39",
+      "access": "Root read full report and all18 native outcomes; exact bytes/Gitblob/SHA256 seal joins verified. Public bounded observation, no grants inferred."
+    },
+    "foreign-owner-delta-20261013-1244-delta": {
+      "kind": "bounded public foreign-owner delta",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/39f1a18090d90dbe728b738913fea97271d3e0d7",
+      "git_blob": "39f1a18090d90dbe728b738913fea97271d3e0d7",
+      "bytes": 31575,
+      "sha256": "6132bdf1f5f07f3f3e08da51fa1b2b011bac229b748af3efd6316354293cabfa",
+      "access": "Root read full report and all18 native outcomes; exact bytes/Gitblob/SHA256 seal joins verified. Public bounded observation, no grants inferred."
+    },
+    "foreign-owner-delta-20261013-1244-seal": {
+      "kind": "bounded public foreign-owner delta",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/2cff2c519ba79ff742b918a822dcfb3d52bd342a",
+      "git_blob": "2cff2c519ba79ff742b918a822dcfb3d52bd342a",
+      "bytes": 620,
+      "sha256": "0888977930bda5f6e1593d8565ac46ece985ac62db6f3f50fd643c00166a0747",
+      "access": "Root read full report and all18 native outcomes; exact bytes/Gitblob/SHA256 seal joins verified. Public bounded observation, no grants inferred."
+    },
+    "main115-hosted-focused": {
+      "kind": "PR115 actual-main focused report",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/cf9c6d5dd6a3413a1ab3bb7a211ee5ced81681e8",
+      "git_blob": "cf9c6d5dd6a3413a1ab3bb7a211ee5ced81681e8",
+      "bytes": 10378,
+      "sha256": "1adad826059607773e3362006132f8a7e74e3052f08220252ee765a17070cf6f",
+      "access": "Public immutable Git blob. Root read both full actual-main reports, verified exact report/index hashes against seals and exact26 native job-ID union; raw logs owner-audited with declared limits."
+    },
+    "main115-hosted-focused-index": {
+      "kind": "PR115 actual-main focused index",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/2d394ee375ed1ab5d8023bd7d964258211c90588",
+      "git_blob": "2d394ee375ed1ab5d8023bd7d964258211c90588",
+      "bytes": 571699,
+      "sha256": "1dbc2a140137ee4e6bb7b70d5946364300fd0705c3f1136e1e56e464cb9e1f8e",
+      "access": "Public immutable Git blob. Root read both full actual-main reports, verified exact report/index hashes against seals and exact26 native job-ID union; raw logs owner-audited with declared limits."
+    },
+    "main115-hosted-inherited": {
+      "kind": "PR115 actual-main inherited report",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/8171bce0bf928f85e8146661565df3b8277ec13b",
+      "git_blob": "8171bce0bf928f85e8146661565df3b8277ec13b",
+      "bytes": 13982,
+      "sha256": "8cc972fc52c2c53163bf507a3bc136e8b00edc9469275f9e8d72d911065277b8",
+      "access": "Public immutable Git blob. Root read both full actual-main reports, verified exact report/index hashes against seals and exact26 native job-ID union; raw logs owner-audited with declared limits."
+    },
+    "main115-hosted-inherited-index": {
+      "kind": "PR115 actual-main inherited index",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/70158a1f12cd62a1ae7de2a6fa1813531a11d61c",
+      "git_blob": "70158a1f12cd62a1ae7de2a6fa1813531a11d61c",
+      "bytes": 1660556,
+      "sha256": "1197285d085e851d5b70830cfd7f4271183d33a0b4832a75d8f890ef7c94cb90",
+      "access": "Public immutable Git blob. Root read both full actual-main reports, verified exact report/index hashes against seals and exact26 native job-ID union; raw logs owner-audited with declared limits."
+    },
+    "main115-hosted-focused-seal": {
+      "kind": "PR115 actual-main focused seal",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/b1360bf6397494810d4794995163d406b7843a6b",
+      "git_blob": "b1360bf6397494810d4794995163d406b7843a6b",
+      "bytes": 1642,
+      "sha256": "60be170f66a0f996d9e1b26a6c47d76f9271d0721a44851a17d5796f4d8902c3",
+      "access": "Public immutable Git blob. Root read both full actual-main reports, verified exact report/index hashes against seals and exact26 native job-ID union; raw logs owner-audited with declared limits."
+    },
+    "main115-hosted-inherited-seal": {
+      "kind": "PR115 actual-main inherited seal",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/149aea16c84db4726ec5ddcd89d90d90bb0f54ea",
+      "git_blob": "149aea16c84db4726ec5ddcd89d90d90bb0f54ea",
+      "bytes": 2005,
+      "sha256": "ff63f4008ae5ca9918a78f3502a962f34f2c3660d51b9964b58aac0f66954a42",
+      "access": "Public immutable Git blob. Root read both full actual-main reports, verified exact report/index hashes against seals and exact26 native job-ID union; raw logs owner-audited with declared limits."
+    },
+    "local-prerequisite-outcomes-report": {
+      "kind": "independent local prerequisite outcome report",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/a91ece1adf4e16b5b898f49494c3ae79579befce",
+      "git_blob": "a91ece1adf4e16b5b898f49494c3ae79579befce",
+      "bytes": 6011,
+      "sha256": "2dfa69efad12989d03c184747c635bcd66ce3af8bb25ac8465608dcb42986eda",
+      "access": "Root read full independent report/four-edge matrix and verified all3member hashes/seal. Evidence-backed consumed prerequisite outcomes may receive local acceptance; all upstream/public/global scope retained."
+    },
+    "local-prerequisite-outcomes-matrix": {
+      "kind": "independent local prerequisite outcome matrix",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/b54a5af4223c876eac206dcede6c3c8915406978",
+      "git_blob": "b54a5af4223c876eac206dcede6c3c8915406978",
+      "bytes": 7378,
+      "sha256": "a6a3bbaafadb31aaae4fb04426304c7d1ce77376a3f2e344a6fe7004343e9c53",
+      "access": "Root read full independent report/four-edge matrix and verified all3member hashes/seal. Evidence-backed consumed prerequisite outcomes may receive local acceptance; all upstream/public/global scope retained."
+    },
+    "local-prerequisite-outcomes-native": {
+      "kind": "independent local prerequisite outcome native",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/c19161575152dfec122aea84fa147212797dd678",
+      "git_blob": "c19161575152dfec122aea84fa147212797dd678",
+      "bytes": 99211,
+      "sha256": "77adff8a682277c3b6ade479d775311c4f2785c2eec36ae7de399e73d4bd8eb6",
+      "access": "Root read full independent report/four-edge matrix and verified all3member hashes/seal. Evidence-backed consumed prerequisite outcomes may receive local acceptance; all upstream/public/global scope retained."
+    },
+    "local-prerequisite-outcomes-seal": {
+      "kind": "independent local prerequisite outcome seal",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/c2cf4baf593c62e3a1263a0db292e9e7853acc37",
+      "git_blob": "c2cf4baf593c62e3a1263a0db292e9e7853acc37",
+      "bytes": 405,
+      "sha256": "34d718fbc53da22669a0c0e5197b7cf4d4a004d0b6c142946ade36e986dc722c",
+      "access": "Root read full independent report/four-edge matrix and verified all3member hashes/seal. Evidence-backed consumed prerequisite outcomes may receive local acceptance; all upstream/public/global scope retained."
+    },
+    "foreign-owner-delta-20261013-1324": {
+      "kind": "bounded read-only foreign owner delta with18native responses",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/c4c5a49b364670ad23210bd93bdbd3bf06c22947",
+      "git_blob": "c4c5a49b364670ad23210bd93bdbd3bf06c22947",
+      "bytes": 14240,
+      "sha256": "d0574eb6522405a5a4337b556dfe978b31a10f2bc569b7a53dbfb2eb8cb5333a",
+      "access": "Root read every native response; all6mainrefs unchanged, all12public updated-issue/issue-comment collections empty since12:44:47; exact published bytes readback verified."
+    },
+    "pr116-current-focused-report": {
+      "kind": "pr116-current-focused-report",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/2299cf97c7380f42015f6fb92e4b2870fe355ff8",
+      "git_blob": "2299cf97c7380f42015f6fb92e4b2870fe355ff8",
+      "bytes": 7695,
+      "sha256": "a5d44b078b69f600586daa84ae22cf35876b4bb316d63047bed605ce9114ba93",
+      "access": "Root full report read/hash/seal validation and exact disjoint8+42 native check ID union. Candidate4d29fa3460519d19d270bdcac4c06b344115030f/literalcc134ede4623ec20c722815f95dd8c41da3906cb only; no execution transfer to actual main."
+    },
+    "pr116-current-focused-index": {
+      "kind": "pr116-current-focused-index",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/ab460f493660cc020d55c7bf40a5872a02e60df7",
+      "git_blob": "ab460f493660cc020d55c7bf40a5872a02e60df7",
+      "bytes": 150372,
+      "sha256": "3a2ae2502db788b732932dd72298adcc35a0a772b6e25d17d58e07a06051a409",
+      "access": "Root full report read/hash/seal validation and exact disjoint8+42 native check ID union. Candidate4d29fa3460519d19d270bdcac4c06b344115030f/literalcc134ede4623ec20c722815f95dd8c41da3906cb only; no execution transfer to actual main."
+    },
+    "pr116-current-focused-seal": {
+      "kind": "pr116-current-focused-seal",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/e478a1958991e5344fda84b3b210e65ef5105262",
+      "git_blob": "e478a1958991e5344fda84b3b210e65ef5105262",
+      "bytes": 6480,
+      "sha256": "ffa9792a6183678bfa3f78fb7e8c2e29cb0a20deb50936c8ae1990c8988df5a1",
+      "access": "Root full report read/hash/seal validation and exact disjoint8+42 native check ID union. Candidate4d29fa3460519d19d270bdcac4c06b344115030f/literalcc134ede4623ec20c722815f95dd8c41da3906cb only; no execution transfer to actual main."
+    },
+    "pr116-current-inherited-report": {
+      "kind": "pr116-current-inherited-report",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/65048b28da1e2a8b4bef55a6cf6ebcd1cd06cb41",
+      "git_blob": "65048b28da1e2a8b4bef55a6cf6ebcd1cd06cb41",
+      "bytes": 13583,
+      "sha256": "952bda794f75ee6d17d01d6a4f79dac4f6413156a41a9151d70bd72774978ff7",
+      "access": "Root full report read/hash/seal validation and exact disjoint8+42 native check ID union. Candidate4d29fa3460519d19d270bdcac4c06b344115030f/literalcc134ede4623ec20c722815f95dd8c41da3906cb only; no execution transfer to actual main."
+    },
+    "pr116-current-inherited-index": {
+      "kind": "pr116-current-inherited-index",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/c19ddaad485be0898ba267667d2eb6a9c0c95729",
+      "git_blob": "c19ddaad485be0898ba267667d2eb6a9c0c95729",
+      "bytes": 1538117,
+      "sha256": "9dc439898a61f0acbfe8a50c89e35df57b1fb8a15837230125af36304a3a8a05",
+      "access": "Root full report read/hash/seal validation and exact disjoint8+42 native check ID union. Candidate4d29fa3460519d19d270bdcac4c06b344115030f/literalcc134ede4623ec20c722815f95dd8c41da3906cb only; no execution transfer to actual main."
+    },
+    "pr116-current-inherited-native": {
+      "kind": "pr116-current-inherited-native",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/7b36c14ab64de61af2a98c508217ba28fdbdeeb0",
+      "git_blob": "7b36c14ab64de61af2a98c508217ba28fdbdeeb0",
+      "bytes": 1451567,
+      "sha256": "7dc7c99c6902e310ded9f44ad7ef5128c478b0c60d2b9a6018d509f5a6374c76",
+      "access": "Root full report read/hash/seal validation and exact disjoint8+42 native check ID union. Candidate4d29fa3460519d19d270bdcac4c06b344115030f/literalcc134ede4623ec20c722815f95dd8c41da3906cb only; no execution transfer to actual main."
+    },
+    "pr116-current-inherited-seal": {
+      "kind": "pr116-current-inherited-seal",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/e30759022c1b45eab4dfd620d49ed33c49f63e99",
+      "git_blob": "e30759022c1b45eab4dfd620d49ed33c49f63e99",
+      "bytes": 3835,
+      "sha256": "06b84102892c8b27707344ea06dc313f8f240d3399e1cd49d04dafe4a3009aeb",
+      "access": "Root full report read/hash/seal validation and exact disjoint8+42 native check ID union. Candidate4d29fa3460519d19d270bdcac4c06b344115030f/literalcc134ede4623ec20c722815f95dd8c41da3906cb only; no execution transfer to actual main."
+    },
+    "pr116-final-merge-guard": {
+      "kind": "pr116-final-merge-guard",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/846f6a60c065855fc81805dfad1600dcd93dfdf9",
+      "git_blob": "846f6a60c065855fc81805dfad1600dcd93dfdf9",
+      "bytes": 391395,
+      "sha256": "bccc5bed9616675c1589210cd889dff5fad72f9536c4bc3b8cc3aead9f79fca3",
+      "access": "Root full report read/hash/seal validation and exact disjoint8+42 native check ID union. Candidate4d29fa3460519d19d270bdcac4c06b344115030f/literalcc134ede4623ec20c722815f95dd8c41da3906cb only; no execution transfer to actual main."
+    },
+    "main116-hosted-focused-report": {
+      "kind": "main116-hosted-focused-report",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/aaa6c803c5da5d0d5191b361279a8feae869ac4b",
+      "git_blob": "aaa6c803c5da5d0d5191b361279a8feae869ac4b",
+      "bytes": 5457,
+      "sha256": "4b07e79bb4e884bfc97f4334f84436d797ee930a16953a0be6ba3f945074dc73",
+      "access": "Root full report read, Git/SHA256/byte checks, seal join and exact four-job subset to26native current main checks. Fullraw audit belongs to fixture source author; independent source approval separate."
+    },
+    "main116-hosted-focused-index": {
+      "kind": "main116-hosted-focused-index",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/72c330db683b3f24518688a789e3f9c5f559d79a",
+      "git_blob": "72c330db683b3f24518688a789e3f9c5f559d79a",
+      "bytes": 65597,
+      "sha256": "f99f6004690d9adf2d21756b454f6396cc941e0a815c4209a948aad0169f9327",
+      "access": "Root full report read, Git/SHA256/byte checks, seal join and exact four-job subset to26native current main checks. Fullraw audit belongs to fixture source author; independent source approval separate."
+    },
+    "main116-hosted-focused-seal": {
+      "kind": "main116-hosted-focused-seal",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/3735e053938e58ed9334d86368d3df23b698be81",
+      "git_blob": "3735e053938e58ed9334d86368d3df23b698be81",
+      "bytes": 3267,
+      "sha256": "262ae5f2940564cf6bd67d1c7fc9f3cdbc03777209138e6e954267dbf85f5635",
+      "access": "Root full report read, Git/SHA256/byte checks, seal join and exact four-job subset to26native current main checks. Fullraw audit belongs to fixture source author; independent source approval separate."
+    },
+    "main116-hosted-bounded-report": {
+      "kind": "main116-hosted-bounded-report",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/ba063ef5959e2152dea21d6ace124381c4322e9e",
+      "git_blob": "ba063ef5959e2152dea21d6ace124381c4322e9e",
+      "bytes": 8895,
+      "sha256": "cfa63d465c36e2028346458ea1dabf52fc4d2e69e1e411b242d9b87aa73b19f0",
+      "access": "Root full report read, exact report/index/native hashes joined to seal, all26nativeIDs/source/run revision joined. Generic verify fullraw;21other routes metadata-only,4focused separately attributed."
+    },
+    "main116-hosted-bounded-index": {
+      "kind": "main116-hosted-bounded-index",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/574bf6998a9544fd41aabcc24819ee97b3afae32",
+      "git_blob": "574bf6998a9544fd41aabcc24819ee97b3afae32",
+      "bytes": 268362,
+      "sha256": "73bcccb1e8a4cc3f9f7a81a0c967fcdc97062b8ec03e61e26ee78cd62a75515c",
+      "access": "Root full report read, exact report/index/native hashes joined to seal, all26nativeIDs/source/run revision joined. Generic verify fullraw;21other routes metadata-only,4focused separately attributed."
+    },
+    "main116-hosted-bounded-native": {
+      "kind": "main116-hosted-bounded-native",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/eeb1fa49a2980b2d69f5b4bb8985af99e412491d",
+      "git_blob": "eeb1fa49a2980b2d69f5b4bb8985af99e412491d",
+      "bytes": 659323,
+      "sha256": "7b294003a36bbf77fe5de8d59b0c27614fb26ce624fae2129c0db28645eb7dba",
+      "access": "Root full report read, exact report/index/native hashes joined to seal, all26nativeIDs/source/run revision joined. Generic verify fullraw;21other routes metadata-only,4focused separately attributed."
+    },
+    "main116-hosted-bounded-seal": {
+      "kind": "main116-hosted-bounded-seal",
+      "url": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/f46cd96ddac69842a84ac888f3a62e443b160285",
+      "git_blob": "f46cd96ddac69842a84ac888f3a62e443b160285",
+      "bytes": 1316,
+      "sha256": "c6aed3f95e126d7b3795ba93fd68cc74be109d2fe59a0973f0dd02ac6c4b7932",
+      "access": "Root full report read, exact report/index/native hashes joined to seal, all26nativeIDs/source/run revision joined. Generic verify fullraw;21other routes metadata-only,4focused separately attributed."
     }
   },
   "preserved_failures": [
@@ -391,6 +1690,59 @@
         "main81-runtime-seal",
         "main81-hosted-report",
         "main81-hosted-seal"
+      ]
+    },
+    {
+      "id": "original109-capture-crlf",
+      "revision": "6332191f333e1dc5742962f5a9e9b13458f13e16",
+      "result": "Original capture job115195470800 failed git diff --check with exit2 on CRLF terminators;13required capture controls NOT_RUN.",
+      "artifact_refs": [
+        "original109-capture-failure"
+      ],
+      "later_scoped_repair": "merged-pr-109; one owned workflow option recognizes terminal CR while retaining all three default whitespace errors; original OWNERSHIP bytes unchanged."
+    },
+    {
+      "id": "original109-cache-cancellation",
+      "revision": "6332191f333e1dc5742962f5a9e9b13458f13e16",
+      "result": "Original attempt1 job115195469970 canceled after partial direct cache output, with five required downstream steps skipped. Cause unknown.",
+      "artifact_refs": [
+        "original109-cache-cancellation",
+        "original109-cache-diagnostic-retry"
+      ],
+      "later_result": "One separately labeled attempt2 job115206102727 completes109/189/117 and11declared/15recorded steps on original633.30transitive source+25direct inputs equalb313; no current-main re-execution or cancellation diagnosis inferred."
+    },
+    {
+      "id": "original110-report-high-bit",
+      "result": "Original two red147/148 routes and strict/project skips remain in the referenced owner actual-main report's immutable history;15old archive member contents remain NOT_INSPECTED.",
+      "artifact_refs": [
+        "main110-hosted"
+      ],
+      "later_scoped_repair": "merged-pr-110"
+    },
+    {
+      "id": "brand-hosted-command-attribution-correction",
+      "revision": "5a215a90a433c70f0300b312a59236eb53ae90cf",
+      "result": "Historical focused prose added --test-reporter=tap; both candidate and actual-main logs run node --test tests/brand-declarations/verifier.test.mjs. Corrected owner text preserves original raw/prose; no product failure or rerun.",
+      "artifact_refs": [
+        "main105-hosted-brand"
+      ],
+      "disposition": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/105#issuecomment-6142828316"
+    },
+    {
+      "id": "pr104-candidate-audit-helper-corrections",
+      "result": "Inherited auditor retained unavailable binary-text acquisition and initial18-versus11 observation expectation; root retained initial numeric step-count treated as array producing null totals, corrected to475/698 before publication. No product source/test/result changed or rerun.",
+      "artifact_refs": [
+        "pr104-current-inherited",
+        "pr104-current-inherited-index"
+      ],
+      "disposition": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/git/blobs/a262235269f2643cbf3111ed800706d84469bfd8"
+    },
+    {
+      "kind": "PR116 audit-only acquisition/parser errors",
+      "scope": "TAP escaped-newline parsing, internal timestamp U+FEFF capture framing, graph-wrapper selection and oversized5,717,770-byte index readback Transportclosed are retained in current audit packets. Corrections recovered original bytes; no workflow rerun or product-source change. Initial oversizedblobeff3a88b669620c8825faea1a158518113412135 is not readback-verified.",
+      "artifact_refs": [
+        "pr116-current-focused-index",
+        "pr116-current-inherited-index"
       ]
     }
   ],
@@ -536,7 +1888,7 @@
       "id": "FINANCE",
       "owner_role": "Finance and reliability reservation/ledger owner, with Harness transport and EI observation producers",
       "missing_input": "Accepted pre-dispatch reservation/billability protocol; direct/trace dedupe; logical/billable/transport/provider IDs; unknown-cost holds, independent finality, cancellation/restart/reconciliation and original-expense allocation.",
-      "next_action": "Existing Finance owners resolve their held runtime and return accepted pre-dispatch reservation, attempt/unknown-hold/finality/reconciliation/allocation fixtures and actual consumer ACKs. Reuse delivered reporting/export source and the narrow structural ACK; neither alone supplies paid adoption or independent finality.",
+      "next_action": "Finance owners return accepted pre-dispatch reservation, attempt/unknown-hold/finality/reconciliation/allocation fixtures and authentic adoption/consumer ACKs with applicable monetary authority. The delivered Finance63 reporting-clock test repair and reporting/export source remain credited; their scoped tests and structural ACK do not supply paid adoption or independent finality.",
       "references": [
         "https://github.com/Jevelopers-neatHack-2026/cost-intelligence/issues/3",
         "https://github.com/Jevelopers-neatHack-2026/cost-intelligence/pull/59",
@@ -680,41 +2032,10 @@
   },
   "active_local_work_at_cutoff": [
     {
-      "prs": [
-        91
-      ],
-      "owner_role": "Existing inspection-report writer",
-      "state": "Current d984-based integration under independent qualification at the cutoff",
-      "next_action": "Complete current-source and CI guard, normal merge and actual-main closed-projection proof; no source authority/facts/rights inference."
-    },
-    {
-      "prs": [
-        86,
-        87,
-        89,
-        94,
-        96
-      ],
-      "owner_role": "Existing bounded media and report/accessor writers",
-      "state": "Published owner branches; current-main integrations pending",
-      "next_action": "Preserve owner branches and qualify PNG, JPEG/WebP, scanned-PDF, raw-accessor and bounded media/report integrations in their agreed order. Do not require OCR90/99 for the non-OCR96 scope."
-    },
-    {
-      "prs": [
-        90,
-        99
-      ],
-      "owner_role": "Existing OCR/native/composition writers",
-      "state": "Separate active OCR feature stack; immutable historical installer failures retained",
-      "next_action": "Qualify the exact published OCR and composition union and later actual-main integration; source/feature CI does not transfer to a future destination tree."
-    },
-    {
-      "prs": [
-        98
-      ],
-      "owner_role": "Existing dependency-direction guard writer",
-      "state": "Current owned fixture/check repair; original authority74/75 and two required type skips retained",
-      "next_action": "Publish and independently qualify the owner correction; current-main green does not clear the failing candidate."
+      "scope": "this final evidence-index documentation follow-up",
+      "owner_role": "workspace533 root",
+      "state": "Frozen-source preparation on qualified116actualmain. PR publication/review/currentchecks/normalmerge/affectedactualmain qualification remain separate from this dated product-source cut.",
+      "next_action": "Complete one-file source review and hosted checks; attach PR/actualmain qualification externally without rewriting this historicalcut. No other independent unowned local implementation slice established by the linked criterion reconciliation."
     }
   ],
   "maintenance": {
@@ -726,5 +2047,712 @@
       "changed prerequisite delivery"
     ],
     "validation": "Run all four documented tools/verify_handoff.py scopes and the focused handoff unittests. Existing blocked outcomes must remain blocked with zero invalid/mismatched fields. Check JSON duplicates, cross-references, full SHA identities and credential-free public links independently. This index is not consumed as trusted approval by that checker."
+  },
+  "prior_snapshot_refs": [
+    "prior-index-20261013-0250"
+  ],
+  "criterion_reconciliation": {
+    "map_artifact_refs": [
+      "individual-criterion-map-20261013-1021",
+      "individual-criterion-scope-patch"
+    ],
+    "rule": "Read literal criterion, exact component scope, dated execution and remaining behavior separately. Whole-issue acceptance is not inferred from a scoped local implementation or this index.",
+    "later_local_deltas": [
+      {
+        "issues": [
+          12,
+          22
+        ],
+        "pr": 104,
+        "state": "scoped_actual_main_verified",
+        "revision": "8f359fbf5574839c01b7ffa0a3d6ff3a04b9531e",
+        "meaning": "Review-only explicitly labelled OCR candidates and bound question preparation are now merged; current candidate passes do not supply aggregate inspection completeness or actual-source/provider/consumer acceptance."
+      },
+      {
+        "issue": 8,
+        "criteria": [
+          "AC1",
+          "AC3"
+        ],
+        "pr": 113,
+        "state": "scoped_actual_main_verified",
+        "meaning": "Merged private actual SafeFetcher outcome adapter supplies fixed DESTINATION_BLOCKED/RESOURCE_LIMIT categories while retaining reason/provenance/cancellation/DNS/transport distinctions.35actual controlled cases+4 verifier controls and actual-main26jobs verified. At this historical113cut, native decoder common-category work remained unfinished; qualified115 and the later explicit issue8 local closure below supersede that status. Foreign acceptance is not inferred.",
+        "revision": "5468f7e4738c54e6ba7261949fa7b00274072dc2"
+      },
+      {
+        "issue": 8,
+        "criteria": [
+          "AC5"
+        ],
+        "state": "scoped_actual_main_verified",
+        "meaning": "Merged exact three-path parser recorder verified on actualmain25jobs. Five recorder occurrences/twenty fresh children prove fixed86API/87positive-control interposition,11fixture outcomes, explicit late-network/browser failure, receipt refusal and recovery. API measurement boundaries retained; no kernel/native egress or wholeissue acceptance.",
+        "pr": 114,
+        "revision": "59c8197ddabd5fc3a91877bffdfb22a882e18257"
+      },
+      {
+        "issue": 8,
+        "criteria": [
+          "AC3"
+        ],
+        "state": "scoped_actual_main_verified",
+        "reference": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/115#issuecomment-6145929608",
+        "meaning": "Closed supported-native-reader RESOURCE_LIMIT classification is merged and actual-main verified, preserving detailed reason/original result/incomplete provenance. Allfive issue8 localclauses now accountablyaccepted with explicit consumed#7/#9prerequisite proof in closure6146187178; upstream public/consumer work and global acceptance remainopen.",
+        "pr": 115,
+        "revision": "8cfc7e7afdbf755d0918c550f0450c8513cb0559"
+      },
+      {
+        "issue": 11,
+        "criteria": [
+          "AC1",
+          "AC2"
+        ],
+        "state": "scoped_actual_main_verified_and_local_issue_accepted",
+        "reference": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/11#issuecomment-6146794850",
+        "meaning": "Both narrow fixture additions merged and passed actualmain affected routes. Independent allfive selection and four-edge prerequisite review support explicit local EI-03 acceptance; consumed#8/#10outcomes accepted,edges/history retained,#10canonical/consumer work staysopen. Generic positioned visibleText remains valid; no typed semantic grammar/provider/public-source/globalacceptance.",
+        "artifact_refs": [
+          "issue11-all-five-selection-report",
+          "issue11-all-five-selection-matrix",
+          "issue11-all-five-selection-native",
+          "issue11-all-five-selection-seal"
+        ],
+        "pr": 116,
+        "revision": "2cf59a6e7337a78168dfa6ab70d8a16d60390cbe"
+      },
+      {
+        "issue": 21,
+        "criteria": [
+          "AC3"
+        ],
+        "state": "bounded_local_mechanics_evidenced_integrated_acceptance_unfinished",
+        "meaning": "Exact six-family guard tests and unchanged current blobs bind historical104 hosted results. Explicit favorable-role/denied-permission and independent branded policy checks exist; network/privacy/history guards do not consume JEV responses. No demonstrated local defect or additional test recommended. Actual routed six-family corpus requires accepted DecisionPort and app action composition; existing local validators retain their scoped evidence.",
+        "artifact_refs": [
+          "ei21-six-family-selection-report",
+          "ei21-six-family-selection-matrix",
+          "ei21-six-family-selection-seal"
+        ]
+      },
+      {
+        "issue": 9,
+        "criteria": [
+          "AC1",
+          "AC2",
+          "AC3",
+          "AC4",
+          "AC5"
+        ],
+        "state": "scoped_local_acceptance_recorded_downstream_behavior_unfinished",
+        "meaning": "Actual persistent cache publication is safely wired through genuine reviewed derivative/current scope/host policy and receives credit. Actual59c privacy53/context49 and same-tree candidate9ef cache415 prove scoped local guarantees. AC1/AC2 actual dispatcher/prompt/brief effects and AC3 complete listed canaries across real trace/decision/Creative routes remain unwired or unproved; no new unsafe bypass demonstrated. Narrow authenticated host review and accepted destination mapping needed, then EI still implements actual handoffs. No extra human-only or blanket provider gate.",
+        "artifact_refs": [
+          "issue9-five-clause-selection-report",
+          "issue9-five-clause-selection-matrix",
+          "issue9-five-clause-selection-seal"
+        ],
+        "reference": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/9#issuecomment-6145709994"
+      }
+    ],
+    "whole_issue_closure_claims": [
+      {
+        "issue": 8,
+        "stable_key": "EI-02",
+        "state": "closed",
+        "state_reason": "completed",
+        "closed_at": "2026-10-13T13:04:03Z",
+        "accepted_revision": "8cfc7e7afdbf755d0918c550f0450c8513cb0559",
+        "accountable_role": "user-authorized local EI repository supervisor (/root); independent nonauthor source/evidence/dependency review attributed in linked records",
+        "acceptance_record": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/8#issuecomment-6146187178",
+        "scope": "Allfive literal local safety clauses and explicit consumed#7/#9prerequisite outcomes accepted. Edges/history preserved; #7/#9remaining public/downstream work staysopen. No master/global/foreign acceptance.",
+        "artifact_refs": [
+          "local-prerequisite-outcomes-report",
+          "local-prerequisite-outcomes-matrix",
+          "local-prerequisite-outcomes-native",
+          "local-prerequisite-outcomes-seal"
+        ]
+      },
+      {
+        "issue": 11,
+        "stable_key": "EI-03",
+        "state": "closed",
+        "state_reason": "completed",
+        "closed_at": "2026-10-13T13:36:02Z",
+        "accepted_revision": "2cf59a6e7337a78168dfa6ab70d8a16d60390cbe",
+        "accountable_role": "user-authorized local EI repository supervisor (/root); independent nonauthor source/evidence/prerequisite review separately attributed",
+        "acceptance_record": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/11#issuecomment-6146794850",
+        "scope": "Allfive literal local extraction clauses and exact consumed#8/#10prerequisite outcomes accepted. No upstreamwholeissue/global/provider/consumer acceptance inferred.",
+        "artifact_refs": [
+          "issue11-all-five-selection-report",
+          "issue11-all-five-selection-matrix",
+          "local-prerequisite-outcomes-report",
+          "local-prerequisite-outcomes-matrix",
+          "main116-hosted-focused-report",
+          "main116-hosted-bounded-report"
+        ]
+      }
+    ],
+    "remaining_integration_code": "Accepted public Research request/package mapping, actual DecisionPort eligible request/result/stage routing, monetary usage/trace adapters and authenticated corrected-package/rights/invalidation delivery remain code work after their exact versioned owner inputs arrive. Missing signatures alone are not the claimed blocker.",
+    "evaluation_scope": "Local schema/quality-policy refusal validators and documentation are separate from actual permission-audited corpus creation, held-out comparisons and the narrow P0 paired demonstration.",
+    "whole_issue_eligibility_refs": [
+      "whole-issue-eligibility-interim-report",
+      "whole-issue-eligibility-interim-matrix",
+      "whole-issue-eligibility-interim-seal"
+    ],
+    "prerequisite_outcome_review_refs": [
+      "local-prerequisite-outcomes-report",
+      "local-prerequisite-outcomes-matrix",
+      "local-prerequisite-outcomes-native",
+      "local-prerequisite-outcomes-seal"
+    ]
+  },
+  "merged_pull_request_inventory": {
+    "observed_at": "2026-10-13 13:38:14 UTC",
+    "source": "https://api.github.com/repos/Jevelopers-neatHack-2026/event-intelligence/pulls?state=closed&per_page=100&sort=updated&direction=desc",
+    "collection_records": 95,
+    "page_size": 100,
+    "pagination_complete": true,
+    "scope": "Native closed PR metadata after supplied#62snapshot through#116. Metadata delivery inventory only; row merged_at/merge_commit_sha is not independent review/runtime qualification. Original feature PRs integrated through aggregate ancestry can share merge markers; use scoped component actual-main reports for tested releases.",
+    "merged_count": 53,
+    "closed_unmerged_count": 1,
+    "rows": [
+      {
+        "number": 63,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/63",
+        "title": "Preserve actionable source-refusal reasons through private retrieval",
+        "state": "closed",
+        "merged_at": "2026-10-12T15:56:21Z",
+        "merge_commit_sha": "b893284b90bdda2a96d83ed003f4d7b6f90df1a7",
+        "head": "0c27d0f90c79eaaef55e03c5974a28d041a7ca97",
+        "base": "2394e9aec822fd24ba1a060dd592fe7a8c9b3c72"
+      },
+      {
+        "number": 64,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/64",
+        "title": "Harden source decoding, provenance, and deadline cleanup",
+        "state": "closed",
+        "merged_at": "2026-10-12T16:33:41Z",
+        "merge_commit_sha": "84f4fbc6f51f49eb139531d1a522c7155ae10d45",
+        "head": "84f4fbc6f51f49eb139531d1a522c7155ae10d45",
+        "base": "26d8c45718309262d610f059005da4e5526661e3"
+      },
+      {
+        "number": 65,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/65",
+        "title": "Exercise actual EI history against the exact installed 0.9.7 candidate",
+        "state": "closed",
+        "merged_at": "2026-10-12T16:09:29Z",
+        "merge_commit_sha": "26d8c45718309262d610f059005da4e5526661e3",
+        "head": "1334ad7e53d8ec36fdeff2d78112db06a32d9940",
+        "base": "b893284b90bdda2a96d83ed003f4d7b6f90df1a7"
+      },
+      {
+        "number": 66,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/66",
+        "title": "Bind structured facts to exact JSON-LD paths and decoded source scalars",
+        "state": "closed",
+        "merged_at": "2026-10-12T16:33:41Z",
+        "merge_commit_sha": "84f4fbc6f51f49eb139531d1a522c7155ae10d45",
+        "head": "7d4f60ab16de37163a32ced3474f3ec0d8934de0",
+        "base": "26d8c45718309262d610f059005da4e5526661e3"
+      },
+      {
+        "number": 67,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/67",
+        "title": "Keep stop persistence inside the shared cleanup envelope",
+        "state": "closed",
+        "merged_at": "2026-10-12T16:33:39Z",
+        "merge_commit_sha": "29b5924f4faf38ea852e348d7b32a86dd8b54a83",
+        "head": "350648026fddd3bb8a106da39295452888d1cf69",
+        "base": "26d8c45718309262d610f059005da4e5526661e3"
+      },
+      {
+        "number": 68,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/68",
+        "title": "Enforce stop signal deadlines at callback and return boundaries",
+        "state": "closed",
+        "merged_at": "2026-10-12T17:01:26Z",
+        "merge_commit_sha": "ef69133bb38320793e02f8530accdd67e59f90e3",
+        "head": "9ce455ebbab8df373b53a8d204d534e703200748",
+        "base": "29b5924f4faf38ea852e348d7b32a86dd8b54a83"
+      },
+      {
+        "number": 69,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/69",
+        "title": "docs: clarify research onboarding and fixture reproduction",
+        "state": "closed",
+        "merged_at": "2026-10-12T19:18:07Z",
+        "merge_commit_sha": "72cf787c6143c9f75d0437f77d9a50442bfb0bdf",
+        "head": "70c22f02ac451504f9434e045930039e5b6ee589",
+        "base": "29b5924f4faf38ea852e348d7b32a86dd8b54a83"
+      },
+      {
+        "number": 70,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/70",
+        "title": "docs: integrate research onboarding with verified main",
+        "state": "closed",
+        "merged_at": "2026-10-12T19:18:07Z",
+        "merge_commit_sha": "79e7db8b64ec1e8984dd3261f497b64b148fb5eb",
+        "head": "36e3b9119da68f29e39297e47e630213df5065f2",
+        "base": "ef69133bb38320793e02f8530accdd67e59f90e3"
+      },
+      {
+        "number": 71,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/71",
+        "title": "docs: reconcile event intelligence implementation status",
+        "state": "closed",
+        "merged_at": "2026-10-12T20:04:20Z",
+        "merge_commit_sha": "342fd79e33b33114cd0cdcc0ef269fef9542f49a",
+        "head": "2b1e159f6f251fce19d316c023f9e9ec1c1dd1b5",
+        "base": "ef69133bb38320793e02f8530accdd67e59f90e3"
+      },
+      {
+        "number": 72,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/72",
+        "title": "test: isolate offline policy child from proxy bootstrap",
+        "state": "closed",
+        "merged_at": "2026-10-12T19:18:07Z",
+        "merge_commit_sha": "79e7db8b64ec1e8984dd3261f497b64b148fb5eb",
+        "head": "d0dde79468da0c18181a1b92c1ccca9ff0405da0",
+        "base": "ef69133bb38320793e02f8530accdd67e59f90e3"
+      },
+      {
+        "number": 73,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/73",
+        "title": "Integrate bounded retrieval recovery, critical-status refusal and actual contract diagnostics",
+        "state": "closed",
+        "merged_at": "2026-10-12T19:18:05Z",
+        "merge_commit_sha": "06b6b8fed7be2e4d0c745ec4392ed4ad6dac9e07",
+        "head": "d237e5bee65a2f753655ee2dedd5224f3ef47524",
+        "base": "ef69133bb38320793e02f8530accdd67e59f90e3"
+      },
+      {
+        "number": 74,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/74",
+        "title": "docs: retain pending provider readiness in implementation guidance",
+        "state": "closed",
+        "merged_at": null,
+        "merge_commit_sha": "1082a4637beaa846088d334ccdbf338783b76404",
+        "head": "67db1a8ac3d2bf60b14d7472f6b4399c0bf1a472",
+        "base": "ef69133bb38320793e02f8530accdd67e59f90e3"
+      },
+      {
+        "number": 75,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/75",
+        "title": "Contain DNS connect failures and enforce callback deadlines",
+        "state": "closed",
+        "merged_at": "2026-10-12T19:18:07Z",
+        "merge_commit_sha": "2eb7288cd9e886e171edb1b0c3c432b9034ec4ea",
+        "head": "b1376724ed2629b3b098a02ed9353891a10c351b",
+        "base": "ef69133bb38320793e02f8530accdd67e59f90e3"
+      },
+      {
+        "number": 76,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/76",
+        "title": "test: begin cleanup deadline faults at retention entry",
+        "state": "closed",
+        "merged_at": "2026-10-12T19:18:07Z",
+        "merge_commit_sha": "2eb7288cd9e886e171edb1b0c3c432b9034ec4ea",
+        "head": "0a00697c0c4e45013122943f0d7e05220640d16d",
+        "base": "ef69133bb38320793e02f8530accdd67e59f90e3"
+      },
+      {
+        "number": 77,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/77",
+        "title": "test(security): cover resolver rebinding before pinned dial",
+        "state": "closed",
+        "merged_at": "2026-10-12T19:18:07Z",
+        "merge_commit_sha": "d237e5bee65a2f753655ee2dedd5224f3ef47524",
+        "head": "5de69c48079255e4f64cf2a7ec10a039e2599a4e",
+        "base": "ef69133bb38320793e02f8530accdd67e59f90e3"
+      },
+      {
+        "number": 78,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/78",
+        "title": "fix(questions): retain visible status evidence through typed review refusal",
+        "state": "closed",
+        "merged_at": "2026-10-12T19:18:07Z",
+        "merge_commit_sha": "d237e5bee65a2f753655ee2dedd5224f3ef47524",
+        "head": "37ad9097e689ae2f78c16064b00960f0fd467f8f",
+        "base": "ef69133bb38320793e02f8530accdd67e59f90e3"
+      },
+      {
+        "number": 79,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/79",
+        "title": "fix: retain generated graph instructions in the review artifact",
+        "state": "closed",
+        "merged_at": "2026-10-12T19:35:19Z",
+        "merge_commit_sha": "181bb0fab8c0b053dbe745d7cbf6328007f3210b",
+        "head": "b2c834d72e11fb50b0aef2e2a38a4d06cf5207bb",
+        "base": "06b6b8fed7be2e4d0c745ec4392ed4ad6dac9e07"
+      },
+      {
+        "number": 80,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/80",
+        "title": "feat(cache): bind private conditional refresh to durable evidence",
+        "state": "closed",
+        "merged_at": "2026-10-12T20:30:32Z",
+        "merge_commit_sha": "1a07198fab193e1e4b9001d56c8ce2e19c1b4b4b",
+        "head": "eef6750b32cacf0ea3a63b6bd71dbd2335d38baa",
+        "base": "342fd79e33b33114cd0cdcc0ef269fef9542f49a"
+      },
+      {
+        "number": 81,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/81",
+        "title": "fix: enforce durable admission limits across tenant research runs",
+        "state": "closed",
+        "merged_at": "2026-10-13T01:52:53Z",
+        "merge_commit_sha": "231dff1f40c9dce2a5c1adbc2a6a1fcbf7db765c",
+        "head": "0cb28329bdd1097108770792d454638efb74a424",
+        "base": "7dd941fa325a8167d32d188c10bf8cd101d1e6ed"
+      },
+      {
+        "number": 82,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/82",
+        "title": "fix(assets): enforce original deadline before queued verifier entry",
+        "state": "closed",
+        "merged_at": "2026-10-12T19:58:05Z",
+        "merge_commit_sha": "15355c3b57f85606829b97bda02e488ad0775bbc",
+        "head": "5a104fd3c1ed76b14f3d220d93f5d173ef974641",
+        "base": "181bb0fab8c0b053dbe745d7cbf6328007f3210b"
+      },
+      {
+        "number": 83,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/83",
+        "title": "feat(contracts): inspect the separately pinned 0.10.2 consumer proposal",
+        "state": "closed",
+        "merged_at": "2026-10-12T20:49:48Z",
+        "merge_commit_sha": "6549f9ea7422c7df7b1c6209f4fb4651ef068d9b",
+        "head": "dc98e52c50f963b76db0c7aaa9c5f4d368a8f2ba",
+        "base": "1a07198fab193e1e4b9001d56c8ce2e19c1b4b4b"
+      },
+      {
+        "number": 84,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/84",
+        "title": "feat(cache): revalidate reviewed public profiles through retained original evidence",
+        "state": "closed",
+        "merged_at": "2026-10-13T02:26:31Z",
+        "merge_commit_sha": "d984c6de4b55ccf9c220692c949b80b3a922edbe",
+        "head": "74f16afd39a4978189d4f22f56c4b7d9a2d4b7ec",
+        "base": "231dff1f40c9dce2a5c1adbc2a6a1fcbf7db765c"
+      },
+      {
+        "number": 85,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/85",
+        "title": "fix: reject evidence transactions after the original lock deadline",
+        "state": "closed",
+        "merged_at": "2026-10-12T21:43:37Z",
+        "merge_commit_sha": "dc97a96d07abd5d7b66c0c18f46021e85fd60cea",
+        "head": "eeb75ae0dd5aa3eaa80dc767225b8c35635ca892",
+        "base": "6549f9ea7422c7df7b1c6209f4fb4651ef068d9b"
+      },
+      {
+        "number": 86,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/86",
+        "title": "feat: decode bounded private static PNG pixel observations",
+        "state": "closed",
+        "merged_at": "2026-10-13T04:55:37Z",
+        "merge_commit_sha": "cd8d25aa3c0bc807fa6ba5de4072d6de31f4d2a0",
+        "head": "f8cecbd73bf37e9bbe5cc2d3a5057d41e9419f21",
+        "base": "6f2994dfb6224536a0d29ff17fcbb5d4b5b83885"
+      },
+      {
+        "number": 87,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/87",
+        "title": "feat: decode bounded static JPEG and WebP evidence",
+        "state": "closed",
+        "merged_at": "2026-10-13T06:10:34Z",
+        "merge_commit_sha": "15b71267010f52384a138e49b2161e7f39583fbd",
+        "head": "c549b394a0dc51a8ef2ece239ea955b0b468138b",
+        "base": "b5541fa75351e1c65a882e081a8a10ecdd347f22"
+      },
+      {
+        "number": 88,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/88",
+        "title": "fix(cache): observe authorization promises after revalidation stops",
+        "state": "closed",
+        "merged_at": "2026-10-12T22:53:20Z",
+        "merge_commit_sha": "70ccb25f9343ac2758d1f50d1fa9b4f56745d31e",
+        "head": "3e277f66063adddada380724261d8b811e426dbe",
+        "base": "dc97a96d07abd5d7b66c0c18f46021e85fd60cea"
+      },
+      {
+        "number": 89,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/89",
+        "title": "feat: read bounded scanned PDF pages under native isolation",
+        "state": "closed",
+        "merged_at": "2026-10-13T06:39:23Z",
+        "merge_commit_sha": "176868ad906e27da325c716ca4c636132aafb877",
+        "head": "09c050ab09c1ddaab7958203f2923df363c341d5",
+        "base": "15b71267010f52384a138e49b2161e7f39583fbd"
+      },
+      {
+        "number": 90,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/90",
+        "title": "Add bounded local OCR with sealed native execution and uncertain word evidence",
+        "state": "closed",
+        "merged_at": "2026-10-13T08:50:48Z",
+        "merge_commit_sha": "6332191f333e1dc5742962f5a9e9b13458f13e16",
+        "head": "63639a9cde7cd3bf62da330cd4b41c1b54df4a64",
+        "base": "176868ad906e27da325c716ca4c636132aafb877"
+      },
+      {
+        "number": 91,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/91",
+        "title": "feat: compose byte-bound EI12 inspection reports",
+        "state": "closed",
+        "merged_at": "2026-10-13T02:52:08Z",
+        "merge_commit_sha": "fbc1457974313ba8851d0b74add0e03041f6e5dc",
+        "head": "1decfb13a08df1f5d9168abc2f708f1bf0e7a8cd",
+        "base": "d984c6de4b55ccf9c220692c949b80b3a922edbe"
+      },
+      {
+        "number": 92,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/92",
+        "title": "feat: retain source attribution clusters in private research",
+        "state": "closed",
+        "merged_at": "2026-10-13T00:33:26Z",
+        "merge_commit_sha": "bf1423cf6b426fe1f3682f86a23ad682fb520b02",
+        "head": "756457a07fadd227a9976ebcdf66615a89fd3c0b",
+        "base": "42f5c746f11f1fe57bb21abca7f91f5dd569685e"
+      },
+      {
+        "number": 93,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/93",
+        "title": "feat: bind private reviewed context to retained source evidence",
+        "state": "closed",
+        "merged_at": "2026-10-12T23:34:01Z",
+        "merge_commit_sha": "c43dcffd5719d9c0e716b1c429ecc96aff7572dc",
+        "head": "c21a651774b1015bcf5b17d21e7aaf5b5a54bdb8",
+        "base": "70ccb25f9343ac2758d1f50d1fa9b4f56745d31e"
+      },
+      {
+        "number": 94,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/94",
+        "title": "feat: expose verified raw pixels from bounded image readers",
+        "state": "closed",
+        "merged_at": "2026-10-13T07:51:38Z",
+        "merge_commit_sha": "5ca8889fda70b20020d6c806737dbceb45ec73d4",
+        "head": "362bceec23f172c46466bdd94111cdc37d1514bc",
+        "base": "b91332daa664cc8bf8c64032cfed3355b4db0142"
+      },
+      {
+        "number": 95,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/95",
+        "title": "fix(privacy): retain original deadlines across trusted clocks",
+        "state": "closed",
+        "merged_at": "2026-10-13T00:11:50Z",
+        "merge_commit_sha": "42f5c746f11f1fe57bb21abca7f91f5dd569685e",
+        "head": "6b6aa99f685331b390f80129787c43b940de7eff",
+        "base": "c43dcffd5719d9c0e716b1c429ecc96aff7572dc"
+      },
+      {
+        "number": 96,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/96",
+        "title": "Bind local media inspection reports to source, encoded and raw pixel evidence",
+        "state": "closed",
+        "merged_at": "2026-10-13T08:34:51Z",
+        "merge_commit_sha": "f1e12df14fc9c7416df6fb1d38aea99e99028c67",
+        "head": "ca65953ff043a3432f03d21b54753f7239d4a07b",
+        "base": "bf1423cf6b426fe1f3682f86a23ad682fb520b02"
+      },
+      {
+        "number": 97,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/97",
+        "title": "feat: request bounded follow-up for unknown source authority",
+        "state": "closed",
+        "merged_at": "2026-10-13T01:21:36Z",
+        "merge_commit_sha": "7dd941fa325a8167d32d188c10bf8cd101d1e6ed",
+        "head": "869a71170965447f066a4c8f3d89dc2af17c29de",
+        "base": "bf1423cf6b426fe1f3682f86a23ad682fb520b02"
+      },
+      {
+        "number": 98,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/98",
+        "title": "test(contracts): enforce EI-local dependency direction",
+        "state": "closed",
+        "merged_at": "2026-10-13T03:32:31Z",
+        "merge_commit_sha": "96a40d1b2715eba8449fc6fabaae19b1303cd37f",
+        "head": "5c6c578800f87fcb0440ed191102749b3228df2e",
+        "base": "c6eaf4a256fc2b9f2789f3ef926293ea36f558ba"
+      },
+      {
+        "number": 99,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/99",
+        "title": "feat: compose bounded images and scanned PDFs with local OCR",
+        "state": "closed",
+        "merged_at": "2026-10-13T10:05:46Z",
+        "merge_commit_sha": "dddef9ca57e9469e488aa544d72a876e59d3e280",
+        "head": "048edeb80d1da765985279f0c12c929d1ef7716a",
+        "base": "87619907f2865f8717121b5aa9e685b06ab9050f"
+      },
+      {
+        "number": 100,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/100",
+        "title": "test: exercise final authority deadline checks after bounded setup",
+        "state": "closed",
+        "merged_at": "2026-10-13T03:15:29Z",
+        "merge_commit_sha": "c6eaf4a256fc2b9f2789f3ef926293ea36f558ba",
+        "head": "752061bb5880aa890714a4128656ae18837e5d2f",
+        "base": "fbc1457974313ba8851d0b74add0e03041f6e5dc"
+      },
+      {
+        "number": 101,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/101",
+        "title": "docs: index provisional release evidence and owner prerequisites",
+        "state": "closed",
+        "merged_at": "2026-10-13T03:49:56Z",
+        "merge_commit_sha": "285c5e80a69b33641642b60dc94756f74c9ebbbf",
+        "head": "3cb675dda9b8751fcc47e1b46d1bcfe42d5b85b8",
+        "base": "96a40d1b2715eba8449fc6fabaae19b1303cd37f"
+      },
+      {
+        "number": 102,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/102",
+        "title": "fix: account for finite media loaders and verified JSON data",
+        "state": "closed",
+        "merged_at": "2026-10-13T04:15:37Z",
+        "merge_commit_sha": "6f2994dfb6224536a0d29ff17fcbb5d4b5b83885",
+        "head": "a29a7c3dc4b2dcfe4fcec2716125bb8178184ab7",
+        "base": "285c5e80a69b33641642b60dc94756f74c9ebbbf"
+      },
+      {
+        "number": 103,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/103",
+        "title": "feat: bind local OCR observations to inspection report evidence",
+        "state": "closed",
+        "merged_at": "2026-10-13T10:39:52Z",
+        "merge_commit_sha": "7dee13b040a68ae9ea4fcbc9c5ade75002960560",
+        "head": "2c6f21f8937ed514084014e899ee336aae192892",
+        "base": "268c61320ed70f2cf0f50369842e15035e1cb7b4"
+      },
+      {
+        "number": 104,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/104",
+        "title": "feat: derive review-only OCR candidates with bound question preparation",
+        "state": "closed",
+        "merged_at": "2026-10-13T11:13:41Z",
+        "merge_commit_sha": "8f359fbf5574839c01b7ffa0a3d6ff3a04b9531e",
+        "head": "be778db4c9c58433283a8058c5d19596be24e56f",
+        "base": "6087f359c8f5f12f1db2540f2071d8a3b80b547b"
+      },
+      {
+        "number": 105,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/105",
+        "title": "feat: read attributable brand declarations from retained HTML",
+        "state": "closed",
+        "merged_at": "2026-10-13T09:44:03Z",
+        "merge_commit_sha": "5a215a90a433c70f0300b312a59236eb53ae90cf",
+        "head": "477e72c0339fd8e91fc9d067c42c3040b06f0352",
+        "base": "87619907f2865f8717121b5aa9e685b06ab9050f"
+      },
+      {
+        "number": 106,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/106",
+        "title": "test: anchor cleanup stall to deferred callback entry",
+        "state": "closed",
+        "merged_at": "2026-10-13T05:45:17Z",
+        "merge_commit_sha": "b5541fa75351e1c65a882e081a8a10ecdd347f22",
+        "head": "b99b95fa41a07af3f4dba1ae1517d0c598cb781e",
+        "base": "cd8d25aa3c0bc807fa6ba5de4072d6de31f4d2a0"
+      },
+      {
+        "number": 107,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/107",
+        "title": "test: distinguish PDF admission expiry from active child timeout",
+        "state": "closed",
+        "merged_at": "2026-10-13T07:21:50Z",
+        "merge_commit_sha": "b91332daa664cc8bf8c64032cfed3355b4db0142",
+        "head": "7473ce4c9fd6482a0bc8373f15a9afec5b5ec14e",
+        "base": "176868ad906e27da325c716ca4c636132aafb877"
+      },
+      {
+        "number": 108,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/108",
+        "title": "ci: capture blocked handoff reports with bounded evidence",
+        "state": "closed",
+        "merged_at": "2026-10-13T08:03:22Z",
+        "merge_commit_sha": "51b30210f25df2cb8a190b083a9ac18dd3938d33",
+        "head": "f69f0f62c5a42e00aaf3d9752caa97c929466049",
+        "base": "5ca8889fda70b20020d6c806737dbceb45ec73d4"
+      },
+      {
+        "number": 109,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/109",
+        "title": "Integrate reviewed local OCR on current main",
+        "state": "closed",
+        "merged_at": "2026-10-13T08:50:37Z",
+        "merge_commit_sha": "87619907f2865f8717121b5aa9e685b06ab9050f",
+        "head": "b31313b33edca4b752ab175c97bdbc59a25226af",
+        "base": "2d468d0b619498c943a9c5d2b6012da483d1d221"
+      },
+      {
+        "number": 110,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/110",
+        "title": "fix: integrate media reports and reject malformed PNG chunk names",
+        "state": "closed",
+        "merged_at": "2026-10-13T08:34:49Z",
+        "merge_commit_sha": "2d468d0b619498c943a9c5d2b6012da483d1d221",
+        "head": "7c65bb5adefbd9b04bb8e5fec2978472a9aad906",
+        "base": "51b30210f25df2cb8a190b083a9ac18dd3938d33"
+      },
+      {
+        "number": 111,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/111",
+        "title": "integration: preserve OCR report and expose bounded evidence capture",
+        "state": "closed",
+        "merged_at": "2026-10-13T10:39:51Z",
+        "merge_commit_sha": "6087f359c8f5f12f1db2540f2071d8a3b80b547b",
+        "head": "26a6537a3526de83a3f333fdd69000cd4d8b6618",
+        "base": "268c61320ed70f2cf0f50369842e15035e1cb7b4"
+      },
+      {
+        "number": 112,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/112",
+        "title": "integration: preserve bounded OCR composition and readable evidence",
+        "state": "closed",
+        "merged_at": "2026-10-13T10:05:44Z",
+        "merge_commit_sha": "268c61320ed70f2cf0f50369842e15035e1cb7b4",
+        "head": "0dfbe32491f7087c4605ee9059d75dcd65a95d26",
+        "base": "5a215a90a433c70f0300b312a59236eb53ae90cf"
+      },
+      {
+        "number": 113,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/113",
+        "title": "feat: map private retrieval outcomes over the existing safe fetcher",
+        "state": "closed",
+        "merged_at": "2026-10-13T11:39:52Z",
+        "merge_commit_sha": "5468f7e4738c54e6ba7261949fa7b00274072dc2",
+        "head": "7a2b3573083b5bed64c134264569fc229da09d5b",
+        "base": "8f359fbf5574839c01b7ffa0a3d6ff3a04b9531e"
+      },
+      {
+        "number": 114,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/114",
+        "title": "test: record HTML/XHTML parser side requests with negative controls",
+        "state": "closed",
+        "merged_at": "2026-10-13T12:07:28Z",
+        "merge_commit_sha": "59c8197ddabd5fc3a91877bffdfb22a882e18257",
+        "head": "9ef59a214e6d11756205955f6f638ee6dc16a875",
+        "base": "5468f7e4738c54e6ba7261949fa7b00274072dc2"
+      },
+      {
+        "number": 115,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/115",
+        "title": "Add private resource outcomes over supported native readers (EI-02)",
+        "state": "closed",
+        "merged_at": "2026-10-13T12:37:13Z",
+        "merge_commit_sha": "8cfc7e7afdbf755d0918c550f0450c8513cb0559",
+        "head": "a8fab545f6f1707c79e7ca22eb44d24cf098d529",
+        "base": "59c8197ddabd5fc3a91877bffdfb22a882e18257"
+      },
+      {
+        "number": 116,
+        "url": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/pull/116",
+        "title": "test: preserve visible event conflicts and duplicate JSON-LD provenance (EI-03)",
+        "state": "closed",
+        "merged_at": "2026-10-13T13:22:59Z",
+        "merge_commit_sha": "2cf59a6e7337a78168dfa6ab70d8a16d60390cbe",
+        "head": "4d29fa3460519d19d270bdcac4c06b344115030f",
+        "base": "8cfc7e7afdbf755d0918c550f0450c8513cb0559"
+      }
+    ],
+    "unmerged_rule": "PR74 is closed unmerged and superseded; its nonnull merge_commit_sha field does not establish a merge. Require merged_at and native merged state."
   }
 }
