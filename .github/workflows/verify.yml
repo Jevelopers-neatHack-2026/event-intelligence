@@ -25,6 +25,8 @@ jobs:
       - run: npm ci
       - name: Install the locked host TypeScript compiler
         run: node tools/install-typescript-host.mjs
+      - name: Check the local engine dependency direction
+        run: make verify-dependencies
       - name: Test bounded EI handoff checker
         run: |
           python3 - <<'PY'
