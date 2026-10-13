@@ -65,9 +65,11 @@ function nativeDeadlineFixture(h, durationMs) {
 
 function assertConsumedOriginalBudget(trace) {
   assert.ok(trace.startAuthority);
+  assert.equal(trace.authorityCalls.filter((entry) => entry.stage === 'start').length, 1,
+    'the upper bound must come from exactly one original start callback');
   assert.ok(trace.targetEntry, 'the intended callback must actually be entered');
   assert.ok(trace.startAuthority.monotonic >= trace.beforeInvocation.monotonic);
-  assert.ok(trace.waitFinished.monotonic >= trace.nativeUpperBound);
+  assert.ok(trace.waitFinished.monotonic >= trace.waitUntil, 'consume the original upper bound plus the stated margin');
   assert.equal(trace.timerDeliveriesBeforeReturn, 0, 'native timers cannot run during the synchronous callback');
   assert.equal(trace.timerDeliveries, 1);
   assert.ok(trace.timerDelivered.monotonic >= trace.waitFinished.monotonic);
