@@ -325,6 +325,8 @@ async function awaitAdapter(callback, argument, operation, assertCurrent) {
   const callbackPromise = Promise.resolve()
     .then(() => {
       if (abortSignalAbortedGetter.call(operation.signal)) return ABORTED_BEFORE_ADAPTER;
+      // Queued work can exhaust the deadline before its timer is delivered.
+      checkOperation(operation);
       return callback(argument, operation.signal);
     })
     .then((value) => value === ABORTED_BEFORE_ADAPTER

@@ -67,6 +67,7 @@ const result = await readStaticPng(alreadyAcquiredPrivateBytes, {
 });
 if (result.kind === "decoded") {
   const privateDerivative = result.copyNormalizedBytes();
+  const privateRgba = result.copyRgbaBytes();
   // Keep sourceSha256, normalizedSha256, rgbaSha256, dimensions and decoder
   // profile with this private derivative. Human/model inspection and current
   // disclosure/asset permissions remain separate owner-controlled steps.
@@ -84,8 +85,12 @@ are not invoked. Options must be plain own data properties with known names;
 accessors, proxies and forged cancellation signals are rejected. The reader
 uses native `AbortSignal`/`EventTarget` operations instead of caller shadows.
 
-Each `copyNormalizedBytes()` call returns a new mutable copy. The retained bytes
-and frozen metadata cannot be changed through that copy. `sourceSha256` hashes
+Each `copyNormalizedBytes()` or `copyRgbaBytes()` call returns a new mutable copy.
+The retained buffers, the other representation and frozen metadata cannot be
+changed through those copies. Raw output is contiguous, row-major RGBA8 with
+stride `width * 4`, no padding and no filter bytes. Alpha is preserved, including
+RGB sample values under transparent pixels; no background or premultiplication
+is assumed. `sourceSha256` hashes
 the exact input snapshot; `normalizedSha256` hashes the normalized PNG;
 `rgbaSha256` hashes concatenated RGBA sample rows without filter bytes. The pixel
 hash alone does not encode dimensions, source attribution, visual meaning or
@@ -100,6 +105,7 @@ research fields.
 | Width / rows | 4096 / 4096 |
 | Total pixels | 4,194,304 |
 | Inflated scanline bytes, including row filter bytes | 16,781,312 |
+| Raw RGBA payload / retained raw samples | 16 MiB |
 | Normalized output bytes | 20 MiB |
 | Total PNG chunks, including IHDR and IEND | 1024 |
 | Worker protocol JSON header | 4096 bytes, plus a 4-byte length prefix |
@@ -115,6 +121,25 @@ other resource settings are not caller configurable. A wall deadline starts
 before option validation and input copying. Queue waiting, dispatch, child work
 and parent frame/hash validation share that original deadline. A delayed timer
 callback does not grant a fresh allowance at dispatch or publication.
+
+The private worker frame is explicitly versioned as `ei-static-png-worker/2`:
+four-byte header length, JSON header, normalized PNG, then raw RGBA. The header
+contains both exact payload lengths. Version 1 encoded-only replies are rejected;
+deploy the paired worker and reader together. The accepted source profile remains
+`ei-static-png/1`, and its normalized PNG encoder, bytes and hashes are unchanged.
+`maxOutputBytes` still caps **only normalized PNG bytes**. The fixed
+`maxRgbaBytes` separately caps raw samples; stdout capture is bounded by the
+selected normalized cap plus 16 MiB plus the 4096-byte header and four-byte prefix.
+No caller can raise the source, pixel or raw ceilings through the output option.
+
+The worker copies raw samples from the same reconstructed rows used by its
+existing normalized encoder. The parent checks each received payload's actual
+hash independently, owns separate retained copies, and rechecks the original
+deadline after validation and copying. At most 36 MiB of output buffers can be
+retained per successful result, plus the finite in-flight frame/copy buffers.
+This is not a global cap on results retained by callers or on copies callers
+request after completion. A composition owner must bound those lifetimes and
+include subsequent copying/inspection in its own original deadline.
 
 The runtime supports Linux with a root-owned, executable, non-group/world-writable
 `/usr/bin/prlimit` at that exact real path. It requires Node **22.23.3** with zlib
@@ -145,14 +170,17 @@ physical-memory/RSS cap. Production host containment and admission/budget
 authority remain separate requirements.
 
 The parent validates the complete worker frame: exact keys/profile/runtime,
-source binding, dimensions, exact chunk-name bytes, output shape and CRC, derivative hash, byte count,
+source binding, dimensions, exact chunk-name bytes, output shape and CRC, both payload hashes and byte counts,
 and guarded-API count. It also requires the minimum nonempty zlib envelope,
 the fixed encoder's header, and a nonreserved first deflate block type. An
 empty IDAT, an eight-byte empty zlib stream, or a shorter envelope is a protocol
 rejection even with matching PNG CRCs and derivative hash.
-The parent does not inflate untrusted data a second time; complete compressed
+The raw hash covers the exact returned `copyRgbaBytes()` samples. The parent
+does not inflate untrusted data a second time; complete compressed
 stream and pixel-row validation remain the worker's responsibility. These
-framing checks do not prove arbitrary faulty-worker pixel semantics.
+framing checks do not prove arbitrary faulty-worker pixel semantics or
+independently decode the normalized derivative to compare its pixels with the
+raw payload. Their common sample origin is provided by the fixed worker codec.
 Rejected/late/malformed frames do not expose pixel bytes.
 
 ## Private error codes
@@ -187,19 +215,25 @@ npm run typecheck
 
 Use the repository's existing `npm ci` and locked compiler installation helper
 for a fresh checkout. The new `static-png.yml` workflow runs these commands on
-push and PR candidates. The dedicated PNG runner requires all **93** collected
+push and PR candidates. The dedicated PNG runner requires all **107** collected
 tests to pass with zero failures, cancellations, skips or TODOs; no existing
 shared verification gate is weakened. The `deterministic-extraction` mock route
 keeps its existing extraction-root and text-PDF tests; it does not recursively
 enroll this dedicated PNG directory. PNG platform/profile qualification remains
-the separate required 93-case command above.
+the separate required 107-case command above.
 
 The suite includes literal RGB/RGBA filter vectors with independently computed
 CRC; real decode at exact pixel/row/inflation ceilings; malformed/unsupported
 input and output limits; immutable snapshot/copy behavior; actual child close
 and recovery; queue saturation and cancellation; delayed-timer dispatch and
-delayed parent-validation controls; and strict consumer types. The lifecycle
-fixture holds the actual child's input-end boundary, rather than adding a
+delayed parent-validation controls; and strict consumer types. New controls
+also delay or cancel the actual retained raw-copy phase after child
+close, and require an original-deadline refusal with no accessor followed by
+actual decoder recovery. Versioned raw-frame tests reject missing, truncated,
+extra, swapped or hash-mismatched samples without weakening prior PNG framing
+refusals. Existing literal sample vectors and recorded predecessor derivative
+hashes verify that the new handoff preserves normalization and transparency.
+The lifecycle fixture holds the actual child's input-end boundary, rather than adding a
 production callback or inferring a phase from a sleep. Its separate kernel-limit
 probe reuses the observed OS/Node/environment prefix, with one additional
 read-only grant for **that probe's own** `/proc/self/limits` and a probe entrypoint.
@@ -215,3 +249,9 @@ consumer journey. Local implementation of those formats is not inherently
 blocked by provider credentials; any model/provider-backed evidence still needs
 its actual authorized configuration, policy, metering and acceptance. Gate #22
 and epic #1 remain open.
+
+This raw accessor does not invoke OCR. A future raw-raster consumer must use the
+actual raw hash rather than the encoded PNG hash, preserve source/dimension
+correlation, and explicitly refuse unsupported transparency instead of choosing
+a background. It must not treat a caller-fabricated decoded object as evidence
+that this fixed reader ran.

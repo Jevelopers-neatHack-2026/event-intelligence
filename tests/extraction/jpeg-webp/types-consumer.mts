@@ -18,6 +18,8 @@ async function privatePixelConsumer(): Promise<string | StaticJpegWebpErrorCode>
     void possibleHash;
     // @ts-expect-error Refused reads never expose a pixel derivative.
     result.copyNormalizedBytes();
+    // @ts-expect-error Refused reads never expose raw sample bytes.
+    result.copyRgbaBytes();
     return code;
   }
   const decoded: StaticJpegWebpDecoded = result;
@@ -28,12 +30,15 @@ async function privatePixelConsumer(): Promise<string | StaticJpegWebpErrorCode>
   const rgbaColorType: 6 = decoded.outputColorType;
   const guardedApiAttempts: 0 = decoded.networkApiAttemptCount;
   const copy: Uint8Array = decoded.copyNormalizedBytes();
+  const rawCopy: Uint8Array = decoded.copyRgbaBytes();
   const runtimeIdentity: string = decoded.runtimeManifestSha256;
-  void [stillIncomplete, inspectionRequired, format, frame, rgbaColorType, guardedApiAttempts, copy, runtimeIdentity];
+  void [stillIncomplete, inspectionRequired, format, frame, rgbaColorType, guardedApiAttempts, copy, rawCopy, runtimeIdentity];
   // @ts-expect-error A decoded dimension is immutable.
   decoded.width = 1;
   // @ts-expect-error The retained copy operation is immutable.
   decoded.copyNormalizedBytes = () => privateBytes;
+  // @ts-expect-error Raw copy ownership is immutable.
+  decoded.copyRgbaBytes = () => privateBytes;
   // @ts-expect-error Pixel decoding does not claim interpreted facts.
   decoded.facts;
   // @ts-expect-error Pixel decoding supplies no asset permission decision.

@@ -2,15 +2,18 @@ import { createHash } from 'node:crypto';
 import { types } from 'node:util';
 
 import { compareOccurrenceIdentity } from '../../discovery/occurrences/identity.mjs';
+import { validateSourceCorroboration, corroborationDigest, normalizedAttributionUrl, CorroborationError } from '../../discovery/identity/corroboration.mjs';
 import { QuestionPreparationError, deriveQuestionTargetRef, prepareIndependentQuestions } from './prepare.mjs';
 import { hasCredentialLikeText } from './sensitive-content.mjs';
 
 const COMPOSITION_SCHEMA = 'ei-source-identity-composition-internal/v1';
+const COMPOSITION_SCHEMA_V2 = 'ei-source-identity-composition-internal/v2';
 const OCCURRENCE_SCHEMA = 'ei-occurrence-observation-internal/v1';
 const DECISION_SCHEMA = 'ei-occurrence-identity-decision-internal/v1';
 const TRANSITION_SCHEMA = 'ei-occurrence-transition-internal/v1';
 const QUESTION_ID = 'Q-EI-IDENTITY:v1';
 const BINDING_SCHEMA = 'ei-source-identity-question-binding-internal/v1';
+const BINDING_SCHEMA_V2 = 'ei-source-identity-question-binding-internal/v2';
 const BINDING_HASH_DOMAIN = 'event-intelligence:source-identity-question-binding:v1\0';
 const OBSERVATION_HASH_DOMAIN = 'event-intelligence:source-identity-question-group:v1\0';
 const FIELD_REF_HASH_DOMAIN = 'event-intelligence:source-identity-question-field:v1\0';
@@ -204,12 +207,146 @@ function parseOptions(rawOptions) {
 }
 
 function assertCompositionShape(composition) {
-  const descriptors = safeDataRecord(composition, ROOT_KEYS);
+  const schema = dataValue(composition, 'schema');
+  const descriptors = safeDataRecord(composition, schema === COMPOSITION_SCHEMA_V2
+    ? new Set([...ROOT_KEYS, 'corroboration', 'corroborationFactBindings']) : ROOT_KEYS);
   for (const key of ROOT_ARRAY_KEYS) {
     if (!Object.hasOwn(descriptors, key) || !Object.hasOwn(descriptors[key], 'value')) fail();
   }
-  if (descriptors.schema.value !== COMPOSITION_SCHEMA || descriptors.sourceAuthority.value !== 'not_evaluated') fail('SOURCE_BINDING_FAILED');
+  if (![COMPOSITION_SCHEMA, COMPOSITION_SCHEMA_V2].includes(schema) || descriptors.sourceAuthority.value !== 'not_evaluated') fail('SOURCE_BINDING_FAILED');
   return descriptors;
+}
+
+function projectCorroboration(root, sourceById) {
+  if (root.schema.value === COMPOSITION_SCHEMA) return null;
+  const graph = validateSourceCorroboration(root.corroboration.value);
+  const nodeById = new Map(graph.nodes.map((node) => [node.candidateId, node]));
+  const observed = new Set();
+  let identityCount = 0;
+  const bindIdentity = (id, kind, supports) => {
+    const node = nodeById.get(id);
+    if (!node || node.kind !== kind || observed.has(id)) fail('SOURCE_BINDING_FAILED');
+    const keys = supports.map((support) => {
+      if (support.evidenceId !== node.evidenceId || support.contentHash !== node.contentHash) fail('SOURCE_BINDING_FAILED');
+      return corroborationDigest('source-identity-support', support);
+    }).sort();
+    identityCount += keys.length;
+    if (identityCount > MAX_FACTS) fail('RESOURCE_LIMIT_EXCEEDED');
+    if (stableJson(keys) !== stableJson(node.identityKeys)) fail('SOURCE_BINDING_FAILED');
+    observed.add(id);
+  };
+  for (const raw of safeArray(root.occurrenceCandidates.value, MAX_CANDIDATES)) {
+    const candidate = projectCandidate(raw, sourceById);
+    bindIdentity(candidate.candidateId, 'event', Object.values(candidate.facts).flatMap((claims) => claims.flatMap((claim) => claim.supports)));
+  }
+  for (const raw of safeArray(root.entityCandidates.value, MAX_CANDIDATES)) {
+    const candidate = safeDataRecord(raw, new Set(['schema', 'candidateId', 'kind', 'names']));
+    if (candidate.schema.value !== 'ei-entity-observation-internal/v1' || candidate.kind.value !== 'organization') fail('SOURCE_BINDING_FAILED');
+    const names = safeArray(candidate.names.value, 24).map((claim) => projectClaim(claim, 'title', sourceById));
+    bindIdentity(safeReference(candidate.candidateId.value), 'organization', names.flatMap((claim) => claim.supports));
+  }
+  if (observed.size !== nodeById.size) fail('SOURCE_BINDING_FAILED');
+
+  const facts = safeArray(root.facts.value, MAX_FACTS);
+  const factById = new Map();
+  for (const fact of facts) {
+    const id = safeReference(dataValue(fact, 'factId'));
+    if (factById.has(id)) fail('SOURCE_BINDING_FAILED');
+    factById.set(id, fact);
+  }
+  const bindingByClaim = new Map();
+  const usedFacts = new Set();
+  const factBindings = safeArray(root.corroborationFactBindings.value, MAX_FACTS).map((value) => {
+    const entry = safeDataRecord(value, new Set(['claimId', 'factId']));
+    const claimId = entry.claimId.value;
+    const factId = safeReference(entry.factId.value);
+    if (typeof claimId !== 'string' || !SHA256.test(claimId) || bindingByClaim.has(claimId)
+      || usedFacts.has(factId) || !factById.has(factId)
+      || !graph.claims.some((claim) => claim.claimId === claimId && claim.status === 'retained')) fail('SOURCE_BINDING_FAILED');
+    const binding = Object.freeze({ claimId, factId });
+    bindingByClaim.set(claimId, binding); usedFacts.add(factId);
+    return binding;
+  }).sort((a, b) => a.claimId < b.claimId ? -1 : 1);
+  if (graph.claims.filter((claim) => claim.status === 'retained').length !== factBindings.length
+    || facts.some((fact) => dataValue(fact, 'field') === 'isBasedOn' && !usedFacts.has(dataValue(fact, 'factId')))) fail('SOURCE_BINDING_FAILED');
+  const observedClaims = new Set();
+  const sourceBoundNodes = new Set();
+  for (const rawSource of safeArray(root.sources.value, MAX_SOURCES)) {
+    const evidence = dataValue(rawSource, 'evidence');
+    if (evidence === null) continue;
+    const evidenceId = safeReference(dataValue(evidence, 'evidenceId'));
+    const source = sourceById.get(evidenceId);
+    const stored = dataValue(rawSource, 'storedSource');
+    const extraction = dataValue(rawSource, 'extraction');
+    if (!source || dataValue(extraction, 'sourceHash') !== `sha256:${source.contentHash}`
+      || dataValue(stored, 'contentHash') !== source.contentHash) fail('SOURCE_BINDING_FAILED');
+    const urls = [...new Set(['sourceUrl', 'canonicalUrl'].map((key) =>
+      normalizedAttributionUrl(safeText(dataValue(stored, key), 4096))).filter(Boolean))].sort();
+    for (const [kind, field] of [['event', 'events'], ['organization', 'organizations']]) {
+      const entities = safeArray(dataValue(extraction, field), 24);
+      for (const entity of entities) {
+        const block = dataValue(entity, 'blockIndex');
+        const ordinal = dataValue(entity, 'ordinal');
+        if (!Number.isSafeInteger(block) || block < 0 || block >= 8 || !Number.isSafeInteger(ordinal) || ordinal < 0 || ordinal >= 24) fail('SOURCE_BINDING_FAILED');
+        const id = `${kind === 'event' ? 'event' : 'org'}-${evidenceId.replaceAll('-', '')}-${block}-${ordinal}`;
+        const node = nodeById.get(id);
+        if (!node) continue;
+        const pointer = safeText(dataValue(entity, 'jsonPointer'), MAX_LOCATOR_BYTES, { empty: true });
+        if (node.entityPointer !== pointer || node.entityKey !== `${kind}:script-${block}:${ordinal}`
+          || node.sourceEntityCount !== entities.length || stableJson(node.sourceUrls) !== stableJson(urls)
+          || dataValue(entity, 'kind') !== kind || dataValue(entity, 'entityId') !== `${kind}:script-${block}:${pointer}`) fail('SOURCE_BINDING_FAILED');
+        if (sourceBoundNodes.has(id)) fail('SOURCE_BINDING_FAILED');
+        sourceBoundNodes.add(id);
+        const rootPointer = `${pointer}/isBasedOn`;
+        for (const candidate of safeArray(dataValue(entity, 'candidates'), 64)) {
+          const origin = dataValue(candidate, 'source');
+          const jsonPointer = safeText(dataValue(origin, 'jsonPointer'), MAX_LOCATOR_BYTES, { empty: true });
+          if (jsonPointer !== rootPointer && !jsonPointer.startsWith(`${rootPointer}/`)) continue;
+          const locator = projectLocator(dataValue(origin, 'locator'));
+          const rawValue = safeText(dataValue(candidate, 'rawValue'), 4096);
+          if (dataValue(origin, 'kind') !== 'jsonld' || locator.kind !== 'text-range'
+            || byteLength(rawValue) !== locator.endByte - locator.startByte) fail('SOURCE_BINDING_FAILED');
+          const sourceRef = { evidenceId, contentHash: source.contentHash, locator,
+            positionHash: createHash('sha256').update(rawValue, 'utf8').digest('hex'), jsonPointer };
+          const matches = graph.claims.filter((claim) => claim.candidateId === id && stableJson(claim.sourceRef) === stableJson(sourceRef));
+          if (matches.length !== 1 || observedClaims.has(matches[0].claimId)) fail('SOURCE_BINDING_FAILED');
+          const claim = matches[0];
+          observedClaims.add(claim.claimId);
+          const value = dataValue(candidate, 'normalizedValue');
+          if (claim.form === 'direct_string' && (typeof value !== 'string' || normalizedAttributionUrl(value) !== claim.targetUrl)) fail('SOURCE_BINDING_FAILED');
+          if (claim.form === 'unsupported_shape' && jsonPointer === rootPointer) fail('SOURCE_BINDING_FAILED');
+          if (claim.form === 'unsupported_value' && jsonPointer !== rootPointer) fail('SOURCE_BINDING_FAILED');
+          if (claim.form !== 'direct_string') continue;
+          const binding = bindingByClaim.get(claim.claimId);
+          if (claim.status === 'retained') {
+            const fact = factById.get(binding?.factId);
+            if (!fact || dataValue(fact, 'field') !== 'isBasedOn' || dataValue(fact, 'status') !== 'sourced'
+              || dataValue(fact, 'rawValue') !== rawValue || dataValue(fact, 'normalizedValue') !== value) fail('SOURCE_BINDING_FAILED');
+            const supports = safeArray(dataValue(fact, 'supports'), 1);
+            if (supports.length !== 1 || dataValue(supports[0], 'contentHash') !== source.contentHash
+              || dataValue(supports[0], 'duplicateGroupId') !== source.duplicateGroupId || dataValue(supports[0], 'independence') !== 'unknown') fail('SOURCE_BINDING_FAILED');
+          } else if (binding) fail('SOURCE_BINDING_FAILED');
+        }
+      }
+    }
+  }
+  if (observedClaims.size !== graph.claims.length || sourceBoundNodes.size !== nodeById.size) fail('SOURCE_BINDING_FAILED');
+  return { graph, factBindings };
+}
+
+function corroborationContext(graph, candidateId) {
+  const cluster = graph.clusters.find((item) => item.members.includes(candidateId));
+  if (!cluster) fail('SOURCE_BINDING_FAILED');
+  const bases = [...new Set(graph.edges.filter((edge) => cluster.members.includes(edge.from)
+    && cluster.members.includes(edge.to)).map((edge) => edge.basis))].sort();
+  return Object.freeze({
+    schema: graph.schema, policy: graph.policy, clusterId: cluster.clusterId,
+    relation: cluster.members.length > 1 ? 'shared_dependence_cluster' : 'no_retained_dependence_link',
+    independence: 'unknown', origin: 'not_established', sourceAuthority: 'not_evaluated',
+    bases: Object.freeze(bases),
+    unresolvedClaimCount: graph.unresolved.filter((item) => graph.claims.some((claim) =>
+      claim.claimId === item.claimId && claim.candidateId === candidateId)).length,
+  });
 }
 
 function projectEvidenceSummaries(rawSources) {
@@ -372,7 +509,7 @@ function languageFor(evidenceId, descriptors) {
   return language;
 }
 
-function observationsFor(pair, candidates, languageDescriptors, sourceById) {
+function observationsFor(pair, candidates, languageDescriptors, sourceById, corroboration) {
   const selectedProjection = [];
   const groupsByKey = new Map();
   for (const candidate of candidates) {
@@ -439,21 +576,24 @@ function observationsFor(pair, candidates, languageDescriptors, sourceById) {
   const observationGroups = [];
   for (const group of groups) {
     const claims = [...group.claimsByKey.values()].sort((left, right) => stableJson(left).localeCompare(stableJson(right), 'en'));
-    const textBytes = serializedJsonByteLength(claims);
+    const context = corroboration ? corroborationContext(corroboration, group.candidateId) : null;
+    const payload = context ? { claims, corroboration: context } : claims;
+    const textBytes = serializedJsonByteLength(payload);
     if (textBytes > MAX_TEXT_BYTES_PER_FIELD) fail('RESOURCE_LIMIT_EXCEEDED');
     // The maintained parser counts both `text` and `claimText`; this adapter
     // supplies the same bounded group payload in both fields.
     totalTextBytes += textBytes * 2;
     if (totalTextBytes > MAX_TOTAL_TEXT_BYTES) fail('RESOURCE_LIMIT_EXCEEDED');
-    const text = stableJson(claims);
+    const text = stableJson(payload);
     const observationCore = Object.freeze({
       candidateId: group.candidateId,
       evidenceId: group.evidenceId,
       contentHash: group.contentHash,
       languageLabel: group.languageLabel,
-      claims: Object.freeze(claims)
+      claims: Object.freeze(claims),
+      ...(context ? { corroboration: context } : {})
     });
-    const observationRef = `source-identity-${hash(OBSERVATION_HASH_DOMAIN, observationCore)}`;
+    const observationRef = `source-identity-${hash(context ? OBSERVATION_HASH_DOMAIN.replace(':v1\0', ':v2\0') : OBSERVATION_HASH_DOMAIN, observationCore)}`;
     const fieldRef = `occurrence-group-${hash(FIELD_REF_HASH_DOMAIN, {
       candidateId: group.candidateId,
       evidenceId: group.evidenceId,
@@ -675,7 +815,7 @@ function checkSelectedDecision(candidates, transitions, rawDecisions, pair, sour
 function sidecar(core) {
   const preflight = { ...core, digest: '0'.repeat(64), utf8Bytes: MAX_SIDE_CAR_UTF8_BYTES };
   if (serializedJsonByteLength(preflight) > MAX_SIDE_CAR_UTF8_BYTES) fail('RESOURCE_LIMIT_EXCEEDED');
-  const digest = hash(BINDING_HASH_DOMAIN, core);
+  const digest = hash(core.schema === BINDING_SCHEMA_V2 ? BINDING_HASH_DOMAIN.replace(':v1\0', ':v2\0') : BINDING_HASH_DOMAIN, core);
   let utf8Bytes = 0;
   let output;
   for (let attempt = 0; attempt < 4; attempt += 1) {
@@ -731,11 +871,13 @@ export function prepareIdentityQuestionFromComposition(composition, rawOptions) 
     const usedEvidenceIds = new Set(candidates.flatMap((candidate) => FACT_FIELDS
       .flatMap((field) => candidate.facts[field].flatMap((claim) => claim.supports.map((support) => support.evidenceId)))));
     assertSelectedStatusEvidenceSupported(root.sources.value, usedEvidenceIds, sourceById);
+    const provenance = projectCorroboration(root, sourceById);
+    const corroboration = provenance?.graph ?? null;
 
     const selectedLinks = selectedTransitions(root.transitionLinks.value);
     const decision = checkSelectedDecision(candidates, selectedLinks, root.occurrenceDecisions.value, pair, sourceById);
     const unresolvedTransitions = unresolvedForPair(root.unresolvedTransitions.value, pair);
-    const { observations, selectedProjection, observationGroups, totalTextBytes } = observationsFor(pair, candidates, languageDescriptors, sourceById);
+    const { observations, selectedProjection, observationGroups, totalTextBytes } = observationsFor(pair, candidates, languageDescriptors, sourceById, corroboration);
     if (Object.keys(languageDescriptors).some((evidenceId) => !usedEvidenceIds.has(evidenceId))) fail('INVALID_INPUT');
     const observationRefs = observations.map((observation) => observation.observationRef);
     const targetRef = deriveQuestionTargetRef(QUESTION_ID, observationRefs, { candidateRefs: pair });
@@ -760,10 +902,19 @@ export function prepareIdentityQuestionFromComposition(composition, rawOptions) 
     });
     const summaries = sourceSummaryProjection(candidates, sourceById);
     const core = Object.freeze({
-      schema: BINDING_SCHEMA,
+      schema: corroboration ? BINDING_SCHEMA_V2 : BINDING_SCHEMA,
       questionId: QUESTION_ID,
       candidateIds: Object.freeze(pair),
-      sourceCompositionSchema: COMPOSITION_SCHEMA,
+      sourceCompositionSchema: root.schema.value,
+      ...(corroboration ? { corroboration: {
+        schema: corroboration.schema, policy: corroboration.policy,
+        sourceGraphDigest: corroboration.digest, sourceAuthority: 'not_evaluated', independence: 'unknown',
+        factBindings: provenance.factBindings,
+        selectedCandidates: pair.map((candidateId) => ({ candidateId, ...corroborationContext(corroboration, candidateId) })),
+        clusters: corroboration.clusters.filter((cluster) => cluster.members.some((id) => pair.includes(id))),
+        edges: corroboration.edges.filter((edge) => corroboration.clusters.some((cluster) =>
+          cluster.members.some((id) => pair.includes(id)) && cluster.members.includes(edge.from) && cluster.members.includes(edge.to))),
+      } } : {}),
       sourceAuthority: 'not_evaluated',
       sourceEvidence: Object.freeze(summaries),
       selectedCandidates: Object.freeze(selectedProjection),
@@ -786,6 +937,7 @@ export function prepareIdentityQuestionFromComposition(composition, rawOptions) 
     return Object.freeze({ plan, sourceIdentityBinding });
   } catch (error) {
     if (error instanceof SourceIdentityQuestionPreparationError || error instanceof QuestionPreparationError) throw error;
+    if (error instanceof CorroborationError && error.code === 'LIMIT') fail('RESOURCE_LIMIT_EXCEEDED');
     fail('SOURCE_BINDING_FAILED');
   }
 }

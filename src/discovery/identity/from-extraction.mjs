@@ -5,8 +5,9 @@ import { decodedJsonLdScalarValue } from "../../extraction/jsonld.mjs";
 import { normalizeCandidateValue } from "../../extraction/source.mjs";
 import { compareEntityIdentity } from "../entities/identity.mjs";
 import { compareOccurrenceIdentity } from "../occurrences/identity.mjs";
+import { buildSourceCorroboration, corroborationDigest, normalizedAttributionUrl, CorroborationError } from "./corroboration.mjs";
 
-const RESULT_SCHEMA = "ei-source-identity-composition-internal/v1";
+const RESULT_SCHEMA = "ei-source-identity-composition-internal/v2";
 const MAX_SOURCES = 8;
 const MAX_BYTES_PER_SOURCE = 512 * 1024;
 const MAX_TOTAL_BYTES = 2 * 1024 * 1024;
@@ -586,9 +587,41 @@ function draftLinkCandidates(extraction, document) {
   }
 }
 
-function allSourcePositions(drafts, linkDrafts) {
+function draftAttributionCandidates(entities, identityDrafts, document) {
+  const eligible = new Set(identityDrafts.map((draft) => draft.entityKey));
+  const drafts = [];
+  try {
+    for (const { entity, observationKind, entityKey } of entities) {
+      if (!eligible.has(entityKey)) continue;
+      const rootPointer = `${entity.jsonPointer}/isBasedOn`;
+      for (const candidate of entity.candidates) {
+        const pointer = candidate.source?.jsonPointer;
+        if (typeof pointer !== 'string' || !(pointer === rootPointer || pointer.startsWith(`${rootPointer}/`))) continue;
+        const bound = bindCandidateToSource(candidate, document.bytes);
+        const decoded = decodedJsonLdScalarValue(candidate);
+        if (typeof bound.input.normalizedValue === 'string'
+          && (typeof decoded !== 'string' || normalizeCandidateValue(decoded) !== bound.input.normalizedValue)) {
+          bound.rawBytes.fill(0);
+          fail('SOURCE_BINDING_FAILED');
+        }
+        const targetUrl = pointer === rootPointer ? normalizedAttributionUrl(decoded) : null;
+        drafts.push({
+          entityKey, observationKind, sourceField: 'isBasedOn', rawValue: bound.input.rawValue,
+          normalizedValue: bound.input.normalizedValue, identityValue: bound.input.normalizedValue,
+          locator: bound.locator, jsonPointer: pointer, positionDigest: sha256(bound.rawBytes), positionBytes: bound.rawBytes,
+          targetUrl, form: pointer !== rootPointer ? 'unsupported_shape' : targetUrl ? 'direct_string' : 'unsupported_value',
+          retained: false,
+        });
+        if (drafts.length > MAX_POSITIONS) fail('RESOURCE_LIMIT');
+      }
+    }
+    return drafts;
+  } catch (error) { for (const draft of drafts) draft.positionBytes.fill(0); throw error; }
+}
+
+function allSourcePositions(drafts, linkDrafts, attributionDrafts) {
   const positions = new Map();
-  for (const draft of [...drafts, ...linkDrafts]) {
+  for (const draft of [...drafts, ...linkDrafts, ...attributionDrafts]) {
     const key = locatorKey(draft.locator);
     const previous = positions.get(key);
     if (previous && (previous.positionDigest !== draft.positionDigest || !previous.content.equals(draft.positionBytes))) {
@@ -664,6 +697,14 @@ function reconcileStoredSourcePositions(positionValues, source) {
     if (actualPosition && actualPosition.positionDigest !== draft.positionDigest) fail("STORED_SOURCE_MISMATCH");
   }
   if (linksByLocator.size !== source.linkDrafts.length) fail("SOURCE_BINDING_FAILED");
+  for (const draft of source.attributionDrafts) {
+    const actualPosition = actualByLocator.get(locatorKey(draft.locator));
+    if (actualPosition && actualPosition.positionDigest !== draft.positionDigest) fail('STORED_SOURCE_MISMATCH');
+    // Older immutable same-byte records may lack this newly selected position.
+    // Preserve the record and expose unresolved attribution instead of claiming
+    // the new input slice is retrievable from the historical evidence.
+    draft.retained = Boolean(actualPosition);
+  }
   return { expectedPositions: reconciled, linkDrafts, omittedCount };
 }
 
@@ -892,6 +933,7 @@ function projectObservations(sourceRuns) {
         }
       }
     }
+    for (const item of source.attributionFacts) facts.push(item.fact);
   }
   if (entities.length + occurrences.length > MAX_IDENTITY_CANDIDATES) fail("RESOURCE_LIMIT");
   return {
@@ -900,6 +942,47 @@ function projectObservations(sourceRuns) {
     facts,
     transitionDiagnostics,
   };
+}
+
+function projectCorroboration(sourceRuns) {
+  const nodes = [];
+  const claims = [];
+  const factBindings = [];
+  for (const source of sourceRuns) {
+    if (!source.evidence) continue;
+    const eligible = new Set(source.identityFacts.map((item) => item.draft.entityKey));
+    const nodeByEntity = new Map();
+    for (const { entity, observationKind, entityKey } of source.entities) {
+      if (!eligible.has(entityKey)) continue;
+      const node = {
+        candidateId: candidateId(observationKind === 'event' ? 'event' : 'org', source.evidence.evidenceId, entityKey),
+        kind: observationKind, entityKey, entityPointer: entity.jsonPointer,
+        sourceEntityCount: source.entities.filter((item) => item.observationKind === observationKind).length,
+        evidenceId: source.evidence.evidenceId, contentHash: source.fullHash,
+        sourceUrls: [...new Set([source.storedSource.sourceUrl, source.storedSource.canonicalUrl].map(normalizedAttributionUrl).filter(Boolean))],
+        identityKeys: source.identityFacts.filter((item) => item.draft.entityKey === entityKey)
+          .map((item) => corroborationDigest('source-identity-support', item.claim.supports[0])),
+      };
+      nodes.push(node); nodeByEntity.set(entityKey, node);
+    }
+    for (const draft of source.attributionDrafts) {
+      const node = nodeByEntity.get(draft.entityKey);
+      if (!node) fail('SOURCE_BINDING_FAILED');
+      const fact = source.attributionFacts.find((item) => item.draft === draft)?.fact;
+      const sourceRef = { evidenceId: node.evidenceId, contentHash: source.fullHash, locator: draft.locator,
+        positionHash: draft.positionDigest, jsonPointer: draft.jsonPointer };
+      const claim = {
+        candidateId: node.candidateId, form: draft.form,
+        status: draft.form !== 'direct_string' ? 'unsupported' : draft.retained ? 'retained' : 'legacy_position_unavailable',
+        targetUrl: draft.targetUrl,
+        sourceRef,
+        factKey: fact ? corroborationDigest('source-attribution-fact', { sourceRef, targetUrl: draft.targetUrl }) : null,
+      };
+      claims.push(claim);
+      if (fact) factBindings.push({ claimId: corroborationDigest('source-declaration', claim), factId: fact.factId });
+    }
+  }
+  return { graph: buildSourceCorroboration(nodes, claims), factBindings: factBindings.sort((a, b) => a.claimId < b.claimId ? -1 : 1) };
 }
 
 function comparePairs(values, compare) {
@@ -977,11 +1060,14 @@ export async function composeSourceIdentity(inputValue) {
       validateExtractorResult(extraction);
       let candidateResult;
       let links;
+      let attributionDrafts;
       try {
         candidateResult = draftSourceCandidates(extraction, source.document);
         links = draftLinkCandidates(extraction, source.document);
+        attributionDrafts = draftAttributionCandidates(candidateResult.entities, candidateResult.drafts, source.document);
       } catch (error) {
         for (const draft of candidateResult?.drafts ?? []) draft.positionBytes.fill(0);
+        for (const draft of links?.drafts ?? []) draft.positionBytes.fill(0);
         throw error;
       }
       const { entities, drafts } = candidateResult;
@@ -994,8 +1080,10 @@ export async function composeSourceIdentity(inputValue) {
         linkCandidatesOmitted: links.omittedCount,
         evidence: null,
         identityFacts: [],
+        attributionDrafts,
+        attributionFacts: [],
       });
-      totalEvidenceFacts += drafts.length;
+      totalEvidenceFacts += drafts.length + attributionDrafts.filter((draft) => draft.form === 'direct_string').length;
       totalLinkCandidatesOmitted += links.omittedCount;
       if (totalEvidenceFacts > MAX_FACTS) fail("RESOURCE_LIMIT");
     }
@@ -1021,7 +1109,7 @@ export async function composeSourceIdentity(inputValue) {
     for (const source of sourceRuns) {
       if (source.drafts.length === 0 && source.linkDrafts.length === 0) continue;
       guard.check();
-      const positions = allSourcePositions(source.drafts, source.linkDrafts);
+      const positions = allSourcePositions(source.drafts, source.linkDrafts, source.attributionDrafts);
       totalPositions += positions.length;
       if (totalPositions > MAX_POSITIONS) fail("RESOURCE_LIMIT");
       const fullHashMatch = SOURCE_HASH.exec(source.extraction.sourceHash);
@@ -1095,12 +1183,15 @@ export async function composeSourceIdentity(inputValue) {
     if (evidenceSources.some((source) => !source.metadata || !source.storedSource || !source.positionHandles)) {
       fail("SOURCE_BINDING_FAILED");
     }
+    totalEvidenceFacts = evidenceSources.reduce((count, source) => count + source.drafts.length
+      + source.attributionDrafts.filter((draft) => draft.retained && draft.form === 'direct_string').length, 0);
 
     // Writes may commit individually. Only the final aggregate read below can
     // authorize releasing the composed identity result.
     for (const source of evidenceSources) {
       const positionByLocator = new Map(source.expectedPositions.map((position) => [locatorKey(position.locator), position]));
-      for (const draft of source.drafts) {
+      const retainedAttributions = source.attributionDrafts.filter((draft) => draft.retained && draft.form === 'direct_string');
+      for (const draft of [...source.drafts, ...retainedAttributions]) {
         guard.check();
         const key = locatorKey(draft.locator);
         const position = positionByLocator.get(key);
@@ -1119,7 +1210,7 @@ export async function composeSourceIdentity(inputValue) {
         const factHandle = await guard.awaitCall(() => input.methods.appendFact(scope, factInput, input.request, guard.controller.signal));
         guard.check();
         if (!factHandle || typeof factHandle !== "object") fail("SOURCE_BINDING_FAILED");
-        source.identityFacts.push({ draft, factHandle });
+        (retainedAttributions.includes(draft) ? source.attributionFacts : source.identityFacts).push({ draft, factHandle });
       }
     }
 
@@ -1133,7 +1224,7 @@ export async function composeSourceIdentity(inputValue) {
       scope,
       {
         evidence: evidenceSources.map((source) => source.evidenceHandle),
-        facts: evidenceSources.flatMap((source) => source.identityFacts.map((item) => item.factHandle)),
+        facts: evidenceSources.flatMap((source) => [...source.identityFacts, ...source.attributionFacts].map((item) => item.factHandle)),
       },
       input.request,
       guard.controller.signal,
@@ -1164,7 +1255,7 @@ export async function composeSourceIdentity(inputValue) {
     }
     if (finalById.size !== evidenceSources.length) fail("SOURCE_BINDING_FAILED");
 
-    const expectedFacts = evidenceSources.flatMap((source) => source.identityFacts.map((item) => ({ source, item })));
+    const expectedFacts = evidenceSources.flatMap((source) => [...source.identityFacts, ...source.attributionFacts].map((item) => ({ source, item })));
     for (let index = 0; index < finalBatch.facts.length; index += 1) {
       const expected = expectedFacts[index];
       if (!expected) fail("SOURCE_BINDING_FAILED");
@@ -1177,6 +1268,7 @@ export async function composeSourceIdentity(inputValue) {
 
     guard.check();
     const projected = projectObservations(sourceRuns);
+    const { graph: corroboration, factBindings: corroborationFactBindings } = projectCorroboration(sourceRuns);
     const entityDecisions = comparePairs(projected.entities, compareEntityIdentity);
     const occurrenceDecisions = comparePairs(projected.occurrences, compareOccurrenceIdentity);
     const sources = sourceRuns.map((source) => Object.freeze({
@@ -1209,6 +1301,8 @@ export async function composeSourceIdentity(inputValue) {
       linkCandidates,
       linkCandidatesOmitted: totalLinkCandidatesOmitted,
       sourceAuthority: "not_evaluated",
+      corroboration,
+      corroborationFactBindings,
       limits: Object.freeze({
         maxSources: MAX_SOURCES,
         maxBytesPerSource: MAX_BYTES_PER_SOURCE,
@@ -1223,6 +1317,7 @@ export async function composeSourceIdentity(inputValue) {
     guard.check();
     return result;
   } catch (error) {
+    if (error instanceof CorroborationError) fail(error.code === 'LIMIT' ? 'RESOURCE_LIMIT' : 'SOURCE_BINDING_FAILED');
     if (error instanceof SourceIdentityCompositionError) throw error;
     if (error instanceof EvidenceStoreError) throw mapEvidenceError(error);
     fail("COMPOSITION_FAILED");
@@ -1231,6 +1326,7 @@ export async function composeSourceIdentity(inputValue) {
     for (const source of sourceRuns) {
       for (const draft of source.drafts) draft.positionBytes.fill(0);
       for (const draft of source.linkDrafts ?? []) draft.positionBytes.fill(0);
+      for (const draft of source.attributionDrafts ?? []) draft.positionBytes.fill(0);
     }
     for (const source of input.sources) {
       source.document.bytes.fill(0);

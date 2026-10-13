@@ -60,6 +60,26 @@ export interface FrontierLimits {
   readonly maxSuggestionsPerCompletion?: number;
 }
 
+/** Trusted local policy, bound immutably to the tenant database on first use. */
+export interface FrontierTenantLimits {
+  /** Defaults to 4; includes leases retained by any uncertain transport exposure. */
+  readonly maxInFlightLeases?: number;
+  /** Defaults to 100 MiB; outstanding reservations only, not cumulative spend. */
+  readonly maxReservedDecodedBytes?: number;
+}
+
+export interface FrontierTenantProgress {
+  readonly limits: Required<FrontierTenantLimits>;
+  readonly inFlightLeases: number;
+  readonly reservedBytes: number;
+  readonly availableInFlightLeases: number;
+  readonly availableReservedBytes: number;
+  readonly unsettledTransportHops: number;
+  /** Admissions without transport rows, excluding v1 full-run reservations. */
+  readonly untrackedAttempts: number;
+  readonly legacyUnknownRuns: number;
+}
+
 export interface FrontierRunInput {
   readonly runId: string;
   readonly seeds: readonly FrontierSeedInput[];
@@ -220,10 +240,14 @@ export interface DiscoveryFrontierOptions<Request = unknown> {
   /** Trusted clock injection for deterministic tests; persisted time never moves backward. */
   readonly now?: () => number;
   readonly lockTimeoutMs?: number;
+  /** Every instance for a tenant database must supply the same normalized policy. */
+  readonly tenantLimits?: FrontierTenantLimits;
 }
 
 export interface DiscoveryFrontierStore<Request = unknown> {
   scopeForAuthenticatedRequest(request: Request): Promise<FrontierTenantScope>;
+  /** Saturates available capacity at zero without erasing migrated over-limit exposure. */
+  getTenantProgress(scope: FrontierTenantScope, signal?: AbortSignal): Promise<FrontierTenantProgress>;
   createRun(scope: FrontierTenantScope, input: FrontierRunInput, signal?: AbortSignal): Promise<FrontierSnapshot>;
   claimNext(scope: FrontierTenantScope, runId: string, input: { readonly workerId: string; readonly claimKey: string }, signal?: AbortSignal): Promise<FrontierClaimResult>;
   /** Read the immutable claim-time candidate prefix and its durable claim/completion identity for private receipt replay. */

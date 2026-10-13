@@ -203,6 +203,9 @@ function frameResult(job, parts, size) {
     const result = normalizeRgba(pixels, header.width, header.height, job.options.maxOutputBytes);
     if (result.kind !== "normalized") return rejected(result.code, job.sourceSha256);
     const normalized = result.normalized;
+    // Retain only owned samples, not the framed worker buffer. The original
+    // deadline is checked again by complete() after this bounded copy.
+    const rgba = Buffer.from(pixels);
     return Object.freeze({
       kind: "decoded", completeness: "incomplete-pixels-only", requiresInspection: true,
       sourceSha256: job.sourceSha256, decoder: RASTER_DECODER,
@@ -212,6 +215,7 @@ function frameResult(job, parts, size) {
       normalizedSha256: result.normalizedSha256, normalizedByteLength: normalized.length,
       networkApiAttemptCount: 0,
       copyNormalizedBytes() { return new Uint8Array(normalized); },
+      copyRgbaBytes() { return new Uint8Array(rgba); },
     });
   } catch { return bad(); }
 }

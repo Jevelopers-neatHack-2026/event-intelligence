@@ -3,7 +3,7 @@ import {
   type SourceIdentityQuestionPreparationOptions,
   type SourceIdentityQuestionPreparationResult
 } from '../../../src/decisions/questions/index.mjs';
-import type { SourceIdentityCompositionResult } from '../../../src/discovery/identity/from-extraction.mjs';
+import type { SourceIdentityCompositionResult, LegacySourceIdentityCompositionResult } from '../../../src/discovery/identity/from-extraction.mjs';
 
 declare const composition: SourceIdentityCompositionResult;
 const options: SourceIdentityQuestionPreparationOptions = {
@@ -31,3 +31,18 @@ const hashes: string[] = [
 ];
 
 void [readiness, execution, promotion, candidateOnly, decisionPort, questionId, localReviewOnly, digest, observationGroupClaim, observationTextLimit, hashes];
+
+if (prepared.sourceIdentityBinding.schema === 'ei-source-identity-question-binding-internal/v2') {
+  const sourceSchema: 'ei-source-identity-composition-internal/v2' = prepared.sourceIdentityBinding.sourceCompositionSchema;
+  const graphDigest: string = prepared.sourceIdentityBinding.corroboration.sourceGraphDigest;
+  const independence: 'unknown' = prepared.sourceIdentityBinding.corroboration.independence;
+  void [sourceSchema, graphDigest, independence];
+} else {
+  const legacySchema: 'ei-source-identity-composition-internal/v1' = prepared.sourceIdentityBinding.sourceCompositionSchema;
+  // @ts-expect-error Legacy output does not invent a retained attribution graph.
+  prepared.sourceIdentityBinding.corroboration;
+  void legacySchema;
+}
+declare const historical: LegacySourceIdentityCompositionResult;
+const historicalPrepared: SourceIdentityQuestionPreparationResult = prepareIdentityQuestionFromComposition(historical, options);
+void historicalPrepared;

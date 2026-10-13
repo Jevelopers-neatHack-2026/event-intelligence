@@ -16,19 +16,24 @@ async function privatePixelConsumer(): Promise<string | StaticPngErrorCode> {
     void possibleHash;
     // @ts-expect-error A rejected decode never carries derivative bytes.
     result.copyNormalizedBytes();
+    // @ts-expect-error A rejected decode never carries raw pixel bytes.
+    result.copyRgbaBytes();
     return code;
   }
   const decoded: StaticPngDecoded = result;
   const incomplete: "incomplete-pixels-only" = decoded.completeness;
   const reviewStillRequired: true = decoded.requiresInspection;
   const privateCopy: Uint8Array = decoded.copyNormalizedBytes();
+  const rawCopy: Uint8Array = decoded.copyRgbaBytes();
   const rgba: 6 = decoded.outputColorType;
   const measuredGuardedApis: 0 = decoded.networkApiAttemptCount;
-  void [incomplete, reviewStillRequired, privateCopy, rgba, measuredGuardedApis];
+  void [incomplete, reviewStillRequired, privateCopy, rawCopy, rgba, measuredGuardedApis];
   // @ts-expect-error Read-only dimensions cannot be revised into authoritative facts.
   decoded.width = 1;
   // @ts-expect-error The retained byte-copy operation is also read-only.
   decoded.copyNormalizedBytes = () => privateBytes;
+  // @ts-expect-error Raw copy ownership cannot be replaced through the result.
+  decoded.copyRgbaBytes = () => privateBytes;
   // @ts-expect-error There is no inspection/fact result in this component.
   decoded.facts;
   // @ts-expect-error A normalized image does not carry an asset permission decision.
