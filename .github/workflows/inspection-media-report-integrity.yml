@@ -76,6 +76,60 @@ jobs:
           tests/extraction/jpeg-webp/types-consumer.mts
           tests/extraction/scanned-pdf/types-consumer.mts
       - run: npm run typecheck
+      - name: Mirror bounded synthetic media evidence for API review
+        if: always()
+        shell: bash
+        run: |
+          python -I -S -B - <<'PY'
+          import base64, hashlib, json, os, stat
+          from pathlib import Path
+
+          temporary = Path(os.environ["RUNNER_TEMP"]).resolve(strict=True)
+          capture = Path(os.environ["EI_INSPECTION_MEDIA_REPORT_CAPTURE"])
+          if (not capture.is_absolute() or capture.is_symlink()
+                  or capture.resolve(strict=True) != capture or capture.parent != temporary
+                  or temporary == Path.cwd().resolve() or Path.cwd().resolve() in temporary.parents):
+              raise ValueError("capture must be an ordinary runner-temp child outside source")
+          names = [
+              "wrapper.stdout", "wrapper.stderr", "source-before.json", "source-after.json",
+              "static-png.stdout", "static-png.stderr", "static-png.command.json",
+              "static-jpeg-webp.stdout", "static-jpeg-webp.stderr", "static-jpeg-webp.command.json",
+              "scanned-pdf.stdout", "scanned-pdf.stderr", "scanned-pdf.command.json",
+              "scanned-pdf.stderr-recovery.json", "scanned-pdf.child-stderr",
+              "actual-fixture-origins.json", "composed-media-report.json",
+          ]
+          if sorted(path.name for path in capture.iterdir()) != sorted(names):
+              raise ValueError("missing or unexpected media capture member")
+          payloads, total = [], 0
+          for name in names:
+              descriptor = os.open(capture / name, os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC)
+              with os.fdopen(descriptor, "rb") as stream:
+                  before = os.fstat(stream.fileno())
+                  if not stat.S_ISREG(before.st_mode) or before.st_size > 4 * 1024 * 1024:
+                      raise ValueError("capture member is not an admitted bounded regular file")
+                  raw = stream.read(4 * 1024 * 1024 + 1)
+                  after = os.fstat(stream.fileno())
+              identity = lambda item: (item.st_dev, item.st_ino, item.st_size, item.st_mtime_ns)
+              if len(raw) != before.st_size or identity(before) != identity(after):
+                  raise ValueError("capture member changed during read")
+              total += len(raw)
+              if total > 16 * 1024 * 1024:
+                  raise ValueError("aggregate capture exceeds bound")
+              payloads.append((name, raw))
+          manifest = []
+          for name, raw in payloads:
+              manifest.append({"file": name, "bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()})
+              for offset in range(0, max(1, len(raw)), 16384):
+                  record = {"file": name, "encoding": "base64", "offset": offset,
+                            "total_bytes": len(raw),
+                            "data": base64.b64encode(raw[offset:offset + 16384]).decode("ascii")}
+                  print("MEDIA_REPORT_CAPTURE_BYTES " + json.dumps(record, sort_keys=True), flush=True)
+          print("MEDIA_REPORT_CAPTURE_MANIFEST_JSON=" + json.dumps({
+              "schemaVersion": "ei-inspection-media-capture-mirror/1",
+              "mode": "local-synthetic-native-evidence",
+              "members": manifest, "totalBytes": total, "acceptanceAuthority": "none",
+          }, sort_keys=True), flush=True)
+          PY
       - name: Preserve local source, output and failure evidence without native libraries
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9

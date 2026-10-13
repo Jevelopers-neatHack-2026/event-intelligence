@@ -193,7 +193,7 @@ function normalizedPng(payload, width, height) {
   for (const type of ["IHDR", "IDAT", "IEND"]) {
     check(at + 12 <= payload.length, "DERIVATIVE_FORMAT_MISMATCH");
     const size = payload.readUInt32BE(at), end = at + size + 8;
-    check(end + 4 <= payload.length && payload.toString("ascii", at + 4, at + 8) === type, "DERIVATIVE_FORMAT_MISMATCH");
+    check(end + 4 <= payload.length && payload.subarray(at + 4, at + 8).equals(Buffer.from(type, "ascii")), "DERIVATIVE_FORMAT_MISMATCH");
     check(crc32(payload.subarray(at + 4, end)) === payload.readUInt32BE(end), "DERIVATIVE_FORMAT_MISMATCH");
     if (type === "IHDR") check(size === 13 && payload.readUInt32BE(at + 8) === width && payload.readUInt32BE(at + 12) === height && payload.toString("hex", at + 16, end) === "0806000000", "DERIVATIVE_FORMAT_MISMATCH");
     if (type === "IDAT") check(size > 0, "DERIVATIVE_FORMAT_MISMATCH");
