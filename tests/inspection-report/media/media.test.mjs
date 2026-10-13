@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test, { before } from "node:test";
+import { crc32 } from "node:zlib";
 import { composeInspectionMediaReport, validateInspectionMediaReport, INSPECTION_MEDIA_REPORT_LIMITS } from "../../../src/extraction/inspection-report/media.mjs";
 import { InspectionReportError } from "../../../src/extraction/inspection-report/index.mjs";
 import { actualMediaFixture, projectedObservation, recoverScannedChildStderr, changeNativeSummary, changeSnapshot, refreshPrerequisite, copy, hash, jsonBytes } from "./support.mjs";
@@ -109,10 +110,41 @@ test("hash-consistent transparent PDF bytes still violate the opaque admitted pr
   const h = hash(o.derivatives[0].bytes); o.derivatives[0].expectedSha256 = h; o.projection.result.pages[0].sha256 = h;
   refused(f, "INVALID_ALPHA");
 });
-test("matching derivative digest cannot turn arbitrary bytes into normalized PNG", () => {
+test("matching derivative digest cannot turn arbitrary bytes into normalized PNG", (t) => {
   const f = input(), o = png(f), d = o.derivatives[0]; d.bytes = new Uint8Array(d.bytes.length);
   d.expectedSha256 = hash(d.bytes); o.projection.result.normalizedSha256 = d.expectedSha256;
   refused(f, "DERIVATIVE_FORMAT_MISMATCH");
+
+  // Mutate actual native fixture output; exercise only the pure report framing
+  // check here, without claiming a fresh decoder invocation for each mutation.
+  const valid = composeInspectionMediaReport(input());
+  let refusedTypes = 0;
+  for (const id of ["png-rgba", "jpeg-rgb-baseline", "webp-rgba-lossless"]) {
+    const original = input().observations.find((item) => item.id === id).derivatives[0].bytes;
+    let at = 8;
+    for (const type of ["IHDR", "IDAT", "IEND"]) {
+      const originalBytes = Buffer.from(original);
+      const end = at + originalBytes.readUInt32BE(at) + 8;
+      assert.deepEqual(originalBytes.subarray(at + 4, at + 8), Buffer.from(type, "ascii"));
+      for (let byte = 0; byte < 4; byte += 1) {
+        const changed = input(), observation = changed.observations.find((item) => item.id === id);
+        const derivative = observation.derivatives[0], payload = Buffer.from(derivative.bytes);
+        payload[at + 4 + byte] |= 0x80;
+        payload.writeUInt32BE(crc32(payload.subarray(at + 4, end)), end);
+        derivative.bytes = payload;
+        derivative.expectedSha256 = hash(payload);
+        observation.projection.result.normalizedSha256 = derivative.expectedSha256;
+        t.diagnostic(`normalized PNG high-bit control: ${id} ${type} byte ${byte}; matching CRC and SHA256 ${derivative.expectedSha256}`);
+        refused(changed, "DERIVATIVE_FORMAT_MISMATCH");
+        refusedTypes += 1;
+      }
+      at = end + 4;
+    }
+    assert.equal(at, original.length);
+  }
+  assert.equal(refusedTypes, 36);
+  assert.equal(composeInspectionMediaReport(input()).sha256, valid.sha256);
+  t.diagnostic("normalized PNG high-bit controls: 36 refused; unchanged valid composition recovered");
 });
 test("a component-reported RGBA digest is retained explicitly unverified without pretending to decode PNG", () => {
   const f = input(); png(f).derivatives.pop(); png(f).projection.result.rgbaSha256 = "1".repeat(64);
