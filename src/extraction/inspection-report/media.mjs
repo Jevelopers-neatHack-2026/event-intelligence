@@ -81,9 +81,14 @@ function runtimeReceipts(input) {
       files = array(manifest.files, 512);
     } else {
       const d = record(manifest.descriptor);
+      exactKeys(d, ["schema", "python", "pythonVersion", "platform", "machine", "wheelSha256", "pdfiumVersion", "startup", "files"]);
       check(d.schema === 1 && d.pythonVersion === profile.pythonVersion && d.platform === "Linux" && d.machine === "x86_64" && d.wheelSha256 === PDF_WHEEL && d.pdfiumVersion === profile.pdfiumVersion, "RUNTIME_MISMATCH");
       check(same(d.startup, { isolated: 1, noSite: 1, dontWriteBytecode: 1 }) && typeof d.python === "string" && d.python.startsWith("/"), "RUNTIME_MISMATCH");
-      check(isHash(manifest.closureSha256) && hash(canonical(d).slice(0, -1)) === manifest.closureSha256, "RUNTIME_MISMATCH");
+      // The pinned Python installer hashes sorted compact JSON with its default
+      // ensure_ascii encoding. The declared keys and numbers are ASCII/integer;
+      // non-ASCII path values must retain that exact JSON byte domain as well.
+      const descriptorBytes = canonical(d).slice(0, -1).replace(/[\u007f-\uffff]/g, (c) => "\\u" + c.charCodeAt(0).toString(16).padStart(4, "0"));
+      check(isHash(manifest.closureSha256) && hash(descriptorBytes) === manifest.closureSha256, "RUNTIME_MISMATCH");
       closure = manifest.closureSha256; files = array(d.files, 512);
     }
     check(files.length > 0, "RUNTIME_MISMATCH"); const paths = new Set();
@@ -91,7 +96,10 @@ function runtimeReceipts(input) {
       record(f); check(typeof f.path === "string" && f.path.length <= 2048 && isHash(f.sha256) && integer(f.bytes, 256 * 1024 * 1024), "RUNTIME_MISMATCH");
       check(!paths.has(f.path), "RUNTIME_MISMATCH"); paths.add(f.path);
       if (item.component === "static-jpeg-webp") check(safePath(f.path), "RUNTIME_MISMATCH");
-      else check(f.path.startsWith("/") && !/[\u0000-\u001f\u007f]/.test(f.path) && integer(f.mode, 0o777), "RUNTIME_MISMATCH");
+      else {
+        exactKeys(f, ["path", "mode", "bytes", "sha256"]);
+        check(f.path.startsWith("/") && !/[\u0000-\u001f\u007f]/.test(f.path) && integer(f.mode, 0o777), "RUNTIME_MISMATCH");
+      }
     }
     result.set(item.component, { component: item.component, manifest: artifact.identity, files: files.length, closureSha256: closure,
       authority: "selected receipt bytes; runtime file installation and host authority are not reattested by the report" });
@@ -296,7 +304,7 @@ function compose(input) {
   const base = prerequisite.report, pins = base.pins;
   const source = sourceBinding(input.source, pins), runtimes = runtimeReceipts(input.runtimeReceipts);
   const executions = array(input.executions, L.maxExecutions).map((e) => execution(e, pins, base.requiredMode, source)).sort(byId);
-  check(new Set(executions.map((e) => e.id)).size === executions.length, "DUPLICATE_ID");
+  check(new Set([...base.executions, ...executions].map((e) => e.id)).size === base.executions.length + executions.length, "DUPLICATE_ID");
   check(new Set(executions.map((e) => e.component)).size === executions.length, "DUPLICATE_COMPONENT");
   const executionMap = new Map(executions.map((e) => [e.id, e]));
   const budget = { source: base.observations.reduce((total, o) => total + o.source.bytes, 0), derivative: 0 };

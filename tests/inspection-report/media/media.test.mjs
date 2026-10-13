@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test, { before } from "node:test";
 import { composeInspectionMediaReport, validateInspectionMediaReport, INSPECTION_MEDIA_REPORT_LIMITS } from "../../../src/extraction/inspection-report/media.mjs";
 import { InspectionReportError } from "../../../src/extraction/inspection-report/index.mjs";
-import { actualMediaFixture, projectedObservation, changeNativeSummary, changeSnapshot, refreshPrerequisite, copy, hash, jsonBytes } from "./support.mjs";
+import { actualMediaFixture, projectedObservation, recoverScannedChildStderr, changeNativeSummary, changeSnapshot, refreshPrerequisite, copy, hash, jsonBytes } from "./support.mjs";
 
 let fixture;
 before(async () => { fixture = await actualMediaFixture(); });
@@ -93,6 +93,7 @@ for (const [name, mutate, code] of [
   ["duplicate observation ID", (f) => { f.observations[1].id = f.observations[0].id; }, "DUPLICATE_ID"],
   ["duplicate source/format", (f) => { const o = copy(png(f)); o.id = "another-copy"; f.observations.push(o); }, "DUPLICATE_OBSERVATION"],
   ["duplicate execution", (f) => { f.executions.push(copy(f.executions[0])); }, "RESOURCE_LIMIT"],
+  ["execution ID borrowed from the prerequisite", (f) => { f.executions[0].id = f.prerequisite.input.executions[0].id; }, "DUPLICATE_ID"],
   ["duplicate runtime receipt", (f) => { f.runtimeReceipts[1] = copy(f.runtimeReceipts[0]); }, "DUPLICATE_COMPONENT"],
   ["runtime digest", (f) => { f.runtimeReceipts[0].expectedSha256 = "0".repeat(64); }, "ARTIFACT_HASH_MISMATCH"],
   ["source receipt digest", (f) => { f.source.expectedBeforeSha256 = "0".repeat(64); }, "ARTIFACT_HASH_MISMATCH"],
@@ -141,6 +142,20 @@ test("unused runtime metadata is hashed but never copied into the report", () =>
   value.privateText = "PRIVATE_CANARY"; r.bytes = jsonBytes(value); r.expectedSha256 = hash(r.bytes);
   for (const o of f.observations.filter((o) => o.component === "static-jpeg-webp")) o.projection.result.runtimeManifestSha256 = r.expectedSha256;
   assert.equal(Buffer.from(composeInspectionMediaReport(f).copyBytes()).includes(Buffer.from("PRIVATE_CANARY")), false);
+});
+test("the selected PDF runtime closure retains Python ASCII JSON encoding for non-ASCII paths", () => {
+  const f = input(), r = f.runtimeReceipts.find((r) => r.component === "scanned-pdf");
+  const value = JSON.parse(Buffer.from(r.bytes).toString());
+  // Synthetic receipt encoding control only: this does not run or attest a
+  // renamed runtime. The installed actual receipt is preserved in the fixture.
+  value.descriptor.python = "/synthetic/\u00e9/\ud83d\ude00/python";
+  const sorted = (v) => Array.isArray(v) ? v.map(sorted) : v && typeof v === "object" ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, sorted(v[k])])) : v;
+  const ascii = JSON.stringify(sorted(value.descriptor)).replace(/[\u007f-\uffff]/g, (c) => "\\u" + c.charCodeAt(0).toString(16).padStart(4, "0"));
+  value.closureSha256 = hash(ascii); r.bytes = jsonBytes(value); r.expectedSha256 = hash(r.bytes);
+  const observed = composeInspectionMediaReport(f).report.runtimeReceipts.find((r) => r.component === "scanned-pdf");
+  assert.equal(observed.closureSha256, value.closureSha256);
+  value.closureSha256 = hash(JSON.stringify(sorted(value.descriptor))); r.bytes = jsonBytes(value); r.expectedSha256 = hash(r.bytes);
+  refused(f, "RUNTIME_MISMATCH");
 });
 
 for (const [name, mutate] of [
@@ -193,11 +208,24 @@ for (const [status, directive] of [["fail", "not ok"], ["skipped", "ok"]]) test(
 });
 
 test("PDF child TAP and child stderr retain their own digest domains", () => {
+  assert.notEqual(fixture.input.executions.find((e) => e.component === "scanned-pdf").childStderrBytes, null, "actual native wrapper recovery must be available in this required control");
   const f = input(); changeNativeSummary(f, "scanned-pdf", (s) => { s.stderrSha256 = "0".repeat(64); }); refused(f, "SUMMARY_HASH_MISMATCH");
   const g = input(), e = g.executions.find((e) => e.component === "scanned-pdf");
   e.stderrBytes = Buffer.from("wrapper-only diagnostic\n");
   const r = composeInspectionMediaReport(g).report.executions.find((e) => e.component === "scanned-pdf");
   assert.notEqual(r.stderr.sha256, r.childStderr.sha256);
+});
+test("bounded child-stderr recovery retains the wrapper and refuses ambiguous or unavailable byte framing", () => {
+  const actual = fixture.input.executions.find((e) => e.component === "scanned-pdf");
+  const before = Buffer.from(actual.stderrBytes), child = Buffer.from(actual.childStderrBytes);
+  const recovered = recoverScannedChildStderr(before, hash(child));
+  assert.deepEqual(recovered.bytes, child); assert.deepEqual(before, Buffer.from(actual.stderrBytes));
+  assert.equal(recovered.evidence.childByteLength, child.length);
+  assert.equal(recoverScannedChildStderr(Buffer.from("same\nsame\n"), hash("same\n")).bytes, null);
+  assert.equal(recoverScannedChildStderr(Buffer.from("different\n"), hash("child\n")).bytes, null);
+  assert.equal(recoverScannedChildStderr(Buffer.from("x\n".repeat(256)), hash("x\n")).bytes, null);
+  assert.equal(recoverScannedChildStderr(Buffer.alloc(256 * 1024 + 1), hash("")).bytes, null);
+  assert.deepEqual(recoverScannedChildStderr(Buffer.alloc(0), hash("")).bytes, Buffer.alloc(0));
 });
 
 for (const location of ["input", "observations", "observation", "projection", "pages", "page", "source", "runtime", "executions", "derivatives", "derivative"]) test("never executes proxy traps at " + location, () => {
@@ -233,6 +261,23 @@ test("native byte slots enforce bounds without shadow getters or subclass method
   const c = input(); png(c).derivatives[0].bytes = new Uint8Array(new SharedArrayBuffer(4)); refused(c);
   const d = input(), detached = new Uint8Array(4); structuredClone(detached, { transfer: [detached.buffer] }); png(d).derivatives[0].bytes = detached; refused(d);
   assert.equal(calls, 0);
+});
+for (const [name, mutate] of [
+  ["source bytes", (f) => { png(f).sourceBytes = new Uint8Array(INSPECTION_MEDIA_REPORT_LIMITS.maxSourceBytes + 1); }],
+  ["derivative bytes", (f) => { png(f).derivatives[0].bytes = new Uint8Array(INSPECTION_MEDIA_REPORT_LIMITS.maxDerivativeBytes + 1); }],
+  ["execution stdout", (f) => { f.executions[0].stdoutBytes = new Uint8Array(INSPECTION_MEDIA_REPORT_LIMITS.maxSummaryBytes + 1); }],
+  ["execution stderr", (f) => { f.executions[0].stderrBytes = new Uint8Array(INSPECTION_MEDIA_REPORT_LIMITS.maxStderrBytes + 1); }],
+  ["source receipt", (f) => { f.source.beforeBytes = new Uint8Array(INSPECTION_MEDIA_REPORT_LIMITS.maxSourceReceiptBytes + 1); }],
+  ["runtime receipt", (f) => { f.runtimeReceipts[0].bytes = new Uint8Array(INSPECTION_MEDIA_REPORT_LIMITS.maxRuntimeReceiptBytes + 1); }],
+  ["observation inventory", (f) => { f.observations = Array.from({ length: INSPECTION_MEDIA_REPORT_LIMITS.maxObservations + 1 }, () => png(f)); }],
+  ["page inventory", (f) => { pdf(f).projection.result.pages = Array.from({ length: 5 }, () => copy(pdf(f).projection.result.pages[0])); }],
+]) test("rejects an actual over-limit " + name + " input before partial output", () => { const f = input(); mutate(f); refused(f, "RESOURCE_LIMIT"); });
+test("the aggregate source cap includes original text/PDF and all media representations", () => {
+  const f = input(), source = new Uint8Array(16 * 1024 * 1024), expected = hash(source), decoder = png(f).projection.result.decoder;
+  f.observations = Array.from({ length: 4 }, (_, index) => ({ id: "bounded-cancel-" + index, component: "static-png", format: "png", pins: f.prerequisite.input.expectedPins,
+    executionId: "static-png", sourceBytes: source, expectedSourceSha256: expected,
+    projection: { schemaVersion: "ei-native-media-data-projection/1", component: "static-png", result: { kind: "rejected", code: "CANCELLED", sourceSha256: null, decoder } }, derivatives: [] }));
+  refused(f, "RESOURCE_LIMIT");
 });
 test("valid Buffer and Uint8Array subviews bind only their visible bytes", () => {
   const f = input(), a = composeInspectionMediaReport(f);

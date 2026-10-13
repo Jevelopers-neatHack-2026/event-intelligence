@@ -53,6 +53,31 @@ function command(component, script) {
   return child;
 }
 
+/** The existing PDF verifier emits the captured child stderr in one write.
+ * Its own startup warnings can precede/follow it. Keep the complete wrapper
+ * stream and recover a child stream only from a unique newline-framed prefix
+ * or suffix whose exact bytes match the native returned digest. This is a
+ * bounded byte recovery, not an inferred subtraction of warning messages. */
+export function recoverScannedChildStderr(wrapper, expectedSha256) {
+  const missing = (reason) => ({ bytes: null, evidence: { method: "unavailable", reason, expectedSha256 } });
+  if (!Buffer.isBuffer(wrapper) || wrapper.length > 256 * 1024 || !/^[a-f0-9]{64}$/.test(expectedSha256)) return missing("invalid bounded capture");
+  const boundaries = [0];
+  for (let at = 0; at < wrapper.length; at++) if (wrapper[at] === 10) boundaries.push(at + 1);
+  if (boundaries.at(-1) !== wrapper.length) boundaries.push(wrapper.length);
+  if (boundaries.length > 256) return missing("newline framing bound exceeded");
+  const intervals = new Map();
+  for (const at of boundaries) {
+    intervals.set("0:" + at, [0, at]);
+    intervals.set(at + ":" + wrapper.length, [at, wrapper.length]);
+  }
+  const matches = [...intervals.values()].filter(([first, last]) => hash(wrapper.subarray(first, last)) === expectedSha256);
+  if (matches.length !== 1) return missing(matches.length ? "ambiguous matching intervals" : "no exact matching interval");
+  const [first, last] = matches[0], owned = Buffer.from(wrapper.subarray(first, last));
+  return { bytes: owned, evidence: { method: "unique newline-framed prefix/suffix from actual wrapper bytes", expectedSha256,
+    childByteLength: owned.length, wrapperByteLength: wrapper.length, fromByte: first, toByte: last, examinedIntervals: intervals.size,
+    authority: "native summary digest selects copied bytes; no independent process attestation or missing length field is invented" } };
+}
+
 /** This helper consumes actual trusted native reader output. The production
  * composer never calls the removed methods or reads the filesystem. */
 export function projectedObservation(component, format, id, native, sourceBytes, pins) {
@@ -119,10 +144,16 @@ export async function actualMediaFixture() {
   const executions = [];
   for (const component of ["static-png", "static-jpeg-webp", "scanned-pdf"]) {
     const child = command(component, "tools/verify-" + component + ".mjs");
-    // Empty wrapper stderr proves that no distinct child stderr bytes were lost.
-    // Otherwise retain unknown instead of assigning the whole wrapper stream.
+    let childStderrBytes = null;
+    if (component === "scanned-pdf") {
+      const summary = JSON.parse(child.stdout.toString().trim().split("\n").at(-1));
+      const recovered = recoverScannedChildStderr(child.stderr, summary.stderrSha256);
+      childStderrBytes = recovered.bytes;
+      capture(component + ".stderr-recovery.json", jsonBytes(recovered.evidence));
+      if (childStderrBytes !== null) capture(component + ".child-stderr", childStderrBytes);
+    }
     executions.push({ id: component, component, pins, mode: "mock", origin: "local-synthetic", stdoutBytes: child.stdout,
-      stderrBytes: child.stderr, childStderrBytes: child.stderr.length === 0 ? Buffer.alloc(0) : null, exitCode: child.status, signal: child.signal });
+      stderrBytes: child.stderr, childStderrBytes, exitCode: child.status, signal: child.signal });
   }
   const runtimeReceipts = [
     { component: "static-jpeg-webp", bytes: readFileSync(path.join(runtimeDirectory, "runtime.json")) },

@@ -6,11 +6,11 @@ import type { ScannedPdfDecoded, ScannedPdfRejected, RasterPageObservation } fro
 export type InspectionMediaComponent = "static-png" | "static-jpeg-webp" | "scanned-pdf";
 /** Explicit data projection: callers copy derivatives outside the pure composer.
  * An absent native source hash becomes null, never a fabricated hash. */
-type Projected<T> = Omit<T, "sourceSha256" | "copyNormalizedBytes"> & { readonly sourceSha256: string | null };
+type Projected<T> = Omit<T, "sourceSha256" | "copyNormalizedBytes"> & { readonly sourceSha256: string | null; readonly copyNormalizedBytes?: never };
 export type PngDataProjection = Readonly<{ schemaVersion: "ei-native-media-data-projection/1"; component: "static-png"; result: Projected<StaticPngDecoded> | Projected<StaticPngRejected> }>;
 export type JpegWebpDataProjection = Readonly<{ schemaVersion: "ei-native-media-data-projection/1"; component: "static-jpeg-webp"; result: Projected<StaticJpegWebpDecoded> | Projected<StaticJpegWebpRejected> }>;
 export type ScannedPdfDataProjection = Readonly<{ schemaVersion: "ei-native-media-data-projection/1"; component: "scanned-pdf"; result:
-  (Omit<ScannedPdfDecoded, "pages"> & { readonly pages: readonly Omit<RasterPageObservation, "copyRgbaBytes">[] }) | Projected<ScannedPdfRejected> }>;
+  (Omit<ScannedPdfDecoded, "pages"> & { readonly pages: readonly (Omit<RasterPageObservation, "copyRgbaBytes"> & { readonly copyRgbaBytes?: never })[] }) | Projected<ScannedPdfRejected> }>;
 export type MediaDataProjection = PngDataProjection | JpegWebpDataProjection | ScannedPdfDataProjection;
 
 export interface InspectionSourceSnapshot {
