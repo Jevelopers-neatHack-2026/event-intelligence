@@ -103,6 +103,7 @@ const result = await reader.read(alreadyAcquiredBytes, {
 });
 if (result.kind === "decoded") {
   const privatePngCopy = result.copyNormalizedBytes();
+  const privateRgbaCopy = result.copyRgbaBytes();
   // Inspect the pixels through the separately authorized inspection route.
   // Preserve sourceSha256, rgbaSha256 and normalizedSha256 as distinct identities.
 }
@@ -110,12 +111,23 @@ if (result.kind === "decoded") {
 
 The input is a non-shared `Uint8Array` or `Buffer`, copied synchronously before
 the promise returns. Caller mutation cannot change queued bytes. The immutable
-result does not expose its retained PNG; each `copyNormalizedBytes()` call makes
-a new copy. The reader accepts no URL, provider callback or input-selected path.
+result does not expose either retained buffer; each `copyNormalizedBytes()` or
+`copyRgbaBytes()` call makes a new independent copy. The raw representation is
+contiguous row-major RGBA8, stride `width * 4`, with no padding or filter bytes.
+The reader accepts no URL, provider callback or input-selected path.
 Configuration and option accessors, proxies, coercions, malformed cancellation
 objects, shared buffers and limits above the ceilings are refused without
 invoking caller getters. A malformed trusted factory configuration throws
 `TypeError`; read refusals are discriminated values with no pixel derivative.
+
+The worker already sends raw RGBA. Before either representation is published,
+the parent checks the exact admitted dimensions, raw length and actual raw SHA,
+then normalizes those samples and retains an owned raw copy. The raw accessor
+does not change the worker protocol, codec/dependency pin, source limits,
+normalized encoder or either existing hash. `rgbaSha256` hashes the raw copy;
+`normalizedSha256` hashes the encoded PNG. These hash domains are distinct.
+Alpha is preserved with no implicit flattening or background. A future consumer
+that accepts only opaque rasters must refuse nonopaque samples explicitly.
 
 ### Strict supported profiles
 
@@ -187,7 +199,8 @@ the derivative does not claim color calibration or original author intent.
 | Original monotonic deadline | 5000 ms default, at most 10000 ms; caller may lower it |
 
 The deadline starts before validation and the input copy. Queue waiting, runtime
-validation, spawning, native work, framed output, normalization and final result
+validation, spawning, native work, framed output, normalization, retained raw
+copying and final result
 acceptance all use that original deadline. An overdue timer callback cannot
 renew it. Expired queued jobs never dispatch. Deadline/cancellation checks also
 run at actual child spawn and final return, including when the event loop was
@@ -211,6 +224,15 @@ wall-clock seconds. Parent memory is bounded by the finite input/queue/frame/
 normalization limits, but the child's address-space rlimit is not a Node heap
 limit.
 
+`maxOutputBytes` continues to cap only the deterministic PNG. Raw output and the
+worker capture retain the separate 16 MiB pixel ceiling, regardless of a lower
+normalized cap. Successful results now retain up to an additional 16 MiB of raw
+samples, in addition to the bounded normalized PNG; transient framed/copy buffers
+remain finite. The local queue does not cap caller-retained results or repeated
+copy requests. A composition owner must bound those lifetimes and its overall
+copy/inspection deadline. This accessor neither runs OCR nor accepts arbitrary
+caller-produced decoded objects as proof of processing.
+
 The worker blocks cooperative Python socket/lookup APIs, captured Python lookup
 wrappers and audited socket operations. It also rejects filesystem opens,
 subprocesses and dynamic native-library lookups after trusted imports finish.
@@ -223,7 +245,7 @@ isolation and egress policy; this component does not claim or provision it.
 
 ## Verification and remaining acceptance
 
-`tools/verify-static-jpeg-webp.mjs` and the dedicated workflow execute all 158
+`tools/verify-static-jpeg-webp.mjs` and the dedicated workflow execute all 160
 required cases. Missing runtime/wheel input, unsupported runtime, nonzero exits,
 timeouts, incomplete case counts, failures, cancellations, skipped cases and
 TODOs make that route fail. The strict consumer and project type checks are
@@ -245,6 +267,13 @@ refusals, exact container ends, immutable input/output, hostile framing, queue
 and callback stalls, cancellation, installation drift and the offline setup
 failure boundaries. Earlier failed author runs remain historical evidence; a
 later passing case does not erase them.
+
+Raw handoff checks compare returned samples against the independently inflated
+normalized PNG, exact fixture pixels/hashes and retained predecessor derivative
+hashes. They cover separate copies, alpha preservation, raw hash/length failures
+and a delayed or canceled actual raw-copy phase after child close. Those new
+phase controls must enter before the original deadline and return no pixel
+accessor after expiry/cancellation; actual subsequent decoding must recover.
 
 This slice does not qualify the full inspection-adapters selector, OCR quality,
 field extraction, private host/provider authorization, rights or permissions,

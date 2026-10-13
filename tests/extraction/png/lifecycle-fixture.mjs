@@ -11,6 +11,8 @@ const mode = process.argv[2];
 const originalSpawn = childProcess.spawn;
 const originalHash = crypto.createHash;
 const originalTimer = globalThis.setTimeout;
+const originalFrom = Buffer.from;
+const rawCopyController = new AbortController();
 const children = [];
 const records = [];
 const output = { mode, syntheticInputs: true, records };
@@ -19,7 +21,7 @@ const firstSpawn = new Promise((resolve) => { firstSpawnResolve = resolve; });
 let started = 0;
 let timeoutMs = 1000;
 let parentHashCount = 0;
-const holdFirst = !["profile", "late-return"].includes(mode);
+const holdFirst = !["profile", "late-return", "raw-copy-timeout", "raw-copy-cancel"].includes(mode);
 const safety = originalTimer(() => {
   for (const child of children) {
     try { process.kill(-child.pid, "SIGKILL"); } catch { /* absent */ }
@@ -85,6 +87,20 @@ if (mode === "late-return") {
     return hash;
   };
 }
+if (mode.startsWith("raw-copy-")) {
+  Buffer.from = function (value, ...args) {
+    const result = originalFrom.call(this, value, ...args);
+    if (!output.rawCopyPhase && records[0]?.closed && Buffer.isBuffer(value) &&
+        value.length === 4 && value[0] === 1 && value[1] === 2 && value[2] === 3 && value[3] === 4) {
+      const enteredAt = performance.now();
+      assert.ok(enteredAt < started + timeoutMs, "The actual raw copy must begin before the original deadline.");
+      output.rawCopyPhase = { enteredAt, originalDeadline: started + timeoutMs, childClosed: true };
+      if (mode === "raw-copy-timeout") busyUntil(started + timeoutMs + 40);
+      else rawCopyController.abort();
+    }
+    return result;
+  };
+}
 syncBuiltinESMExports();
 const { readStaticPng, STATIC_PNG_READER_LIMITS } = await import("../../../src/extraction/png/index.mjs");
 
@@ -105,6 +121,7 @@ function reaped(index) {
 async function recover(expectedSpawns) {
   const result = await readStaticPng(png());
   assert.equal(result.kind, "decoded", JSON.stringify(result));
+  assert.deepEqual([...result.copyRgbaBytes()], [1, 2, 3, 4]);
   assert.equal(records.length, expectedSpawns);
   assert.ok(records.every((record) => record.closed));
   output.recovery = result.kind;
@@ -179,6 +196,19 @@ async function run() {
     assert.equal(output.parentValidationDelayed, true, "The actual parent derivative hash must be reached.");
     assert.equal(result.code, "TIMEOUT", JSON.stringify(result));
     assert.equal(Object.hasOwn(result, "copyNormalizedBytes"), false);
+    assert.equal(Object.hasOwn(result, "copyRgbaBytes"), false);
+    reaped(0);
+    await recover(2);
+    return;
+  }
+  if (mode.startsWith("raw-copy-")) {
+    timeoutMs = 3000;
+    started = performance.now();
+    const result = await readStaticPng(png(), { signal: rawCopyController.signal, timeoutMs });
+    assert.ok(output.rawCopyPhase, "The actual decoded raw copy must be reached, not a setup failure.");
+    assert.equal(result.code, mode === "raw-copy-timeout" ? "TIMEOUT" : "CANCELLED", JSON.stringify(result));
+    assert.equal(result.copyNormalizedBytes, undefined);
+    assert.equal(result.copyRgbaBytes, undefined);
     reaped(0);
     await recover(2);
     return;
@@ -246,6 +276,7 @@ try {
   globalThis.setTimeout = originalTimer;
   childProcess.spawn = originalSpawn;
   crypto.createHash = originalHash;
+  Buffer.from = originalFrom;
   syncBuiltinESMExports();
   for (const child of children) {
     if (child.exitCode === null && child.signalCode === null) {

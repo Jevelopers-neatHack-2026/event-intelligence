@@ -34,9 +34,10 @@ if (mode === "network-url") {
   workerMode = "network-url:" + port;
 }
 if (["active-cancel", "active-timeout", "queue-timeout", "queue-late", "saturation"].includes(mode)) workerMode = "sleep";
-const realModes = ["pre-spawn-timeout", "pre-spawn-cancel", "return-timeout", "return-cancel", "normalized-timeout", "normalized-cancel", "spawn-throw"];
+const realModes = ["pre-spawn-timeout", "pre-spawn-cancel", "return-timeout", "return-cancel", "normalized-timeout", "normalized-cancel", "raw-copy-timeout", "raw-copy-cancel", "spawn-throw"];
 if (realModes.includes(mode)) workerMode = undefined;
 let normalizeHook = 0;
+let rawCopyPhase;
 if (mode.startsWith("normalized-")) {
   const realHash = crypto.createHash;
   crypto.createHash = function (...args) {
@@ -55,6 +56,21 @@ if (mode.startsWith("normalized-")) {
       }
       return value;
     };
+    return result;
+  };
+}
+if (mode.startsWith("raw-copy-")) {
+  const realFrom = Buffer.from;
+  Buffer.from = function (value, ...args) {
+    const result = realFrom.call(this, value, ...args);
+    if (!rawCopyPhase && entries[0]?.closed && Buffer.isBuffer(value) &&
+        value.length === expected.expectedDecodedRgbaBytes && hash(value) === expected.expectedRgbaSha256) {
+      const enteredAt = performance.now();
+      assert.ok(enteredAt < started + timeoutMs, "The actual raw copy must begin before the original deadline.");
+      rawCopyPhase = { enteredAt, originalDeadline: started + timeoutMs, childClosed: true };
+      if (mode === "raw-copy-timeout") stall(Math.max(0, started + timeoutMs + 40 - performance.now()));
+      else controller.abort();
+    }
     return result;
   };
 }
@@ -106,7 +122,7 @@ const { createStaticJpegWebpReader } = await import("../../../src/extraction/jpe
 const reader = () => createStaticJpegWebpReader({ runtimeDirectory: runtimeDirectory() });
 const { bytes, expected } = fixture("jpeg-gray-baseline");
 const started = performance.now();
-const timeoutMs = mode === "cpu" ? 10000 : mode === "active-timeout" ? 2000 :
+const timeoutMs = mode.startsWith("raw-copy-") ? 3000 : mode === "cpu" ? 10000 : mode === "active-timeout" ? 2000 :
   ["return-timeout", "normalized-timeout"].includes(mode) ? 1500 : mode === "pre-spawn-timeout" ? 1000 : 5000;
 const pending = reader().read(bytes, { signal: controller.signal, timeoutMs });
 async function entered() {
@@ -148,6 +164,10 @@ if (mode === "pre-spawn-cancel") { assert.equal(result.code, "CANCELLED"); asser
 if (mode === "return-timeout" || mode === "normalized-timeout") assert.equal(result.code, "TIMEOUT");
 if (mode === "return-cancel" || mode === "normalized-cancel") assert.equal(result.code, "CANCELLED");
 if (mode.startsWith("normalized-")) assert.equal(normalizeHook, 1, "must cross actual final normalization, not fail during setup");
+if (mode.startsWith("raw-copy-")) {
+  assert.ok(rawCopyPhase, "must cross the actual retained raw copy, not fail during setup");
+  assert.equal(result.code, mode === "raw-copy-timeout" ? "TIMEOUT" : "CANCELLED");
+}
 if (["cpu", "abi", "exit", "spawn-throw"].includes(mode)) assert.equal(result.code, "DECODER_FAILURE");
 if (mode === "cpu") { assert.equal(entries[0].signal, "SIGKILL"); assert.ok(performance.now() - started < 10000); }
 if (mode === "memory") assert.equal(result.code, "RESOURCE_LIMIT");
@@ -157,6 +177,11 @@ if (mode === "fd") {
   assert.equal(result.kind, "decoded");
   const packet = entries[0].packets.find((x) => x.phase === "fd-cap");
   assert.ok(packet && packet.opened > 0 && packet.opened < 64); assert.deepEqual(packet.limit, [64, 64]);
+}
+if (result.kind === "decoded") assert.equal(hash(result.copyRgbaBytes()), result.rgbaSha256);
+else {
+  assert.equal(result.copyNormalizedBytes, undefined);
+  assert.equal(result.copyRgbaBytes, undefined);
 }
 for (const entry of entries) {
   assert.ok(entry.closed, "result cannot release a still-open child");
@@ -173,10 +198,11 @@ const recovery = await reader().read(bytes);
 assert.equal(recovery.kind, "decoded", JSON.stringify(recovery));
 assert.equal(recovery.rgbaSha256, expected.expectedRgbaSha256);
 assert.equal(hash(recovery.copyNormalizedBytes()), recovery.normalizedSha256);
+assert.equal(hash(recovery.copyRgbaBytes()), recovery.rgbaSha256);
 if (canary) {
   await new Promise((resolve) => canary.close(resolve));
   assert.equal(canaryConnections, 0, "guarded decoder must make no secondary request");
 }
 process.stdout.write(JSON.stringify({ mode, result, secondary, elapsedMs: performance.now() - started,
-  normalizeHook, canaryConnections, firstEntries, recovery: { kind: recovery.kind, sourceSha256: recovery.sourceSha256,
+  normalizeHook, rawCopyPhase, canaryConnections, firstEntries, recovery: { kind: recovery.kind, sourceSha256: recovery.sourceSha256,
     rgbaSha256: recovery.rgbaSha256, normalizedSha256: recovery.normalizedSha256 } }) + "\n");

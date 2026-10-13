@@ -11,6 +11,7 @@ export interface StaticPngReaderLimits {
   readonly maxPixels: number;
   readonly maxRows: number;
   readonly maxInflatedBytes: number;
+  readonly maxRgbaBytes: number;
   readonly maxOutputBytes: number;
   readonly maxChunks: number;
   readonly maxHeaderBytes: number;
@@ -52,6 +53,8 @@ export interface StaticPngDecoded extends StaticPngBase {
   readonly networkApiAttemptCount: 0;
   /** Returns new mutable bytes. No mutable reference to the retained derivative is exposed. */
   readonly copyNormalizedBytes: () => Uint8Array;
+  /** Fresh contiguous RGBA8 samples, row-major without padding; alpha is preserved, not flattened. */
+  readonly copyRgbaBytes: () => Uint8Array;
 }
 
 export interface StaticPngRejected extends StaticPngBase {

@@ -22,6 +22,11 @@ for (const [name, expected] of Object.entries(fixtureDocument.fixtures)) {
     assert.equal(normalized.length, result.normalizedByteLength);
     assert.equal(hash(normalized), result.normalizedSha256);
     const pixels = pixelsFromPng(normalized, expected.width, expected.height);
+    const raw = result.copyRgbaBytes();
+    assert.equal(Object.getPrototypeOf(raw), Uint8Array.prototype);
+    assert.equal(raw.length, result.decodedRgbaBytes);
+    assert.deepEqual(Buffer.from(raw), pixels);
+    assert.equal(hash(raw), result.rgbaSha256);
     assert.equal(hash(pixels), expected.expectedRgbaSha256);
     if (expected.expectedRgbaBase64) assert.deepEqual(pixels, Buffer.from(expected.expectedRgbaBase64, "base64"));
     if (name.startsWith("jpeg-gray") || name === "jpeg-pixel-limit") {
@@ -44,6 +49,12 @@ test("snapshot, immutable result and deterministic repeated derivative retain se
   assert.equal(first.kind, "decoded", JSON.stringify(first));
   assert.equal(first.sourceSha256, expected.sourceSha256);
   const copy = first.copyNormalizedBytes(); copy.fill(0);
+  const rawCopy = first.copyRgbaBytes(), rawSecond = first.copyRgbaBytes();
+  assert.notEqual(rawCopy.buffer, rawSecond.buffer);
+  assert.notEqual(rawCopy.buffer, copy.buffer);
+  rawCopy.fill(0);
+  assert.equal(hash(rawSecond), first.rgbaSha256);
+  assert.equal(hash(first.copyRgbaBytes()), first.rgbaSha256);
   assert.equal(hash(first.copyNormalizedBytes()), first.normalizedSha256);
   assert.ok(Object.isFrozen(first)); assert.ok(Object.isFrozen(first.decoder)); assert.ok(Object.isFrozen(first.limits));
   assert.throws(() => { first.width = 100; }, TypeError);
@@ -51,6 +62,9 @@ test("snapshot, immutable result and deterministic repeated derivative retain se
   assert.equal(second.kind, "decoded");
   assert.equal(second.rgbaSha256, first.rgbaSha256); assert.equal(second.normalizedSha256, first.normalizedSha256);
   assert.deepEqual(second.copyNormalizedBytes(), first.copyNormalizedBytes());
+  assert.deepEqual(second.copyRgbaBytes(), first.copyRgbaBytes());
+  // Actual 1f3c074 baseline output; exposing raw pixels does not re-encode it.
+  assert.equal(first.normalizedSha256, "753e23545db5ce1d4742c03c3518491f0cfb740e052d52d082f98cd4b4826ae4");
 });
 
 test("refuses unavailable explicit runtime and returns no partial pixels", async () => {
@@ -58,6 +72,7 @@ test("refuses unavailable explicit runtime and returns no partial pixels", async
   const result = await absent.read(fixture("jpeg-gray-baseline").bytes);
   assert.equal(result.kind, "rejected"); assert.equal(result.code, "DECODER_UNAVAILABLE");
   assert.equal(result.copyNormalizedBytes, undefined); assert.equal(result.rgbaSha256, undefined);
+  assert.equal(result.copyRgbaBytes, undefined);
 });
 
 test("lower-only output cap checks exact deterministic PNG length", async () => {
@@ -65,8 +80,10 @@ test("lower-only output cap checks exact deterministic PNG length", async () => 
   const baseline = await reader.read(bytes); assert.equal(baseline.kind, "decoded");
   const refused = await reader.read(bytes, { maxOutputBytes: baseline.normalizedByteLength - 1 });
   assert.equal(refused.code, "OUTPUT_LIMIT");
+  assert.equal(refused.copyRgbaBytes, undefined);
   const exact = await reader.read(bytes, { maxOutputBytes: baseline.normalizedByteLength });
   assert.equal(exact.kind, "decoded"); assert.equal(exact.normalizedSha256, baseline.normalizedSha256);
+  assert.deepEqual(exact.copyRgbaBytes(), baseline.copyRgbaBytes());
 });
 
 test("validates trusted configuration without invoking caller accessors or proxy traps", () => {
