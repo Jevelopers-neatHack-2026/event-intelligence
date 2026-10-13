@@ -12,6 +12,7 @@ import { compareEntityIdentity } from '../discovery/entities/identity.mjs';
 import { compareOccurrenceIdentity } from '../discovery/occurrences/identity.mjs';
 import { parseAndValidateUrl } from '../security/url-policy.mjs';
 import { inspectSafeAssetBytes, SAFE_ASSET_POLICY_VERSION, SAFE_ASSET_LIMITS } from '../security/assets/inspect.mjs';
+import { composeSourceAuthorityReview, composeNoSourceAuthorityReview } from './source-authority-followup.mjs';
 import {
   createPrivateAssetReleaseAuthority as createReleaseAuthorityState,
   hasThenableBehavior,
@@ -485,7 +486,12 @@ async function awaitAbortableCleanup(operation, timeoutMs = 250, waitMs = timeou
 
 function authorized(input, stage) {
   try {
-    return input.authorizeCurrent(input.request, Object.freeze({ runId: input.runId, stage })) === true;
+    const value = input.authorizeCurrent(input.request, Object.freeze({ runId: input.runId, stage }));
+    if (value === true) return true;
+    // Authorization is synchronous. Invalid native Promise outcomes must stay
+    // observed without forwarding a fulfilled value into another Promise.
+    subscribeToSupportedNativePromise(value, () => {}, () => {});
+    return false;
   } catch {
     return false;
   }
@@ -906,7 +912,12 @@ function aggregateIdentity(candidateResults) {
 
 function projection(identity, selectedEvidence, selectedFacts, progress, limitations, omittedLinkCandidates,
   truncatedSuggestionCount, sourceLinkCandidateOmittedCount, sourceLinkCandidateOmittedCountLowerBound,
-  sourceLinkCandidateOmittedCountComplete, assetCandidateIds = new Set(), assetAcquisitions = undefined) {
+  sourceLinkCandidateOmittedCountComplete, assetCandidateIds = new Set(), assetAcquisitions = undefined,
+  deadlineAtMonotonic, signal) {
+  // A trusted final authority callback can consume time synchronously. Recheck
+  // the original deadline before reading the selection into a new projection.
+  if (performance.now() >= deadlineAtMonotonic) throw new RetrievalError('DEADLINE_EXCEEDED');
+  if (signalAborted(signal)) throw new RetrievalError('CANCELED');
   const facts = selectedFacts;
   const evidenceById = new Map(selectedEvidence.map((item) => [item.metadata.evidenceId, item]));
   const sources = [...evidenceById.values()].map((item) => Object.freeze({
@@ -976,7 +987,11 @@ function projection(identity, selectedEvidence, selectedFacts, progress, limitat
     sourceRefs: candidate.sourceRefs,
     sourceAuthority: 'not_evaluated',
   }));
-  return Object.freeze({
+  const sourceAuthorityReview = composeSourceAuthorityReview({
+    occurrenceCandidates, entityCandidates, sources,
+    limitations: [...limitations], stopReasons: progress.stopReasons.map((entry) => entry.reason),
+  });
+  const draft = Object.freeze({
     schema: PRIVATE_DRAFT_SCHEMA,
     status: facts.length > 0 ? 'draft' : 'incomplete',
     completeness: 'incomplete',
@@ -997,6 +1012,7 @@ function projection(identity, selectedEvidence, selectedFacts, progress, limitat
     }))),
     conflicts,
     sourceAuthority: 'not_evaluated',
+    ...(sourceAuthorityReview ? { sourceAuthorityReview } : {}),
     rights: 'not_evaluated',
     usage: 'unknown',
     limitations: Object.freeze([...limitations].sort()),
@@ -1013,6 +1029,9 @@ function projection(identity, selectedEvidence, selectedFacts, progress, limitat
       sourceLinkCandidateOmittedCountComplete,
     }),
   });
+  if (performance.now() >= deadlineAtMonotonic) throw new RetrievalError('DEADLINE_EXCEEDED');
+  if (signalAborted(signal)) throw new RetrievalError('CANCELED');
+  return draft;
 }
 
 /**
@@ -2593,7 +2612,29 @@ export async function runPrivateRetrieval(value) {
       limitations.add('transport_state_unknown_or_unresolved_work');
       return incompleteWithProgress(input.runId, finalSnapshot, [...limitations]);
     }
-    if (evidenceIds.size === 0) return incompleteWithProgress(input.runId, finalSnapshot, [...limitations]);
+    if (evidenceIds.size === 0) {
+      checkDeadline();
+      if (controller.signal.aborted) throw abortError();
+      if (!authorized(input, 'release')) {
+        limitations.add('authorization_revoked');
+        return incompleteWithProgress(input.runId, finalSnapshot, [...limitations]);
+      }
+      checkDeadline();
+      if (controller.signal.aborted) throw abortError();
+      if (assetPolicy && !privateAssetReleaseControllerMatches(assetReleaseController, {
+        runId: input.runId, policyDigest: digestJson(assetPolicy), deadlineAtMonotonic,
+      })) {
+        limitations.add('asset_acquisition_release_authority_unavailable');
+        return incompleteWithProgress(input.runId, finalSnapshot, [...limitations]);
+      }
+      const sourceAuthorityReview = composeNoSourceAuthorityReview(
+        [...limitations], finalSnapshot.stopReasons.map((entry) => entry.reason),
+      );
+      checkDeadline();
+      if (controller.signal.aborted) throw abortError();
+      const incomplete = incompleteWithProgress(input.runId, finalSnapshot, [...limitations]);
+      return sourceAuthorityReview ? Object.freeze({ ...incomplete, sourceAuthorityReview }) : incomplete;
+    }
     if (evidenceIds.size > MAX_SELECTED_EVIDENCE || outputFacts.size > MAX_SELECTED_FACTS) {
       limitations.add('selected_materialization_limit');
       return incompleteWithProgress(input.runId, finalSnapshot, [...limitations]);
@@ -2779,7 +2820,7 @@ export async function runPrivateRetrieval(value) {
             return projection(identity, finalEvidence, materialized.facts, finalSnapshot, limitations,
               omittedLinkCandidates, truncatedSuggestionCount, sourceLinkCandidateOmittedCount,
               sourceLinkCandidateOmittedCountLowerBound, sourceLinkCandidateOmittedCountComplete,
-              assetCandidateIds, assetAcquisitionResults);
+              assetCandidateIds, assetAcquisitionResults, deadlineAtMonotonic, controller.signal);
           },
         },
       );
@@ -2802,7 +2843,7 @@ export async function runPrivateRetrieval(value) {
     const draft = projection(identity, finalEvidence, materialized.facts, finalSnapshot, limitations,
       omittedLinkCandidates, truncatedSuggestionCount, sourceLinkCandidateOmittedCount,
       sourceLinkCandidateOmittedCountLowerBound, sourceLinkCandidateOmittedCountComplete,
-      assetCandidateIds, assetAcquisitionResults);
+      assetCandidateIds, assetAcquisitionResults, deadlineAtMonotonic, controller.signal);
     return draft;
   } catch (error) {
     const code = stopCause === 'deadline' ? 'DEADLINE_EXCEEDED' : safeFailureCode(error);

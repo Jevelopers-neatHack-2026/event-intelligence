@@ -38,6 +38,130 @@ garbage-collection policy; the application composition root must provide a
 private storage directory and an approved lifecycle before relying on it for
 long-lived or customer data.
 
+### Shared tenant admission
+
+The trusted store constructor accepts an optional `tenantLimits` policy. It
+defaults to `maxInFlightLeases: 4` and `maxReservedDecodedBytes: 104857600`
+(100 MiB). The policy applies across every run in one tenant database and
+every store instance or process opening it. The configured directory, identity
+resolver and numeric settings belong to the host; these component defaults
+are not an attestation of deployed tenant policy or host containment.
+
+Both values must be ordinary safe integers. Lease capacity accepts 1–512,
+derived from the existing 128-run and four-lease ceilings. Outstanding byte
+capacity accepts 20 MiB–12,800 MiB, derived from the existing per-hop reservation
+and per-run/store ceilings. The existing per-run lease/attempt limits and
+100 MiB tracked-transport/v1-uncertainty bound retain their values; a larger
+tenant policy cannot raise them. Raw metadata admission remains separate from
+tracked transport and does not grant a transport permit. Unknown keys, getters, string
+coercions, fractions, non-finite values and out-of-range values fail with
+`FRONTIER_INVALID_INPUT` before storage access.
+
+The normalized complete policy is persisted on the tenant's first successful
+database operation. A later instance must supply that same policy, including
+when it omits `tenantLimits` and therefore requests the defaults. A larger or
+smaller mismatched policy fails with `FRONTIER_CONFLICT`; caller mutation after
+construction cannot change the captured policy. Policy binding and schema
+migration use the same `BEGIN IMMEDIATE` transaction. Schema selection happens
+after acquiring that lock, so a peer's completed migration is rechecked before
+binding or validating the policy. There is no policy reset,
+automatic renewal or policy-change API.
+
+Concurrency counts distinct `(run_id, lease_token)` pairs that still have a
+leased claim, an unsettled transport hop, or an admission without a transport
+row. Redirects of one lease count once toward concurrency while their separate
+byte reservations all count. Cancellation, deadline expiry, planner completion
+and `markUnresolved` never remove uncertain transport exposure from this count.
+An unused lease can be released through the existing confirmed
+`cancelled_before_dispatch` path only when no attempt was admitted.
+
+Outstanding bytes include every `reserved`, `dispatch_intent`,
+`response_received` or `unknown` hop at its existing 20 MiB reservation. A raw
+`admitAttempt` has no transport observation, so each such untracked admission
+also conservatively reserves 20 MiB for this tenant policy, even after planner
+completion. It cannot be converted to a new transport permit by replaying its
+key through `admitTransportHop`. The existing v1 full-run uncertainty reserves
+100 MiB per affected run instead of double-counting its untracked attempts.
+Any run with a v1 full-run hold denies fresh raw admissions with `decoded_budget`,
+even under a larger tenant policy; exact historical-key replay stays available.
+No reconciliation authority or refund path is invented for these unknowns.
+
+Known-zero and complete-body settlement release the corresponding **outstanding
+tenant reservation**. Complete-body settlement still records exact decoded
+spend against the original cumulative per-run limit. The tenant policy is a
+resource admission bound, not a cumulative financial budget or a fresh budget
+per new run ID. The old per-run `getTransportProgress` describes tracked
+transport and v1 full-run uncertainty; it does not project current raw
+`admitAttempt` records or imply zero usage for them. `getTenantProgress` exposes
+the separate tenant projection, including untracked admission counts.
+
+New claims wait with `tenant_in_flight_limit` when tenant concurrency is full.
+New admissions return `denied` with `tenant_decoded_budget` when another 20 MiB
+reservation would exceed capacity. Over-limit migrated concurrency also denies
+new admissions for existing leases. Admission and accounting occur atomically;
+exact historical replay remains deduplicated at full capacity and never grants
+another dispatch. Denial leaves the new attempt and its counters uncommitted.
+
+Schema 5 migrates v1–v4 databases atomically, retaining their old rows, run
+configuration hashes, deadlines, counters and uncertainty. Exposure already
+above the new tenant limit is preserved; available capacity saturates at zero.
+History and existing settlement remain accessible with the matching policy,
+while new work stays bounded. An existing v4 policy is validated and retained;
+it is never rebound during the fence migration.
+
+A version-header check alone cannot exclude an already-opening older writer.
+Schema 5 adds a durable write-fence row and native SQLite triggers on all eleven
+frontier application tables, including the immutable tenant policy. A current
+operation validates the complete fence and policy after `BEGIN IMMEDIATE`,
+opens the guard only inside that same write transaction, and closes it before
+commit. Every other writer sees a closed committed guard. Callback failures,
+aborts and process exits roll back both admission changes and the uncommitted
+open guard. The migration installs a closed fence under the same writer lock
+as policy binding. This uses native SQL with `trusted_schema = OFF`; it does
+not register a SQLite function or grant a new external write API.
+
+Fresh v1–v4 binaries reject schema 5. Already-opening versions may finish their
+additive schema handling, but their later application writes are refused by
+the closed guard. A v1 initializer can even write an older `user_version`
+outside its schema transaction. The triggers do not prevent that PRAGMA or
+claim to fence arbitrary DDL: the intact fence and matching immutable policy
+are the authoritative migration records. Current code validates both under
+the lock before restoring a lower header, and rechecks them at its separate
+operation boundary. It never repeats a legacy migration, rebinds a policy or
+clears uncertainty because of that stale header. An older write transaction
+that acquires the lock before migration finishes first; its resulting history
+is retained as pre-migration exposure.
+
+Missing, changed or partial fence objects, an absent/invalid guard row, a
+committed open guard, unknown newer versions and corrupted policy metadata
+fail with `FRONTIER_VERSION`. A mismatched configured policy still fails with
+`FRONTIER_CONFLICT`, including when the header is stale. Neither failure clears
+debt or resets the database. An unfenced older header with an existing v4
+policy is inconsistent state and is also refused. A storage owner must diagnose
+that state and provide an explicit reviewed recovery; the component does not
+invent a repair authority. Reverting code is not a database downgrade procedure.
+These controls coordinate supported store writers; the private filesystem and
+database owner remain trusted and can deliberately change database files.
+
+The tenant tests use real temporary SQLite databases, independent Node
+processes and synthetic identities/settings without transport or provider
+calls. Rolling-version controls import the exact pinned v1/v2/v3/v4 source and
+its complete local dependency closure from repository history, schedule a real
+current child before the old writer resumes, and verify persisted capacity and
+header recovery. The existing workflow supplies full history; absent historical
+objects fail fixture setup rather than being fetched or skipped. Separate
+controls check unguarded DML refusal, transaction abort, actual process-exit
+rollback and corrupt-fence refusal. Existing receipt/policy corruption tests use
+an explicitly privileged **test-only** transaction helper to preserve their
+intentional local row mutations and unchanged higher-level assertions. The
+unauthorized and historical-writer controls do not use that helper. No production
+database or policy was changed by these local fixtures.
+
+Two older per-run byte-contention fixtures explicitly select six tenant
+lease slots to retain their four unsettled reservations and two racing workers;
+their original 20 MiB and 100 MiB assertions remain intact. This is a scoped
+EI-02 AC4 mechanism and does not close issue #8, the release gate or the epic.
+
 ## Durable operations
 
 `createDiscoveryFrontierStore` requires a trusted local directory and a

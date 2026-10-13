@@ -21,13 +21,22 @@ const input: ComposeSourceIdentityInput<{ readonly principal: { readonly tenantI
 
 const result: Promise<SourceIdentityCompositionResult> = composeSourceIdentity(input);
 void result.then((composition) => {
+  const schema: "ei-source-identity-composition-internal/v2" = composition.schema;
+  const graphSchema: "ei-source-corroboration-internal/v1" = composition.corroboration.schema;
+  const independence: "unknown" = composition.corroboration.independence;
+  const declarationPosition: number | undefined = composition.corroboration.claims[0]?.sourceRef.locator.startByte;
   const authority: "not_evaluated" = composition.sourceAuthority;
   const hash: string | undefined = composition.sources[0]?.evidence?.contentHash;
   const storedAt: string | undefined = composition.sources[0]?.storedSource?.retrievedAt;
   const observedAt: string | undefined = composition.sources[0]?.observedRetrievedAt;
   const occurrenceCount: number = composition.occurrenceCandidates.length;
   const transitionCount: number = composition.transitionLinks.length;
-  void [authority, hash, storedAt, observedAt, occurrenceCount, transitionCount];
+  void [schema, graphSchema, independence, declarationPosition, authority, hash, storedAt, observedAt, occurrenceCount, transitionCount];
+  // @ts-expect-error A declaration cluster never establishes independent authority.
+  const independent: "independent" = composition.corroboration.independence;
+  // @ts-expect-error The returned cluster collection is immutable.
+  composition.corroboration.clusters.push({});
+  void independent;
 });
 
 const refusalCodes: readonly SourceIdentityCompositionErrorCode[] = [
