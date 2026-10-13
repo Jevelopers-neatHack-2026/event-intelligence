@@ -51,7 +51,7 @@ test("evidence-facts mock case runs only local durable-store and provenance fixt
   assert.equal(summary.case, "evidence-facts");
   assert.equal(summary.mode, "mock");
   assert.equal(summary.status, "passed");
-  assert.equal(summary.test_files, 3);
+  assert.equal(summary.test_files, 4);
   assert.ok(summary.expected_cases > 0);
   assert.equal(summary.expected_cases, summary.terminal_cases);
   assert.equal(summary.failed_cases, 0);
@@ -139,13 +139,15 @@ test("live mode remains blocked even when a config-shaped file is present", asyn
     budget_authorization: "budget-reference",
     expires_at: new Date(Date.now() + 60_000).toISOString(),
   }));
-  const result = runVerifier(["--case=safe-retrieval", "--mode=live"], { EVENT_INTELLIGENCE_LIVE_CONFIG: configPath });
-  const summary = summaryFrom(result.stdout);
-  assert.equal(result.status, 1);
-  assert.equal(summary.status, "blocked");
-  assert.equal(summary.release_config_shape_present, true);
-  assert.equal(summary.provider_activity, "none");
-  assert.match(summary.reason, /not authenticated authorization/);
+  for (const caseName of ["safe-retrieval", "cache-invalidation"]) {
+    const result = runVerifier([`--case=${caseName}`, "--mode=live"], { EVENT_INTELLIGENCE_LIVE_CONFIG: configPath });
+    const summary = summaryFrom(result.stdout);
+    assert.equal(result.status, 1);
+    assert.equal(summary.status, "blocked");
+    assert.equal(summary.release_config_shape_present, true);
+    assert.equal(summary.provider_activity, "none");
+    assert.match(summary.reason, /not authenticated authorization/);
+  }
 });
 
 test("prototype property names are not valid case selectors", () => {

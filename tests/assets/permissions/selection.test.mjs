@@ -828,6 +828,102 @@ test('the selector-owned signal cancels cooperative role and permission lookups 
   });
 });
 
+for (const stage of ['select', 'handoff']) {
+  for (const target of ['role', 'permission']) {
+    for (const stop of ['deadline', 'cancellation']) {
+      test(`queued verifier entry respects ${stop} during ${stage} ${target}`, async (t) => {
+        const fixture = makeCandidate();
+        const host = createHost();
+        const caller = new AbortController();
+        const observations = { stage, target, stop, armedAt: null, stoppedAt: null, entries: [] };
+        let active = false;
+        let authorizationChecks = 0;
+        let deadlineAtMs;
+
+        function queueStop() {
+          if (!active || observations.armedAt !== null) return;
+          observations.armedAt = performance.now();
+          queueMicrotask(() => {
+            if (stop === 'deadline') {
+              // Expire the original deadline before native timer delivery. No
+              // timer or clock is replaced, and the callback has not started.
+              while (performance.now() < deadlineAtMs + 75) { /* bounded fixture delay */ }
+            } else {
+              caller.abort();
+            }
+            observations.stoppedAt = performance.now();
+          });
+        }
+
+        const readAuthorization = host.adapters.readAuthorization;
+        host.adapters.readAuthorization = (input) => {
+          const result = readAuthorization(input);
+          if (active && target === 'role' && ++authorizationChecks === 2) queueStop();
+          return result;
+        };
+        const recheckRole = host.adapters.recheckRoleEvidence;
+        host.adapters.recheckRoleEvidence = (input) => {
+          const result = recheckRole(input);
+          // The first retained role decision is checked in the continuation
+          // that schedules permission verification, after the role await.
+          if (active && target === 'permission') queueStop();
+          return result;
+        };
+        for (const [name, key] of [['role', 'verifyRoleEvidence'], ['permission', 'verifyPermission']]) {
+          const verifier = host.adapters[key];
+          host.adapters[key] = (input, signal) => {
+            if (active) observations.entries.push({ name, enteredAt: performance.now(), aborted: signal.aborted });
+            return verifier(input, signal);
+          };
+        }
+
+        const selector = createAssetPermissionSelector(host.adapters);
+        const selected = stage === 'handoff' ? await select(selector, [fixture.candidate]) : null;
+        const initialCalls = { ...host.state.calls };
+        deadlineAtMs = performance.now() + 800;
+        active = true;
+        let result;
+        let error;
+        try {
+          result = stage === 'select'
+            ? await select(selector, [fixture.candidate], { signal: caller.signal, deadlineAtMs })
+            : await selector.handoff(selected.handle, request, { signal: caller.signal, deadlineAtMs });
+        } catch (caught) {
+          error = caught;
+        }
+        observations.deadlineAtMs = deadlineAtMs;
+        observations.errorCode = error?.code ?? null;
+        observations.calls = Object.fromEntries(['role', 'permission', 'publish'].map((key) => [
+          key, host.state.calls[key] - initialCalls[key],
+        ]));
+        t.diagnostic(JSON.stringify(observations));
+        assert.ok(observations.armedAt !== null && observations.armedAt < deadlineAtMs,
+          'the stop was queued while the operation was still valid');
+        assert.ok(observations.stoppedAt !== null, 'the queued stop actually ran');
+        if (stop === 'deadline') assert.ok(observations.stoppedAt >= deadlineAtMs + 75);
+        assert.ok(error instanceof AssetPermissionSelectionError);
+        assert.equal(error.code, stop === 'deadline' ? 'DEADLINE_EXCEEDED' : 'CANCELLED');
+        assert.equal(result, undefined);
+        assert.equal(observations.entries.filter((entry) => entry.name === target).length, 0,
+          'no queued verifier may start after cancellation or the original deadline');
+        assert.equal(observations.calls.role, target === 'role' ? 0 : 1);
+        assert.equal(observations.calls.permission, 0);
+        assert.equal(observations.calls.publish, 0);
+        assert.equal(host.state.published.length, 0);
+
+        active = false;
+        await delay(0);
+        if (selected) {
+          await assert.rejects(selector.handoff(selected.handle, request), errorCode('INVALID_SELECTION'));
+        }
+        const recovered = await select(selector, [fixture.candidate]);
+        assert.equal(recovered.referenceImageCount, 1);
+        assert.equal((await selector.handoff(recovered.handle, request)).status, 'published');
+      });
+    }
+  }
+}
+
 test('caller cancellation is distinct from the internal timeout and reaches cooperative adapters', async (t) => {
   await t.test('explicit abort during a lookup', async () => {
     const fixture = makeCandidate();

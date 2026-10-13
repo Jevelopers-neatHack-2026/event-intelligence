@@ -25,6 +25,8 @@ jobs:
       - run: npm ci
       - name: Install the locked host TypeScript compiler
         run: node tools/install-typescript-host.mjs
+      - name: Check the local engine dependency direction
+        run: make verify-dependencies
       - name: Test bounded EI handoff checker
         run: |
           python3 - <<'PY'
@@ -58,6 +60,8 @@ jobs:
       - run: make verify CASE=content-privacy MODE=mock
       - name: Test EI research candidate compatibility bundle
         run: make verify CASE=research-api MODE=mock
+      - name: Test installed-proposal selection and archive refusal
+        run: node --test tests/contracts/installed-research-consumer/launcher.test.mjs
       - run: make verify CASE=question-preparation MODE=mock
       - run: npm run test:runner
       - run: npm run typecheck

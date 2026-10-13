@@ -126,6 +126,14 @@ function cloneComposition(composition, patch) {
   return { ...composition, ...patch };
 }
 
+// Synthetic multi-support and byte-boundary fixtures describe the historical v1
+// profile. They deliberately have no current v2 retained-source graph. Keep them
+// explicit so current-composer coverage cannot silently downgrade malformed v2.
+function legacySyntheticComposition(composition, patch = {}) {
+  const { corroboration: ignored, corroborationFactBindings: ignoredBindings, ...legacy } = composition;
+  return { ...legacy, ...patch, schema: 'ei-source-identity-composition-internal/v1' };
+}
+
 function changedCandidate(composition, candidateId, transform) {
   const original = composition.occurrenceCandidates.find((item) => item.candidateId === candidateId);
   assert.ok(original);
@@ -181,7 +189,8 @@ function groupCoreFor(group) {
     evidenceId: group.evidenceId,
     contentHash: group.contentHash,
     languageLabel: group.languageLabel,
-    claims: group.claims
+    claims: group.claims,
+    ...(group.corroboration ? { corroboration: group.corroboration } : {})
   };
 }
 
@@ -319,9 +328,10 @@ test('prepares the explicitly selected composer pair while retaining date, city,
   assert.equal(result.sourceIdentityBinding.observationGroups.length, 2);
   for (const group of result.sourceIdentityBinding.observationGroups) {
     assert.deepEqual(group.claims, claimGroupProjection(result.sourceIdentityBinding, group));
-    assert.deepEqual(JSON.parse(group.text), group.claims);
+    assert.deepEqual(JSON.parse(group.text), { claims: group.claims, corroboration: group.corroboration });
+    assert.equal(group.corroboration.independence, 'unknown');
     const expectedReference = `source-identity-${createHash('sha256')
-      .update('event-intelligence:source-identity-question-group:v1\0', 'utf8')
+      .update('event-intelligence:source-identity-question-group:v2\0', 'utf8')
       .update(stableJsonTest(groupCoreFor(group)), 'utf8').digest('hex')}`;
     assert.equal(group.observationRef, expectedReference);
     const observation = result.plan.state.observations.find((item) => item.observationRef === group.observationRef);
@@ -338,7 +348,7 @@ test('prepares the explicitly selected composer pair while retaining date, city,
   assert.notDeepEqual(droppedCity.claims, claimGroupProjection(result.sourceIdentityBinding, droppedCity),
     'cross-checking the group against the immutable per-field support map detects a dropped critical claim');
   const droppedCityReference = `source-identity-${createHash('sha256')
-    .update('event-intelligence:source-identity-question-group:v1\0', 'utf8')
+    .update('event-intelligence:source-identity-question-group:v2\0', 'utf8')
     .update(stableJsonTest(groupCoreFor(droppedCity)), 'utf8').digest('hex')}`;
   assert.notEqual(droppedCityReference, droppedCity.observationRef);
   const droppedSupportMap = {
@@ -418,8 +428,10 @@ test('pair order, support order, and caller-language map order do not change the
     occurrenceCandidates: composition.occurrenceCandidates.map((candidate) => candidate.candidateId === left.candidateId ? leftReverse : candidate),
     occurrenceDecisions: [reverseDecision]
   });
-  const first = prepare(supportOrderA, pair, language);
-  const second = prepare(supportOrderB, pair, language);
+  assert.throws(() => prepare(supportOrderA, pair, language), { code: 'SOURCE_BINDING_FAILED' });
+  const first = prepare(legacySyntheticComposition(supportOrderA), pair, language);
+  const second = prepare(legacySyntheticComposition(supportOrderB), pair, language);
+  assert.equal(first.sourceIdentityBinding.schema, 'ei-source-identity-question-binding-internal/v1');
   assert.equal(first.plan.planHash, second.plan.planHash);
   assert.equal(first.sourceIdentityBinding.digest, second.sourceIdentityBinding.digest);
   assert.equal(first.sourceIdentityBinding.selectedCandidates.find((candidate) => candidate.candidateId === left.candidateId)
@@ -566,7 +578,7 @@ function syntheticSupport(evidence, pointer, value) {
   };
 }
 
-function syntheticPairComposition(composition, pair, { perCandidate = 16, pointerBytes = 8, valueBytes = 0, extraSeries = false } = {}) {
+function legacySyntheticPairComposition(composition, pair, { perCandidate = 16, pointerBytes = 8, valueBytes = 0, extraSeries = false } = {}) {
   const byId = new Map(composition.occurrenceCandidates.map((candidate) => [candidate.candidateId, candidate]));
   const summaries = composition.sources.map((source) => source.evidence).filter(Boolean);
   const candidates = pair.map((candidateId, candidateIndex) => {
@@ -600,7 +612,7 @@ function syntheticPairComposition(composition, pair, { perCandidate = 16, pointe
     return { schema: 'ei-occurrence-observation-internal/v1', candidateId, facts };
   });
   const decision = compareOccurrenceIdentity(candidates[0], candidates[1]);
-  return cloneComposition(composition, {
+  return legacySyntheticComposition(composition, {
     occurrenceCandidates: composition.occurrenceCandidates.map((candidate) => candidates.find((item) => item.candidateId === candidate.candidateId) ?? candidate),
     occurrenceDecisions: [decision]
   });
@@ -624,7 +636,7 @@ function lengthsForTitleTextBytes(targetBytes, prefix = []) {
   throw new Error(`Could not construct exact ${targetBytes}-byte title group`);
 }
 
-function minimalPairComposition(composition, pair, leftLengths, rightLengths, pointerBytes = 8) {
+function legacyMinimalPairComposition(composition, pair, leftLengths, rightLengths, pointerBytes = 8) {
   const lengthsById = new Map([[pair[0], leftLengths], [pair[1], rightLengths]]);
   const originalById = new Map(composition.occurrenceCandidates.map((candidate) => [candidate.candidateId, candidate]));
   const replacementById = new Map();
@@ -649,7 +661,7 @@ function minimalPairComposition(composition, pair, leftLengths, rightLengths, po
     });
   }
   const ordered = pair.map((candidateId) => replacementById.get(candidateId));
-  return cloneComposition(composition, {
+  return legacySyntheticComposition(composition, {
     occurrenceCandidates: composition.occurrenceCandidates.map((candidate) => replacementById.get(candidate.candidateId) ?? candidate),
     occurrenceDecisions: [compareOccurrenceIdentity(ordered[0], ordered[1])]
   });
@@ -701,13 +713,13 @@ function withFirstSelectedLocatorPadding(composition, pair, extraBytes) {
   });
 }
 
-test('groups 32 supported claims by their exact candidate and evidence identity without treating them as independent sources', async (t) => {
+test('legacy v1 groups 32 supported claims by their exact candidate and evidence identity without treating them as independent sources', async (t) => {
   const composition = await compose(t, [
     { bytes: eventPage({ city: 'Seattle', startDate: '2027-08-01' }), url: 'https://events.example.test/seattle' },
     { bytes: eventPage({ city: 'Vancouver', startDate: '2027-08-02' }), url: 'https://events.example.test/vancouver' }
   ]);
   const pair = [candidateForCity(composition, 'Seattle').candidateId, candidateForCity(composition, 'Vancouver').candidateId].sort();
-  const atCap = syntheticPairComposition(composition, pair);
+  const atCap = legacySyntheticPairComposition(composition, pair);
   const result = prepare(atCap, pair);
   assert.equal(result.plan.state.observations.length, 2);
   assert.equal(result.sourceIdentityBinding.selectedCandidates.reduce((sum, candidate) => sum + candidate.facts.length, 0), 32);
@@ -718,7 +730,7 @@ test('groups 32 supported claims by their exact candidate and evidence identity 
       + Buffer.byteLength(observation.text, 'utf8') + Buffer.byteLength(observation.claimText, 'utf8'), 0));
   assertBlockedPlan(result.plan, pair);
 
-  const over = syntheticPairComposition(composition, pair, { perCandidate: 9, valueBytes: 512 });
+  const over = legacySyntheticPairComposition(composition, pair, { perCandidate: 9, valueBytes: 512 });
   assert.throws(() => prepare(over, pair), (error) => {
     assert.ok(error instanceof SourceIdentityQuestionPreparationError);
     assert.equal(error.code, 'RESOURCE_LIMIT_EXCEEDED');
@@ -726,13 +738,13 @@ test('groups 32 supported claims by their exact candidate and evidence identity 
   });
 });
 
-test('retains more than 32 comparator provenance references in two grouped observations', async (t) => {
+test('legacy v1 retains more than 32 comparator provenance references in two grouped observations', async (t) => {
   const composition = await compose(t, [
     { bytes: eventPage({ city: 'Seattle', startDate: '2027-08-01' }), url: 'https://events.example.test/seattle' },
     { bytes: eventPage({ city: 'Vancouver', startDate: '2027-08-02' }), url: 'https://events.example.test/vancouver' }
   ]);
   const pair = [candidateForCity(composition, 'Seattle').candidateId, candidateForCity(composition, 'Vancouver').candidateId].sort();
-  const input = syntheticPairComposition(composition, pair, { perCandidate: 16, extraSeries: true });
+  const input = legacySyntheticPairComposition(composition, pair, { perCandidate: 16, extraSeries: true });
   assert.equal(input.occurrenceDecisions[0].provenanceReferences.length, 33);
 
   const result = prepare(input, pair);
@@ -743,20 +755,20 @@ test('retains more than 32 comparator provenance references in two grouped obser
   assertBlockedPlan(result.plan, pair);
 });
 
-test('enforces exact UTF-8 observation and aggregate limits at the first byte over', async (t) => {
+test('legacy v1 enforces exact UTF-8 observation and aggregate limits at the first byte over', async (t) => {
   const composition = await compose(t, [
     { bytes: eventPage({ city: 'Seattle', startDate: '2027-08-01' }), url: 'https://events.example.test/seattle' },
     { bytes: eventPage({ city: 'Vancouver', startDate: '2027-08-02' }), url: 'https://events.example.test/vancouver' }
   ]);
   const pair = composition.occurrenceCandidates.map((candidate) => candidate.candidateId).sort();
   const leftAtFieldCap = lengthsForTitleTextBytes(4_096, Array(6).fill(512));
-  const exactField = prepare(minimalPairComposition(composition, pair, leftAtFieldCap, [8]), pair);
+  const exactField = prepare(legacyMinimalPairComposition(composition, pair, leftAtFieldCap, [8]), pair);
   const exactFieldGroups = exactField.sourceIdentityBinding.observationGroups;
   assert.equal(Buffer.byteLength(exactFieldGroups.find((group) => group.candidateId === pair[0]).text, 'utf8'), 4_096);
   assert.equal(Buffer.byteLength(exactFieldGroups.find((group) => group.candidateId === pair[1]).text, 'utf8'), titleClaimsTextBytes([8]));
   assert.ok(exactFieldGroups.every((group) => Buffer.byteLength(group.text, 'utf8') <= 4_096));
 
-  const fieldOver = minimalPairComposition(composition, pair, [...leftAtFieldCap.slice(0, -1), leftAtFieldCap.at(-1) + 1], [8]);
+  const fieldOver = legacyMinimalPairComposition(composition, pair, [...leftAtFieldCap.slice(0, -1), leftAtFieldCap.at(-1) + 1], [8]);
   const smallGroupBytes = titleClaimsTextBytes([8]);
   assert.ok(2 * (4_097 + smallGroupBytes) <= 10_000, 'aggregate cap does not mask the first per-group byte over');
   assert.throws(() => prepare(fieldOver, pair), (error) => {
@@ -766,12 +778,12 @@ test('enforces exact UTF-8 observation and aggregate limits at the first byte ov
   });
 
   const rightAtAggregateCap = lengthsForTitleTextBytes(904, [512]);
-  const exactAggregate = prepare(minimalPairComposition(composition, pair, leftAtFieldCap, rightAtAggregateCap), pair);
+  const exactAggregate = prepare(legacyMinimalPairComposition(composition, pair, leftAtFieldCap, rightAtAggregateCap), pair);
   assert.deepEqual(exactAggregate.sourceIdentityBinding.observationGroups.map((group) => Buffer.byteLength(group.text, 'utf8')).sort((a, b) => a - b), [904, 4_096]);
   assert.equal(exactAggregate.sourceIdentityBinding.limits.observationTextBytes, 10_000,
     'the maintained preparer counts both equal text and claimText fields');
 
-  const aggregateOver = minimalPairComposition(composition, pair, leftAtFieldCap,
+  const aggregateOver = legacyMinimalPairComposition(composition, pair, leftAtFieldCap,
     [...rightAtAggregateCap.slice(0, -1), rightAtAggregateCap.at(-1) + 1]);
   assert.equal(2 * (4_096 + 905), 10_002);
   assert.throws(() => prepare(aggregateOver, pair), (error) => {
@@ -781,7 +793,7 @@ test('enforces exact UTF-8 observation and aggregate limits at the first byte ov
   });
 });
 
-test('fails before scanning overlength strings and detects the exact first sidecar byte over', async (t) => {
+test('legacy v1 fails before scanning overlength strings and detects the exact first sidecar byte over', async (t) => {
   const composition = await compose(t, [
     { bytes: eventPage({ city: 'Seattle', startDate: '2027-08-01' }), url: 'https://events.example.test/seattle' },
     { bytes: eventPage({ city: 'Vancouver', startDate: '2027-08-02' }), url: 'https://events.example.test/vancouver' }
@@ -801,14 +813,14 @@ test('fails before scanning overlength strings and detects the exact first sidec
 
   const titleCount = 16;
   const base = withSelectedPositionCount(withDuplicateGroupIdLength(
-    syntheticPairComposition(composition, pair, { perCandidate: titleCount, pointerBytes: 1 }), 1
+    legacySyntheticPairComposition(composition, pair, { perCandidate: titleCount, pointerBytes: 1 }), 1
   ), pair, 9);
   const baseResult = prepare(base, pair);
   const pointerStep = prepare(withSelectedPositionCount(withDuplicateGroupIdLength(
-    syntheticPairComposition(composition, pair, { perCandidate: titleCount, pointerBytes: 2 }), 1
+    legacySyntheticPairComposition(composition, pair, { perCandidate: titleCount, pointerBytes: 2 }), 1
   ), pair, 9), pair).sourceIdentityBinding.utf8Bytes - baseResult.sourceIdentityBinding.utf8Bytes;
   const duplicateGroupStep = prepare(withSelectedPositionCount(withDuplicateGroupIdLength(
-    syntheticPairComposition(composition, pair, { perCandidate: titleCount, pointerBytes: 1 }), 2
+    legacySyntheticPairComposition(composition, pair, { perCandidate: titleCount, pointerBytes: 1 }), 2
   ), pair, 9), pair).sourceIdentityBinding.utf8Bytes - baseResult.sourceIdentityBinding.utf8Bytes;
   const locatorStep = prepare(withFirstSelectedLocatorPadding(base, pair, 1), pair)
     .sourceIdentityBinding.utf8Bytes - baseResult.sourceIdentityBinding.utf8Bytes;
@@ -830,7 +842,7 @@ test('fails before scanning overlength strings and detects the exact first sidec
         }
         if (residual === 0) {
           exactInput = withSelectedPositionCount(withFirstSelectedLocatorPadding(withDuplicateGroupIdLength(
-            syntheticPairComposition(composition, pair, { perCandidate: titleCount, pointerBytes }), duplicateGroupLength
+            legacySyntheticPairComposition(composition, pair, { perCandidate: titleCount, pointerBytes }), duplicateGroupLength
           ), pair, extra), pair, 9);
           break;
         }
@@ -848,13 +860,13 @@ test('fails before scanning overlength strings and detects the exact first sidec
   });
 });
 
-test('rejects a materially oversized sidecar projection without truncating it', async (t) => {
+test('legacy v1 rejects a materially oversized sidecar projection without truncating it', async (t) => {
   const composition = await compose(t, [
     { bytes: eventPage({ city: 'Seattle', startDate: '2027-08-01' }), url: 'https://events.example.test/seattle' },
     { bytes: eventPage({ city: 'Vancouver', startDate: '2027-08-02' }), url: 'https://events.example.test/vancouver' }
   ]);
   const pair = composition.occurrenceCandidates.map((candidate) => candidate.candidateId).sort();
-  const oversized = syntheticPairComposition(composition, pair, { perCandidate: 16, pointerBytes: 510 });
+  const oversized = legacySyntheticPairComposition(composition, pair, { perCandidate: 16, pointerBytes: 510 });
   assert.throws(() => prepare(oversized, pair), (error) => {
     assert.ok(error instanceof SourceIdentityQuestionPreparationError);
     assert.equal(error.code, 'RESOURCE_LIMIT_EXCEEDED');
