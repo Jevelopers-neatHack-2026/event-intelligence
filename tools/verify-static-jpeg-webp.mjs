@@ -16,7 +16,7 @@ const files = [
   "tests/extraction/jpeg-webp/runtime.test.mjs",
   "tests/extraction/jpeg-webp/setup.test.mjs",
 ];
-const expectedTests = 158;
+const expectedTests = 160;
 if (process.platform !== "linux" || process.arch !== "x64" || process.versions.node !== RASTER_NODE_VERSION ||
     !process.env.EI_JPEG_WEBP_TEST_RUNTIME || !process.env.EI_JPEG_WEBP_TEST_WHEEL) {
   process.stderr.write("Required JPEG/WebP checks need Linux x86-64, Node 22.23.3, and the explicit pinned runtime/wheel paths.\n");
