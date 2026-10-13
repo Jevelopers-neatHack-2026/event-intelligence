@@ -51,7 +51,7 @@ jobs:
         run: |
           printf 'CAPTURE_OUTPUT=%s\n' "$RUNNER_TEMP/ei-handoff-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" >> "$GITHUB_ENV"
       - name: Check whitespace in the actual checked-out change
-        run: git diff --check HEAD^ HEAD
+        run: git -c core.whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol diff --check HEAD^ HEAD
       - name: Test capture controls (not readiness)
         run: |
           python3 -B - <<'PY'
