@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import { spawnSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
@@ -1130,25 +1131,190 @@ test("applies signal count and document-byte ceilings consistently across plain 
   }
 });
 
-test("honors cancellation and does not access the network for canonical or remote IDs", async () => {
-  const originalFetch = globalThis.fetch;
-  let fetchCalls = 0;
-  globalThis.fetch = async () => {
-    fetchCalls += 1;
-    throw new Error("network access is outside deterministic extraction");
-  };
-  try {
-    const input = await fixture("multi-event.html");
-    const result = await extractDeterministically(input);
-    assert.equal(fetchCalls, 0);
-    assertExactRanges(result, input.bytes);
+test("records HTML/XHTML parser side requests and browser launches with interception controls and recovery", { timeout: 45_000 }, (t) => {
+  const prefix = "PARSER_SIDE_REQUEST_PROBE_JSON=";
+  const expectedApis = [
+    "http.request",
+    "http.get",
+    "http.ClientRequest",
+    "https.request",
+    "https.get",
+    "http2.connect",
+    "net.connect",
+    "net.createConnection",
+    "net.Socket.connect",
+    "net.Server.listen",
+    "tls.connect",
+    "dgram.createSocket",
+    "dgram.Socket.connect",
+    "dgram.Socket.send",
+    "dgram.Socket.bind",
+    "dns.lookup",
+    "dns.lookupService",
+    "dns.resolve",
+    "dns.resolve4",
+    "dns.resolve6",
+    "dns.resolveAny",
+    "dns.resolveCaa",
+    "dns.resolveCname",
+    "dns.resolveMx",
+    "dns.resolveNaptr",
+    "dns.resolveNs",
+    "dns.resolvePtr",
+    "dns.resolveSoa",
+    "dns.resolveSrv",
+    "dns.resolveTxt",
+    "dns.reverse",
+    "dns.promises.lookup",
+    "dns.promises.lookupService",
+    "dns.promises.resolve",
+    "dns.promises.resolve4",
+    "dns.promises.resolve6",
+    "dns.promises.resolveAny",
+    "dns.promises.resolveCaa",
+    "dns.promises.resolveCname",
+    "dns.promises.resolveMx",
+    "dns.promises.resolveNaptr",
+    "dns.promises.resolveNs",
+    "dns.promises.resolvePtr",
+    "dns.promises.resolveSoa",
+    "dns.promises.resolveSrv",
+    "dns.promises.resolveTxt",
+    "dns.promises.reverse",
+    "dns.Resolver.resolve",
+    "dns.Resolver.resolve4",
+    "dns.Resolver.resolve6",
+    "dns.Resolver.resolveAny",
+    "dns.Resolver.resolveCaa",
+    "dns.Resolver.resolveCname",
+    "dns.Resolver.resolveMx",
+    "dns.Resolver.resolveNaptr",
+    "dns.Resolver.resolveNs",
+    "dns.Resolver.resolvePtr",
+    "dns.Resolver.resolveSoa",
+    "dns.Resolver.resolveSrv",
+    "dns.Resolver.resolveTxt",
+    "dns.Resolver.reverse",
+    "dns.promises.Resolver.resolve",
+    "dns.promises.Resolver.resolve4",
+    "dns.promises.Resolver.resolve6",
+    "dns.promises.Resolver.resolveAny",
+    "dns.promises.Resolver.resolveCaa",
+    "dns.promises.Resolver.resolveCname",
+    "dns.promises.Resolver.resolveMx",
+    "dns.promises.Resolver.resolveNaptr",
+    "dns.promises.Resolver.resolveNs",
+    "dns.promises.Resolver.resolvePtr",
+    "dns.promises.Resolver.resolveSoa",
+    "dns.promises.Resolver.resolveSrv",
+    "dns.promises.Resolver.resolveTxt",
+    "dns.promises.Resolver.reverse",
+    "global.fetch",
+    "global.WebSocket",
+    "child_process.exec",
+    "child_process.execFile",
+    "child_process.execSync",
+    "child_process.execFileSync",
+    "child_process.fork",
+    "child_process.spawn",
+    "child_process.spawnSync",
+    "worker_threads.Worker",
+    "process.dlopen"
+  ];
+  const expectedFixtures = ["multi-event-html", "remote-html", "remote-xhtml", "external-dtd-xhtml",
+    "js-shell-html", "js-shell-xhtml", "access-html", "access-xhtml",
+    "cancelled-html", "cancelled-xhtml", "recovery-html"];
+  const expectedStatuses = ["PARTIAL", "PARTIAL", "PARTIAL", "PARTIAL", "JS_REQUIRED", "JS_REQUIRED",
+    "ACCESS_RESTRICTED", "ACCESS_RESTRICTED", "CANCELED", "CANCELED", "PARTIAL"];
+  const expectedEvents = [2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 2];
+  const probe = fileURLToPath(new URL("./support/parser-egress-probe.mjs", import.meta.url));
+  const cwd = fileURLToPath(new URL("../../", import.meta.url));
 
-    const controller = new AbortController();
-    controller.abort();
-    const canceled = await extractDeterministically(input, { signal: controller.signal });
-    assert.equal(canceled.status, "CANCELED");
-    assert.equal(canceled.termination, "CANCELED");
-  } finally {
-    globalThis.fetch = originalFetch;
+  function checkReceipt(run, mode) {
+    assert.equal(run.error, undefined, "probe spawn or watchdog failed");
+    assert.equal(run.signal, null, "probe did not settle normally");
+    assert.equal(run.status, mode === "healthy" ? 0 : 1, "unexpected child exit");
+    const lines = run.stdout.trimEnd().split("\n");
+    assert.equal(lines.length, 1, "one complete receipt is mandatory");
+    assert.ok(lines[0].startsWith(prefix), "missing fixed receipt");
+    const row = JSON.parse(lines[0].slice(prefix.length));
+    assert.equal(row.schemaVersion, "ei-parser-side-request-probe/1");
+    assert.equal(row.mode, mode);
+    assert.equal(row.node, process.versions.node);
+    assert.equal(row.measurement, "fixed Node API interposition before product import; not kernel or hostile-native containment");
+    assert.deepEqual(row.registrations.map((entry) => entry.api), expectedApis);
+    assert.deepEqual(row.registrations.map((entry) => entry.category),
+      expectedApis.map((api) => /^(child_process|worker_threads|process)\./.test(api) ? "launch" : "network"));
+    assert.deepEqual(row.positiveControls, [...expectedApis, "http.request.esm-binding"]);
+    assert.equal(row.scriptExecuted, false);
+    if (mode === "healthy") {
+      assert.equal(row.kind, "success");
+      assert.equal(row.phase, "complete");
+      assert.equal(row.activeFixture, null);
+      assert.equal(row.parserAttemptCount, 0);
+      assert.deepEqual(row.parserAttempts, []);
+      assert.deepEqual(row.fixtures.map((entry) => entry.id), expectedFixtures);
+      assert.deepEqual(row.fixtures.map((entry) => entry.status), expectedStatuses);
+      assert.deepEqual(row.fixtures.map((entry) => entry.events), expectedEvents);
+      for (const fixtureRow of row.fixtures) {
+        assert.match(fixtureRow.inputSha256, /^[0-9a-f]{64}$/);
+        assert.ok(Number.isSafeInteger(fixtureRow.exactRanges) && fixtureRow.exactRanges >= 0);
+        assert.equal(fixtureRow.networkAttempts, 0);
+        assert.equal(fixtureRow.launchAttempts, 0);
+        assert.equal(fixtureRow.scriptExecuted, false);
+      }
+      for (const index of [0, 1, 2, 3, 6, 7, 10]) assert.ok(row.fixtures[index].exactRanges > 0);
+    } else {
+      assert.equal(row.kind, "failure");
+      assert.equal(row.errorCode, "PARSER_SIDE_EFFECT_RECORDED");
+      assert.equal(row.phase, mode === "caught-network" ? "late-control" : "fixture");
+      assert.equal(row.activeFixture, mode === "caught-network" ? null : "remote-html");
+      assert.equal(row.parserAttemptCount, 1);
+      assert.deepEqual(row.fixtures.map((entry) => entry.id),
+        mode === "caught-network" ? expectedFixtures : ["multi-event-html"]);
+      assert.deepEqual(row.parserAttempts, [{
+        api: mode === "caught-network" ? "http.request" : "child_process.spawn",
+        category: mode === "caught-network" ? "network" : "launch",
+        phase: mode === "caught-network" ? "late-control" : "fixture",
+        fixture: mode === "caught-network" ? null : "remote-html",
+      }]);
+    }
+    return row;
   }
+
+  function execute(mode) {
+    const run = spawnSync(process.execPath, ["--unhandled-rejections=strict", probe, mode], {
+      cwd, encoding: "utf8", timeout: 10_000, killSignal: "SIGKILL", maxBuffer: 256 * 1024,
+      env: { PATH: process.env.PATH ?? "", LANG: "C.UTF-8", LC_ALL: "C.UTF-8", TZ: "UTC" },
+    });
+    // Preserve every child receipt and stderr, including the two expected failing controls.
+    t.diagnostic("parser probe " + mode + " stdout:\n" + run.stdout);
+    if (run.stderr) t.diagnostic("parser probe " + mode + " stderr:\n" + run.stderr);
+    return { run, receipt: checkReceipt(run, mode) };
+  }
+
+  const normal = execute("healthy");
+  execute("caught-network");
+  execute("caught-browser");
+  const recovery = execute("healthy");
+  assert.deepEqual(recovery.receipt.fixtures, normal.receipt.fixtures);
+  let refusalControls = 0;
+  function rejectsIncomplete(overrides) {
+    assert.throws(() => checkReceipt({ ...normal.run, ...overrides }, "healthy"));
+    refusalControls += 1;
+  }
+  rejectsIncomplete({ stdout: "" });
+  rejectsIncomplete({ stdout: normal.run.stdout + normal.run.stdout });
+  rejectsIncomplete({ status: null, signal: "SIGKILL" });
+  rejectsIncomplete({ error: Object.assign(new Error("synthetic watchdog control"), { code: "ETIMEDOUT" }) });
+  rejectsIncomplete({ stdout: prefix + JSON.stringify({ ...normal.receipt, fixtures: [] }) + "\n" });
+  rejectsIncomplete({ stdout: prefix + JSON.stringify({ ...normal.receipt, positiveControls: [] }) + "\n" });
+  assert.equal(refusalControls, 6);
+  t.diagnostic("PARSER_SIDE_REQUEST_RECORDER_JSON=" + JSON.stringify({
+    schemaVersion: "ei-parser-side-request-recorder/1", mode: "local-synthetic",
+    guardedApis: 86, positiveInterceptionControlsPerChild: 87, parserFixturesPerHealthyChild: 11,
+    healthyChildren: 2, expectedFailingChildren: 2, receiptRefusalControls: refusalControls,
+    parserNetworkAttempts: 0, parserLaunchAttempts: 0, recovery: "passed",
+    limits: "Node API interposition on fixed parser fixtures; external/kernel/native egress not measured",
+  }));
 });
