@@ -1,6 +1,7 @@
 """Fixed C API calls; no filename, language, configuration or model supplied by pixels."""
 import ctypes as C
 import math
+import os
 from errors import reject
 
 def bind(library, name, arguments, result):
@@ -19,9 +20,24 @@ def _load_library(path, target, **options):
             error.__dict__["_ei_native_loader"] = target
         raise
 
+def _refuse_existing_gif():
+    # Each worker initializes once. NOLOAD probes the fixed SONAME without
+    # introducing an ambient library; ctypes also uses NOW on this platform.
+    # Refuse an earlier handle even when its file was renamed or has our bytes.
+    try:
+        C.CDLL("libgif.so.7", mode=os.RTLD_NOLOAD | os.RTLD_NOW)
+    except OSError:
+        return
+    reject("RUNTIME_MISMATCH")
+
 class Engine:
     def __init__(self, site, profile):
         self.handle = None
+        _refuse_existing_gif()
+        # The verified regular file is loaded before Leptonica resolves its
+        # libgif.so.7 dependency. No search-path environment or package link is
+        # installed. A preload error retains the fixed startup failure boundary.
+        self.gif = C.CDLL(str(site/"usr/lib/x86_64-linux-gnu/libgif.so.7.2.0"), mode=C.RTLD_GLOBAL)
         self.lept = _load_library(site/"usr/lib/x86_64-linux-gnu/liblept.so.5.0.4", "leptonica", mode=C.RTLD_GLOBAL)
         self.library = _load_library(site/"usr/lib/x86_64-linux-gnu/libtesseract.so.5.0.3", "tesseract", use_errno=True)
         library = self.library

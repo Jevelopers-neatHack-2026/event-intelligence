@@ -83,7 +83,7 @@ def host_provenance(descriptor):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--archives", type=pathlib.Path, help="Directory containing the three exact offline .deb archives")
+    parser.add_argument("--archives", type=pathlib.Path, help="Directory containing the four exact offline .deb archives")
     parser.add_argument("--check", action="store_true", help="Verify the installed files and loaded closure; no downloads or replacement")
     options = parser.parse_args()
     if platform.python_version() != LOCK["pythonVersion"] or platform.system() != "Linux" or platform.machine() != "x86_64":

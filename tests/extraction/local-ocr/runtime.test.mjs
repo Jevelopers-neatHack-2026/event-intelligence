@@ -93,7 +93,7 @@ test("offline installer check reproduces the exact loaded closure without source
   const result = spawnSync(python, ["tools/local-ocr/install.py", "--check"], { cwd: root, env, timeout: 20000, maxBuffer: 1024 * 1024 });
   assert.equal(result.status, 0, result.stderr?.toString());
   const receipt = JSON.parse(result.stdout);
-  assert.equal(receipt.checked, true); assert.equal(receipt.pinnedFiles, 41);
+  assert.equal(receipt.checked, true); assert.equal(receipt.pinnedFiles, 46);
   assert.equal(receipt.closureSha256, manifest.closureSha256);
 });
 

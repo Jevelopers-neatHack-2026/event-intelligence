@@ -99,8 +99,9 @@ def describe_runtime():
         fields = line.split()
         if len(fields) >= 6 and fields[-1].startswith("/") and pathlib.Path(fields[-1]).is_file():
             mapped.add(pathlib.Path(fields[-1]).resolve())
-    expected_libraries = {SITE/"usr/lib/x86_64-linux-gnu/libtesseract.so.5.0.3", SITE/"usr/lib/x86_64-linux-gnu/liblept.so.5.0.4"}
-    if {p for p in mapped if p.name.startswith(("libtesseract.so", "liblept.so"))} != expected_libraries:
+    expected_libraries = {SITE/"usr/lib/x86_64-linux-gnu/libtesseract.so.5.0.3", SITE/"usr/lib/x86_64-linux-gnu/liblept.so.5.0.4",
+                          SITE/"usr/lib/x86_64-linux-gnu/libgif.so.7.2.0"}
+    if {p for p in mapped if p.name.startswith(("libtesseract.so", "liblept.so", "libgif.so"))} != expected_libraries:
         reject("RUNTIME_MISMATCH")
     paths.update(mapped)
     files = []

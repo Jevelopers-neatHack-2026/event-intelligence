@@ -323,6 +323,76 @@
           "sha256": "7093f320ebdc53dc522c665d5280a3f236e0fbc7c2aebdcdea1fe88258534452"
         }
       ]
+    },
+    {
+      "archive": "libgif7_5.2.2-1ubuntu1.2_amd64.deb",
+      "url": "https://archive.ubuntu.com/ubuntu/pool/main/g/giflib/libgif7_5.2.2-1ubuntu1.2_amd64.deb",
+      "bytes": 35608,
+      "sha256": "8137945ac9167f26d0264f403ffb48a45974f096e8acab5479e33fdba6c28a36",
+      "sourceDescriptor": {
+        "url": "https://archive.ubuntu.com/ubuntu/pool/main/g/giflib/giflib_5.2.2-1ubuntu1.2.dsc",
+        "status": 200,
+        "bytes": 2032,
+        "sha256": "a50e037ee000d290def80f3a08a4485e3f94b14eaa9ccc050dafb3e1a75f11d1"
+      },
+      "files": [
+        {
+          "path": "usr/lib/x86_64-linux-gnu/libgif.so.7.2.0",
+          "bytes": 38904,
+          "sha256": "70ac81372d0ddbdf03dbdd7a9f994df625928cedf794b7c0a06c9eac27a4edc3"
+        },
+        {
+          "path": "usr/share/doc/libgif7/NEWS.gz",
+          "bytes": 12712,
+          "sha256": "c7f48417c330ed43a7fc0f622d284fe282e77936a78ca7210c13a4d0b9a842e5"
+        },
+        {
+          "path": "usr/share/doc/libgif7/TODO",
+          "bytes": 390,
+          "sha256": "f601d1df30e5aa238afe33f19d493c6bde592f7f09ac381ba3c81739f093b317"
+        },
+        {
+          "path": "usr/share/doc/libgif7/changelog.Debian.gz",
+          "bytes": 3124,
+          "sha256": "6dfabe3d36c79080c1acd5ab21117987a1260aff26b82e7c78fa66e0ab632e0d"
+        },
+        {
+          "path": "usr/share/doc/libgif7/copyright",
+          "bytes": 2371,
+          "sha256": "479e834b17e61f0afe5f4a62e1794a4543208dea955820399e2d9589a1938fb0"
+        }
+      ],
+      "notices": [
+        "usr/share/doc/libgif7/copyright"
+      ],
+      "dataMemberCount": 13,
+      "controlFiles": [
+        {
+          "path": "./control",
+          "bytes": 512,
+          "sha256": "db9afb897b5706346cf10c47169e5cf45bf1f0447ea397fa1d3af07e0f574376"
+        },
+        {
+          "path": "./md5sums",
+          "bytes": 342,
+          "sha256": "24c0ba7210be4f9c17de224f1346fc3862f5e3ebf3ce2986e00c6f1e04e25deb"
+        },
+        {
+          "path": "./shlibs",
+          "bytes": 28,
+          "sha256": "41046da4d0cbc2ab942ca0ee8a6aa42c910ef8881d630b647f3395e6524895ad"
+        },
+        {
+          "path": "./symbols",
+          "bytes": 1738,
+          "sha256": "195b0304831451638f8da21ff1f790963893e24ca7519529d65c21a6e81a527f"
+        },
+        {
+          "path": "./triggers",
+          "bytes": 75,
+          "sha256": "0f1eda96d7595190cc2d40a06fafff8def651d19ceb635292ae6104de50de218"
+        }
+      ]
     }
   ]
 }
