@@ -1,0 +1,99 @@
+name: private native inspection outcomes
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  inspection-outcomes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Check merge-relative whitespace
+        shell: bash
+        run: |
+          comparison_base="$(git merge-base HEAD origin/main)"
+          if [ "$comparison_base" = "$(git rev-parse HEAD)" ]; then
+            comparison_base="$(git rev-parse HEAD^)"
+          fi
+          printf 'Whitespace comparison: %s..%s\n' "$comparison_base" "$(git rev-parse HEAD)"
+          git diff --check "$comparison_base" HEAD
+      - name: Set runner-local native paths
+        shell: bash
+        run: |
+          : "${RUNNER_TEMP:?}" "${GITHUB_ENV:?}"
+          printf '%s\n' \
+            "EI_JPEG_WEBP_TEST_RUNTIME=$RUNNER_TEMP/ei-outcomes-raster" \
+            "EI_JPEG_WEBP_TEST_WHEEL=$RUNNER_TEMP/ei-outcomes-wheels/pillow-12.3.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl" \
+            "EI_OUTCOMES_CAPTURE=$RUNNER_TEMP/ei-outcomes-evidence" >> "$GITHUB_ENV"
+          mkdir "$RUNNER_TEMP/ei-outcomes-evidence"
+          git rev-parse HEAD
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 22.23.3
+          cache: npm
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12.14'
+          architecture: x64
+      - run: npm ci
+      - name: Install the locked host TypeScript compiler
+        run: node tools/install-typescript-host.mjs
+      - name: Acquire existing hash-pinned development wheels
+        run: >-
+          python -I -m pip --isolated download --disable-pip-version-check
+          --only-binary=:all: --no-deps --require-hashes
+          --dest "$RUNNER_TEMP/ei-outcomes-wheels"
+          -r tools/static-raster/requirements.txt -r tools/scanned-pdf/requirements.txt
+      - name: Install the two declared runtimes offline
+        run: |
+          python -I -S -B tools/static-raster/install.py --wheel "$EI_JPEG_WEBP_TEST_WHEEL" --destination "$EI_JPEG_WEBP_TEST_RUNTIME"
+          python -I -S -B tools/scanned-pdf/install.py --wheel "$RUNNER_TEMP/ei-outcomes-wheels/pypdfium2-5.14.0-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+          cp "$EI_JPEG_WEBP_TEST_RUNTIME/runtime.json" "$EI_OUTCOMES_CAPTURE/raster-runtime.json"
+          cp tools/scanned-pdf/runtime/manifest.json "$EI_OUTCOMES_CAPTURE/pdf-runtime.json"
+      - name: Verify the exact dependency graph and checker controls
+        run: make verify-dependencies
+      - name: Execute required actual native outcomes
+        shell: bash
+        run: |
+          if node tools/verify-inspection-outcomes.mjs --mode mock > "$EI_OUTCOMES_CAPTURE/native.stdout" 2> "$EI_OUTCOMES_CAPTURE/native.stderr"; then result=0; else result=$?; fi
+          cat "$EI_OUTCOMES_CAPTURE/native.stdout"
+          cat "$EI_OUTCOMES_CAPTURE/native.stderr" >&2
+          exit "$result"
+      - name: Prove missing and nonpass inventories fail the verifier
+        shell: bash
+        run: |
+          if node --test tests/extraction/inspection-outcomes/verifier.test.mjs > "$EI_OUTCOMES_CAPTURE/controls.stdout" 2> "$EI_OUTCOMES_CAPTURE/controls.stderr"; then result=0; else result=$?; fi
+          cat "$EI_OUTCOMES_CAPTURE/controls.stdout"
+          cat "$EI_OUTCOMES_CAPTURE/controls.stderr" >&2
+          exit "$result"
+      - name: Compile the private boundary and four unchanged native consumers
+        run: >-
+          node node_modules/typescript/bin/tsc --noEmit --strict --target ES2022
+          --module NodeNext --moduleResolution NodeNext --lib ES2022,DOM
+          --types node --skipLibCheck false --noErrorTruncation
+          tests/extraction/inspection-outcomes/types-consumer.mts
+          tests/extraction/png/types-consumer.mts
+          tests/extraction/jpeg-webp/types-consumer.mts
+          tests/extraction/scanned-pdf/types-consumer.mts
+          tests/extraction/pdf/types-consumer.mts
+      - run: npm run typecheck
+      - name: Verify tracked source remains unchanged
+        run: git diff --exit-code HEAD
+      - name: Retain bounded synthetic outputs and runtime receipts
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: inspection-outcomes-evidence
+          path: ${{ runner.temp }}/ei-outcomes-evidence/
+          if-no-files-found: error
+          retention-days: 90
