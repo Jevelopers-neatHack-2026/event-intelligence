@@ -9,6 +9,7 @@ const REASONS = new Set(['unverified_public_facts', 'review_unavailable', 'unsup
 const TRUST = 'untrusted_external';
 const UNAVAILABLE = 'private evidence unavailable';
 const privacyBoundaries = new WeakSet();
+const derivativeSourceReaders = new WeakMap();
 const TYPED_ARRAY_PROTOTYPE = Object.getPrototypeOf(Uint8Array.prototype);
 const TYPED_ARRAY_TAG_GETTER = Object.getOwnPropertyDescriptor(TYPED_ARRAY_PROTOTYPE, Symbol.toStringTag).get;
 const TYPED_ARRAY_LENGTH_GETTER = Object.getOwnPropertyDescriptor(TYPED_ARRAY_PROTOTYPE, 'length').get;
@@ -20,6 +21,13 @@ function deny() {
 
 export function isPrivacyBoundary(value) {
   return privacyBoundaries.has(value);
+}
+
+/** @internal Private association only; this does not authorize a source read. */
+export function readDerivativeSourceAssociation(boundary, scope, derivative) {
+  const read = derivativeSourceReaders.get(boundary);
+  if (!read) throw deny();
+  return read(scope, derivative);
 }
 
 function opaque() {
@@ -170,6 +178,7 @@ export function createPrivacyBoundary(options = {}) {
   const sessionRecords = new WeakMap();
   const resultRecords = new WeakMap();
   const derivativeRecords = new WeakMap();
+  const derivativeSources = new WeakMap();
   const retained = new Map();
 
   function currentTime() {
@@ -443,6 +452,20 @@ export function createPrivacyBoundary(options = {}) {
       trust: TRUST,
       facts: state.pendingFacts,
     }));
+    const sourceController = new AbortController();
+    derivativeSources.set(derivative, {
+      partition: info.partition,
+      expiresAt: entry.expiresAt,
+      revoked: false,
+      controller: sourceController,
+      association: Object.freeze({
+        tenantId: info.tenantId,
+        recordId: state.recordId,
+        modality: entry.modality,
+        sourceDigest: entry.digest,
+        signal: sourceController.signal,
+      }),
+    });
     state.pendingFacts = null;
     state.derivative = derivative;
     state.state = 'published';
@@ -499,6 +522,27 @@ export function createPrivacyBoundary(options = {}) {
       trust: data.trust,
       facts: Object.freeze({ ...data.facts }),
     });
+  }
+
+  function readSourceAssociation(scope, derivative) {
+    const info = requireScope(scope);
+    const source = derivativeSources.get(derivative);
+    if (!source || source.partition !== info.partition || source.revoked) throw deny();
+    const time = currentTime();
+    // A trusted clock may reenter. Never resurrect an association it revoked.
+    if (source.revoked || source.expiresAt <= time) throw deny();
+    return source.association;
+  }
+
+  function revokeSourceAssociation(scope, derivative) {
+    const info = requireScope(scope);
+    const source = derivativeSources.get(derivative);
+    if (!source || source.partition !== info.partition) throw deny();
+    if (source.revoked) return false;
+    // Commit revocation before abort listeners can reenter the adapter.
+    source.revoked = true;
+    source.controller.abort();
+    return true;
   }
 
   async function withPrivateOriginal(scope, source, request) {
@@ -565,6 +609,7 @@ export function createPrivacyBoundary(options = {}) {
     result,
     diagnostics,
     exportDerivative,
+    revokeSourceAssociation,
     withPrivateOriginal,
     purgeExpired,
     retainedOriginalCount,
@@ -572,5 +617,6 @@ export function createPrivacyBoundary(options = {}) {
     scopePartition,
   });
   privacyBoundaries.add(boundary);
+  derivativeSourceReaders.set(boundary, readSourceAssociation);
   return boundary;
 }

@@ -4,13 +4,37 @@ on:
   push:
     paths:
       - 'src/cache/reuse/**'
+      - 'src/security/**'
+      - 'src/evidence/**'
+      - 'src/review/history/**'
+      - 'src/private/boundary-guard.*'
       - 'tests/cache/reuse/**'
+      - 'tests/review/history/**'
+      - 'tests/integration/review-cache-binding/**'
+      - 'tests/security/support.mjs'
+      - 'tools/verify.mjs'
+      - 'tools/install-typescript-host.mjs'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.types.json'
       - 'docs/cache/scoped-reuse.md'
       - '.github/workflows/scoped-reuse.yml'
   pull_request:
     paths:
       - 'src/cache/reuse/**'
+      - 'src/security/**'
+      - 'src/evidence/**'
+      - 'src/review/history/**'
+      - 'src/private/boundary-guard.*'
       - 'tests/cache/reuse/**'
+      - 'tests/review/history/**'
+      - 'tests/integration/review-cache-binding/**'
+      - 'tests/security/support.mjs'
+      - 'tools/verify.mjs'
+      - 'tools/install-typescript-host.mjs'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.types.json'
       - 'docs/cache/scoped-reuse.md'
       - '.github/workflows/scoped-reuse.yml'
 
@@ -30,7 +54,15 @@ jobs:
       - run: npm ci
       - name: Install the locked host TypeScript compiler
         run: node tools/install-typescript-host.mjs
-      - run: node --test tests/cache/reuse/*.test.mjs
+      - name: Verify local cache invalidation, correction recovery and conditional transport
+        run: node tools/verify.mjs --case cache-invalidation --mode mock
       - run: npm run typecheck
       - name: Strict scoped reuse declaration consumer
         run: ./node_modules/.bin/tsc --noEmit --strict --target ES2022 --module NodeNext --moduleResolution NodeNext --lib ES2022,DOM --types node --skipLibCheck false tests/cache/reuse/types-consumer.mts
+      - name: Strict private revalidation and correction/history consumers
+        run: >-
+          ./node_modules/.bin/tsc --noEmit --strict --target ES2022 --module NodeNext
+          --moduleResolution NodeNext --lib ES2022,DOM --types node --skipLibCheck false
+          tests/cache/reuse/revalidation-types-consumer.mts
+          tests/review/history/types-consumer.mts
+          tests/integration/review-cache-binding/types-consumer.mts

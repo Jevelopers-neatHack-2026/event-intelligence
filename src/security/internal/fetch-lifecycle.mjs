@@ -1,5 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { createHash } from 'node:crypto';
+import { types } from 'node:util';
+import { copyConditionalValidator } from './conditional-fetch.mjs';
 
 const contexts = new AsyncLocalStorage();
 const provenDocuments = new WeakMap();
@@ -10,12 +12,12 @@ const LIFECYCLE_HOOKS = new Set([
 const LIFECYCLE_OPTIONS = new Set([
   'decodedTextBytesPerResponse', 'decodedMediaBytesPerResponse',
   'gzipChunkSize', 'gzipReadableHighWaterMark', 'gzipWritableHighWaterMark',
-  'totalMilliseconds',
+  'totalMilliseconds', 'deadlineAtMonotonic',
 ]);
 
 function exactDataRecord(value, allowed) {
   try {
-    if (value === null || typeof value !== 'object' || Array.isArray(value)) return null;
+    if (value === null || typeof value !== 'object' || types.isProxy(value) || Array.isArray(value)) return null;
     const prototype = Object.getPrototypeOf(value);
     if (prototype !== Object.prototype && prototype !== null) return null;
     const keys = Reflect.ownKeys(value);
@@ -42,13 +44,22 @@ export function runWithSafeFetchLifecycle(fetcher, hooks, options, operation) {
     if (typeof callback !== 'function') throw new TypeError('private retrieval lifecycle unavailable');
   }
   for (const [name, value] of Object.entries(optionInput)) {
+    // Only private server composition can supply this performance-timeline
+    // deadline. An expired finite value is valid and must stop before DNS;
+    // native transport also clamps it to its own unchanged relative budget.
+    if (name === 'deadlineAtMonotonic') {
+      if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > Number.MAX_SAFE_INTEGER) {
+        throw new TypeError('private retrieval lifecycle unavailable');
+      }
+      continue;
+    }
     if (!Number.isSafeInteger(value) || value < 1) throw new TypeError('private retrieval lifecycle unavailable');
     if (name === 'totalMilliseconds' && value > 30_000) throw new TypeError('private retrieval lifecycle unavailable');
     if (name === 'gzipChunkSize' && value > 4_096) throw new TypeError('private retrieval lifecycle unavailable');
     if (name === 'gzipReadableHighWaterMark' && value > 4_096) throw new TypeError('private retrieval lifecycle unavailable');
     if (name === 'gzipWritableHighWaterMark' && value > 4_096) throw new TypeError('private retrieval lifecycle unavailable');
   }
-  return contexts.run(Object.freeze({ fetcher, hooks: hookInput, options: optionInput }), operation);
+  return contexts.run(Object.freeze({ fetcher, hooks: Object.freeze(hookInput), options: Object.freeze(optionInput) }), operation);
 }
 
 export function safeFetchLifecycleFor(fetcher) {
@@ -64,6 +75,7 @@ export function recordSafeFetchProvenance(document, provenance) {
     mode: provenance.mode === 'svg-asset' ? 'svg-asset' : 'document',
     lifecycleBound: provenance.lifecycleBound === true,
     bodyHash: provenance.bodyHash,
+    conditionalValidator: copyConditionalValidator(provenance.conditionalValidator),
     redirectChain: Object.freeze([...provenance.redirectChain]),
     hops: Object.freeze(provenance.hops.map((hop) => Object.freeze({
       url: hop.url,

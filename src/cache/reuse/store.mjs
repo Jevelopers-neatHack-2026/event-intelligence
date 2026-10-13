@@ -12,6 +12,9 @@ import { types as utilTypes } from 'node:util';
 import { isPrivacyBoundary } from '../../privacy/boundary.mjs';
 import { isCorrectionCacheBindingCapability } from '../../review/history/cache-binding-capability.mjs';
 import { beginLocalBoundary, localBoundaryEffectiveNow, monotonicTimestampNs } from '../../private/boundary-guard.mjs';
+import { safeFetchProvenance } from '../../security/internal/fetch-lifecycle.mjs';
+import { conditionalResponseProvenance } from '../../security/internal/conditional-fetch.mjs';
+import { isCacheRevalidationError, isRevalidationContext, originalBodyHash, revalidationFail } from './revalidation-context.mjs';
 
 const ERROR_MESSAGES = Object.freeze({
   REUSE_DENIED: 'reuse access denied',
@@ -27,6 +30,7 @@ const ERROR_MESSAGES = Object.freeze({
 const SCOPES = new WeakMap();
 const LOCAL_QUEUES = new Map();
 const CACHE_BINDING_PORTS = new WeakMap();
+const REVALIDATION_PORTS = new WeakMap();
 const TRUSTED_ERRORS = new WeakSet();
 const FACT_FIELDS = Object.freeze(['event_name', 'event_date', 'venue']);
 const PRIVATE_FACT_FIELDS_BY_KIND = Object.freeze([...FACT_FIELDS, 'event_status']);
@@ -302,6 +306,7 @@ function copyIndex(input) {
 }
 
 function safeError(error) {
+  if (isCacheRevalidationError(error)) return error;
   if (error && (typeof error === 'object' || typeof error === 'function') && TRUSTED_ERRORS.has(error)) return error;
   try {
     const errcode = Object.getOwnPropertyDescriptor(error, 'errcode')?.value;
@@ -584,6 +589,13 @@ export function createScopedReuseStore(options) {
             UNIQUE(entry_id, sequence)
           ) STRICT;
           CREATE INDEX IF NOT EXISTS reuse_observation_latest ON reuse_observations (entry_id, sequence DESC);
+          CREATE TABLE IF NOT EXISTS reuse_refresh_sources (
+            entry_id TEXT PRIMARY KEY NOT NULL,
+            partition_hash TEXT NOT NULL,
+            version INTEGER NOT NULL,
+            payload_key_id TEXT NOT NULL,
+            payload BLOB NOT NULL
+          ) STRICT;
           CREATE TABLE IF NOT EXISTS reuse_private_links (
             link_id TEXT PRIMARY KEY NOT NULL,
             tenant_partition_hash TEXT NOT NULL,
@@ -731,6 +743,7 @@ export function createScopedReuseStore(options) {
             const boundaryToken = boundary
               ? beginLocalBoundary(config.authorizeBoundary, boundary.input, () => fail('REUSE_DENIED'))
               : null;
+            boundary?.check?.();
             const now = boundaryToken?.nowMs ?? currentTime();
             const effectiveNow = boundaryToken ? localBoundaryEffectiveNow(boundaryToken) : now;
             if (!Number.isSafeInteger(effectiveNow) || effectiveNow < now || effectiveNow > MAX_TIME
@@ -758,6 +771,7 @@ export function createScopedReuseStore(options) {
                     || effectiveCommitNow > MAX_TIME
                     || (boundary?.mustBeBeforeMs !== undefined && effectiveCommitNow >= boundary.mustBeBeforeMs)) fail('REUSE_DENIED');
                 }
+                boundary?.check?.();
                 database.exec('COMMIT');
                 transactionOpen = false;
                 return result;
@@ -840,6 +854,7 @@ export function createScopedReuseStore(options) {
       SELECT
         (SELECT COALESCE(SUM(payload_bytes), 0) FROM reuse_entries) +
         (SELECT COALESCE(SUM(length(payload)), 0) FROM reuse_observations) +
+        (SELECT COALESCE(SUM(length(payload)), 0) FROM reuse_refresh_sources) +
         (SELECT COALESCE(SUM(length(payload)), 0) FROM reuse_private_links) +
         (SELECT COALESCE(SUM(length(payload)), 0) FROM reuse_consumer_refs) +
         (SELECT COALESCE(SUM(length(payload)), 0) FROM reuse_flights) +
@@ -1573,6 +1588,8 @@ export function createScopedReuseStore(options) {
     const changed = database.prepare('UPDATE reuse_entries SET eligible = 0 WHERE entry_id = ? AND scope_kind = ? AND partition_hash = ? AND eligible = 1 AND version = ? AND payload_purged = 0')
       .run(current.entry_id, current.scope_kind, current.partition_hash, current.version);
     if (changed.changes !== 1) return false;
+    database.prepare('DELETE FROM reuse_refresh_sources WHERE entry_id = ? AND partition_hash = ?')
+      .run(current.entry_id, current.partition_hash);
     const allConsumers = registeredConsumers(database, current, payload, keys);
     enqueueInvalidations(database, current, payload, reason, allConsumers, now, keys);
     return true;
@@ -1591,6 +1608,8 @@ export function createScopedReuseStore(options) {
       transitioned ||= purged.changes === 1;
     }
     database.prepare('DELETE FROM reuse_observations WHERE entry_id = ?').run(entry.entry_id);
+    database.prepare('DELETE FROM reuse_refresh_sources WHERE entry_id = ? AND partition_hash = ?')
+      .run(entry.entry_id, entry.partition_hash);
     database.prepare('DELETE FROM reuse_private_links WHERE public_entry_id = ?').run(entry.entry_id);
     database.prepare('DELETE FROM reuse_consumer_refs WHERE entry_id = ?').run(entry.entry_id);
     if (entry.scope_kind === 'tenant_private' && entry.partition_hash) {
@@ -3104,6 +3123,8 @@ export function createScopedReuseStore(options) {
           .run(binding.profileRef, keys.partitionHash, binding.cacheBindingHash, binding.cacheVersion);
         if (update.changes !== 1) fail('REUSE_BUSY');
       } else if (current.eligible !== 0) fail('REUSE_INTEGRITY');
+      database.prepare('DELETE FROM reuse_refresh_sources WHERE entry_id = ? AND partition_hash = ?')
+        .run(binding.profileRef, keys.partitionHash);
       const consumers = Object.freeze(reservationConsumers);
       const targetRefs = consumers.length > 0 ? consumers : [null];
       if (targetRefs.length !== reservation.outboxSlots) fail('REUSE_INTEGRITY');
@@ -3173,6 +3194,50 @@ export function createScopedReuseStore(options) {
     return { row, keys: { ...keys, payloadKey }, payloadKey, payload: unseal(payloadKey.key, row.partition_hash, 'entry', row.entry_id, row.payload, row.payload_key_id) };
   }
 
+  function commitPreparedObservation(database, time, prepared) {
+    const { info, input, ref, row, keys, payloadKey, payload, last, rawCurrent, verified, next } = prepared;
+    if (time.clockRollback) return Object.freeze({ status: 'unavailable', reason: 'clock_rollback' });
+    const current = database.prepare('SELECT * FROM reuse_entries WHERE entry_id = ? AND scope_kind = ? AND partition_hash = ?')
+      .get(ref, input.scopeKind, keys.partitionHash);
+    if (!current || current.version !== row.version || current.payload_bytes !== row.payload_bytes) {
+      return Object.freeze({ status: 'unavailable', reason: 'observation_changed' });
+    }
+    if (current.eligible !== 1) return Object.freeze({ status: 'unavailable', reason: 'invalidated' });
+    if (current.expires_at_ms <= time.now) {
+      expireEntry(database, info, current, payload, time.now, { ...keys, payloadKey });
+      return Object.freeze({ status: 'unavailable', reason: 'expired' });
+    }
+    const currentLast = database.prepare('SELECT * FROM reuse_observations WHERE entry_id = ? ORDER BY sequence DESC LIMIT 1').get(ref);
+    if (!currentLast || currentLast.sequence !== last.sequence || currentLast.observation_id !== last.observation_id) {
+      return Object.freeze({ status: 'unavailable', reason: 'observation_changed' });
+    }
+    const identityLatest = latestIdentityObservation(database, input.scopeKind, keys.partitionHash, current.identity_hash);
+    if (!identityLatest || verified.validatedAtMs < identityLatest.observed_at_ms) {
+      return Object.freeze({ status: 'unavailable', reason: 'observation_changed' });
+    }
+    if (verified.validatedAtMs === identityLatest.observed_at_ms) {
+      if (identityLatest.entry_id !== ref || !sameObservationIdentity(rawCurrent, next)) fail('REUSE_POLICY_UNAVAILABLE');
+      return Object.freeze({
+        status: verified.status,
+        profileRef: ref,
+        invalidated: false,
+        duplicateObservation: true,
+        retrievedAt: iso(effectiveRetrievedAt(payload, rawCurrent)),
+        validatedAt: iso(rawCurrent.validatedAtMs),
+        usageLineage: rawCurrent.attemptLineage.status,
+      });
+    }
+    const count = database.prepare('SELECT COUNT(*) AS count FROM reuse_observations WHERE entry_id = ?').get(ref).count;
+    if (count >= limits.maxObservationsPerEntry) fail('REUSE_CAPACITY');
+    insertObservation(database, ref, row.partition_hash, payloadKey.keyId, payloadKey.key, next, currentLast.sequence + 1);
+    let invalidated = false;
+    if (verified.status !== 'not_modified' && verified.status !== 'outage') {
+      const reason = verified.status === 'body_changed' ? 'source_body_changed' : verified.status;
+      invalidated = invalidateEntry(database, info, current, payload, reason, payload.consumers ?? [], time.now, { ...keys, payloadKey });
+    }
+    return Object.freeze({ status: verified.status, profileRef: ref, invalidated, retrievedAt: iso(effectiveRetrievedAt(payload, rawCurrent)), validatedAt: iso(verified.validatedAtMs), usageLineage: verified.attemptLineage.status });
+  }
+
   async function observe(scope, request, inputValue) {
     const info = scopeInfo(scope);
     const input = record(inputValue, new Set(['profileRef', 'scopeKind', 'observation']));
@@ -3212,48 +3277,9 @@ export function createScopedReuseStore(options) {
       attemptLineage: verified.attemptLineage,
       previousObservationStatus: rawCurrent.status,
     };
-    const result = await withDatabase((database, time) => {
-      if (time.clockRollback) return Object.freeze({ status: 'unavailable', reason: 'clock_rollback' });
-      const current = database.prepare('SELECT * FROM reuse_entries WHERE entry_id = ? AND scope_kind = ? AND partition_hash = ?')
-        .get(ref, input.scopeKind, keys.partitionHash);
-      if (!current || current.version !== row.version || current.payload_bytes !== row.payload_bytes) {
-        return Object.freeze({ status: 'unavailable', reason: 'observation_changed' });
-      }
-      if (current.eligible !== 1) return Object.freeze({ status: 'unavailable', reason: 'invalidated' });
-      if (current.expires_at_ms <= time.now) {
-        expireEntry(database, info, current, payload, time.now, { ...keys, payloadKey });
-        return Object.freeze({ status: 'unavailable', reason: 'expired' });
-      }
-      const currentLast = database.prepare('SELECT * FROM reuse_observations WHERE entry_id = ? ORDER BY sequence DESC LIMIT 1').get(ref);
-      if (!currentLast || currentLast.sequence !== last.sequence || currentLast.observation_id !== last.observation_id) {
-        return Object.freeze({ status: 'unavailable', reason: 'observation_changed' });
-      }
-      const identityLatest = latestIdentityObservation(database, input.scopeKind, keys.partitionHash, current.identity_hash);
-      if (!identityLatest || verified.validatedAtMs < identityLatest.observed_at_ms) {
-        return Object.freeze({ status: 'unavailable', reason: 'observation_changed' });
-      }
-      if (verified.validatedAtMs === identityLatest.observed_at_ms) {
-        if (identityLatest.entry_id !== ref || !sameObservationIdentity(rawCurrent, next)) fail('REUSE_POLICY_UNAVAILABLE');
-        return Object.freeze({
-          status: verified.status,
-          profileRef: ref,
-          invalidated: false,
-          duplicateObservation: true,
-          retrievedAt: iso(effectiveRetrievedAt(payload, rawCurrent)),
-          validatedAt: iso(rawCurrent.validatedAtMs),
-          usageLineage: rawCurrent.attemptLineage.status,
-        });
-      }
-      const count = database.prepare('SELECT COUNT(*) AS count FROM reuse_observations WHERE entry_id = ?').get(ref).count;
-      if (count >= limits.maxObservationsPerEntry) fail('REUSE_CAPACITY');
-      insertObservation(database, ref, row.partition_hash, payloadKey.keyId, payloadKey.key, next, currentLast.sequence + 1);
-      let invalidated = false;
-      if (verified.status !== 'not_modified' && verified.status !== 'outage') {
-        const reason = verified.status === 'body_changed' ? 'source_body_changed' : verified.status;
-        invalidated = invalidateEntry(database, info, current, payload, reason, payload.consumers ?? [], time.now, { ...keys, payloadKey });
-      }
-      return Object.freeze({ status: verified.status, profileRef: ref, invalidated, retrievedAt: iso(effectiveRetrievedAt(payload, rawCurrent)), validatedAt: iso(verified.validatedAtMs), usageLineage: verified.attemptLineage.status });
-    });
+    const result = await withDatabase((database, time) => commitPreparedObservation(database, time, {
+      info, input, ref, row, keys, payloadKey, payload, last, rawCurrent, verified, next,
+    }));
     await authorize(info, request, 'freshness.observe', { profileRef: ref });
     if (result.status === 'unavailable' && result.reason !== 'clock_rollback') fail('REUSE_BUSY');
     return result;
@@ -3460,7 +3486,9 @@ export function createScopedReuseStore(options) {
       }
       if (database.prepare('SELECT COUNT(*) AS count FROM reuse_flights').get().count >= limits.maxFlights) fail('REUSE_CAPACITY');
       const admissionId = randomUUID();
-      const payload = { identity: parsedIdentity, pins: parsedPins, mode: input.mode, usage: 'unknown', attemptLineage: validateLineage({ status: 'unknown' }) };
+      const payload = { identity: parsedIdentity, pins: parsedPins, mode: input.mode, usage: 'unknown',
+        actorBinding: mac(keys.keyInfo.key, `revalidation-actor:${info.actorId}`),
+        attemptLineage: validateLineage({ status: 'unknown' }) };
       const sealed = sealBounded(payloadKey.key, payloadKey.keyId, keys.partitionHash, 'flight', admissionId, payload);
       ensureStorageCapacity(database, sealed.byteLength);
       database.prepare('INSERT INTO reuse_flights (flight_key, scope_kind, partition_hash, admission_id, state, created_at_ms, lease_expires_at_ms, payload_key_id, payload) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
@@ -3723,6 +3751,344 @@ export function createScopedReuseStore(options) {
     }
   }
 
+  // Private conditional transport participates in this store's existing encrypted
+  // admission and observation transactions. It cannot reconcile monetary usage.
+  const refreshIntents = new WeakMap();
+  const bodyHashDomain = 'safe-fetch-decoded-entity-bytes/v1';
+
+  function refreshContext(context) {
+    if (!isRevalidationContext(context) || typeof config.authorizeBoundary !== 'function') {
+      revalidationFail('REVALIDATION_UNSUPPORTED');
+    }
+    context.check();
+  }
+
+  function refreshGuard(info, request, profileRef, context) {
+    return async () => {
+      context.check();
+      await context.wait(authorize(info, request, 'freshness.observe', { profileRef }));
+      await context.wait(authorizeCurrentRequest(info, request, 'freshness.observe', { profileRef }));
+      context.check();
+    };
+  }
+
+  function refreshBoundary(info, request, binding, context, validUntilMs) {
+    return {
+      input: boundaryInput(info, request, binding.profileRef, 'freshness.observe', { revalidation: binding }),
+      mustBeBeforeMs: Math.min(binding.expiresAtMs, validUntilMs),
+      check: context.check,
+    };
+  }
+
+  async function refreshPermission(info, request, loaded, binding, context) {
+    const result = await context.wait(maybePermissions(info, request, loaded.payload, 'cache_read', currentTime()));
+    if (!result.valid && (result.status === 'revoked' || result.status === 'expired')) {
+      // A trusted rights decision uses the same local invalidation primitive as
+      // an ordinary permission-checked cache read. Missing policy is not revocation.
+      await refreshGuard(info, request, binding.profileRef, context)();
+      await context.wait(withBindingDatabase((commit) => commit(), (database, time) => {
+        context.check();
+        const current = database.prepare('SELECT * FROM reuse_entries WHERE entry_id = ? AND partition_hash = ?')
+          .get(binding.profileRef, loaded.row.partition_hash);
+        if (!sameStoredEntry(current, loaded.row)) fail('REUSE_BUSY');
+        invalidateEntry(database, info, current, loaded.payload, `permission_${result.status}`,
+          loaded.payload.consumers ?? [], time.now, loaded.keys);
+      }, context.signal, refreshBoundary(info, request, binding, context, binding.expiresAtMs)));
+    }
+    if (!result.valid || !Number.isSafeInteger(result.validUntilMs)) revalidationFail('REVALIDATION_DENIED');
+    return result.validUntilMs;
+  }
+
+  function sourceBindingMatches(binding, info, loaded) {
+    return binding.schema === 'ei-private-conditional-source/v1'
+      && binding.scopeKind === 'tenant_private' && binding.tenantId === info.tenantId && binding.actorId === info.actorId
+      && binding.profileRef === loaded.row.entry_id && binding.profileVersion === loaded.row.version
+      && binding.profileContentHash === loaded.payload.contentHash && binding.originalBodyHash === loaded.payload.contentHash
+      && binding.bodyHashDomain === bodyHashDomain && binding.profileHashDomain === bodyHashDomain
+      && binding.expiresAtMs === loaded.row.expires_at_ms
+      && binding.originalRetrievedAt === iso(loaded.payload.retrievedAtMs)
+      && stable(binding.identity) === stable(loaded.payload.identity) && stable(binding.pins) === stable(loaded.payload.pins)
+      && loaded.payload.sourceRefs?.length === 1 && loaded.payload.sourceRefs[0] === binding.sourceRef;
+  }
+
+  async function bindRefreshSource(scope, request, inputValue, context) {
+    refreshContext(context);
+    const input = record(inputValue, new Set(['profileRef', 'scopeKind', 'sourceRef', 'evidenceId', 'evidenceVersion', 'document']));
+    if (!input || input.scopeKind !== 'tenant_private' || !string(input.sourceRef) || !string(input.evidenceId)
+      || !Number.isSafeInteger(input.evidenceVersion) || input.evidenceVersion < 1) revalidationFail('REVALIDATION_INVALID');
+    const info = scopeInfo(scope);
+    const ref = entryRefFor(scope, input.profileRef);
+    const guard = refreshGuard(info, request, ref, context);
+    await guard();
+    const loaded = await context.wait(loadEntry(info, 'tenant_private', ref, guard));
+    const { row, payload, keys, payloadKey } = loaded;
+    try {
+      const proof = safeFetchProvenance(input.document);
+      const hop = proof?.hops?.[0];
+      if (!proof || proof.mode !== 'document' || proof.redirectChain.length !== 0 || proof.hops.length !== 1
+        || !proof.conditionalValidator || proof.requestedUrl !== proof.finalUrl || input.document.url !== proof.finalUrl
+        || input.document.redirects !== 0 || hop.url !== proof.finalUrl || hop.statusCode !== 200
+        || !hop.bodyComplete || !hop.dispatchIntent || !hop.responseReceived
+        || hop.decodedBytes !== input.document.bytes?.byteLength || originalBodyHash(input.document.bytes) !== proof.bodyHash) {
+        revalidationFail('REVALIDATION_PROVENANCE');
+      }
+      const binding = freeze({
+        schema: 'ei-private-conditional-source/v1', scopeKind: 'tenant_private',
+        tenantId: info.tenantId, actorId: info.actorId, profileRef: ref, profileVersion: row.version,
+        identity: payload.identity, pins: payload.pins, profileContentHash: payload.contentHash,
+        profileHashDomain: bodyHashDomain, sourceRef: input.sourceRef,
+        evidenceId: input.evidenceId, evidenceVersion: input.evidenceVersion,
+        sourceUrl: proof.finalUrl, contentType: input.document.contentType, originalBodyHash: proof.bodyHash, bodyHashDomain,
+        originalRetrievedAt: input.document.fetchedAt, validator: proof.conditionalValidator,
+        expiresAtMs: row.expires_at_ms,
+      });
+      if (row.eligible !== 1 || !sourceBindingMatches(binding, info, loaded)) revalidationFail('REVALIDATION_UNSUPPORTED');
+      const retainedUntil = await context.retain(binding, 'bind');
+      const permissionUntil = await refreshPermission(info, request, loaded, binding, context);
+      await guard();
+      const sealed = sealBounded(payloadKey.key, payloadKey.keyId, row.partition_hash, 'refresh_source', ref, binding);
+      return await context.wait(withBindingDatabase((commit) => commit(), (database) => {
+        context.check();
+        const current = database.prepare('SELECT * FROM reuse_entries WHERE entry_id = ? AND partition_hash = ?').get(ref, row.partition_hash);
+        if (!sameStoredEntry(current, row)) fail('REUSE_BUSY');
+        const prior = database.prepare('SELECT * FROM reuse_refresh_sources WHERE entry_id = ? AND partition_hash = ?').get(ref, row.partition_hash);
+        if (prior) {
+          if (prior.payload_key_id !== payloadKey.keyId) revalidationFail('REVALIDATION_UNSUPPORTED');
+          const old = unseal(payloadKey.key, row.partition_hash, 'refresh_source', ref, prior.payload, prior.payload_key_id);
+          if (stable(old) !== stable(binding)) revalidationFail('REVALIDATION_DENIED');
+          return Object.freeze({ status: 'bound', profileRef: ref, profileVersion: row.version, replayed: true });
+        }
+        ensureStorageCapacity(database, sealed.byteLength);
+        database.prepare('INSERT INTO reuse_refresh_sources (entry_id, partition_hash, version, payload_key_id, payload) VALUES (?, ?, ?, ?, ?)')
+          .run(ref, row.partition_hash, row.version, payloadKey.keyId, sealed);
+        return Object.freeze({ status: 'bound', profileRef: ref, profileVersion: row.version, replayed: false });
+      }, context.signal, refreshBoundary(info, request, binding, context, Math.min(retainedUntil, permissionUntil))));
+    } finally {
+      keys.keyInfo.key.fill(0);
+      payloadKey.key.fill(0);
+    }
+  }
+
+  async function loadRefreshFlight(info, request, ref, admissionRef, context) {
+    const guard = refreshGuard(info, request, ref, context);
+    await guard();
+    const keys = await context.wait(indexInfo(info, 'tenant_private', guard));
+    let payloadKey;
+    try {
+      const row = await context.wait(withDatabase((database) => database.prepare("SELECT * FROM reuse_flights WHERE admission_id = ? AND scope_kind = 'tenant_private' AND partition_hash = ?")
+        .get(admissionRef, keys.partitionHash)));
+      if (!row) fail('REUSE_NOT_FOUND');
+      payloadKey = await context.wait(resolveKey(info, 'payload', row.payload_key_id, guard));
+      const payload = unseal(payloadKey.key, keys.partitionHash, 'flight', admissionRef, row.payload, row.payload_key_id);
+      const actorBinding = mac(keys.keyInfo.key, `revalidation-actor:${info.actorId}`);
+      if (!payload.actorBinding || payload.actorBinding !== actorBinding) {
+        revalidationFail('REVALIDATION_DENIED');
+      }
+      return { row, keys, payloadKey, payload, actorBinding, guard };
+    } catch (error) { keys.keyInfo.key.fill(0); payloadKey?.key.fill(0); throw error; }
+  }
+
+  function localRefreshResult(admissionRef, local, replayed) {
+    return freeze({
+      status: local.state === 'completed' ? 'completed' : 'unknown',
+      admissionRef, profileRef: local.profileRef, profileVersion: local.profileVersion,
+      localRefreshId: local.localRefreshId, bindingDigest: local.bindingDigest, replayed,
+      ...(local.receipt ? { receipt: local.receipt } : {}),
+      usage: 'unknown', holdDisposition: 'finance_reconciliation_required',
+    });
+  }
+
+  async function prepareRefresh(scope, request, inputValue, context) {
+    refreshContext(context);
+    const input = record(inputValue, new Set(['profileRef', 'scopeKind', 'admissionRef']));
+    if (!input || input.scopeKind !== 'tenant_private' || !string(input.admissionRef, 64)) revalidationFail('REVALIDATION_INVALID');
+    const info = scopeInfo(scope);
+    const ref = entryRefFor(scope, input.profileRef);
+    const flight = await loadRefreshFlight(info, request, ref, input.admissionRef, context);
+    let loaded;
+    let sourceKey;
+    try {
+      if (flight.payload.localRefresh) {
+        const local = flight.payload.localRefresh;
+        if (local.profileRef !== ref || local.actorBinding !== flight.actorBinding) revalidationFail('REVALIDATION_DENIED');
+        await flight.guard();
+        // This is an authorized historical receipt, not a new freshness decision.
+        beginLocalBoundary(config.authorizeBoundary, boundaryInput(info, request, ref, 'freshness.observe', {
+          admissionRef: input.admissionRef, localRefreshId: local.localRefreshId, historicalReceipt: true,
+        }), () => fail('REUSE_DENIED'));
+        context.check();
+        return localRefreshResult(input.admissionRef, local, true);
+      }
+      if (flight.row.state !== 'active' || flight.row.lease_expires_at_ms <= currentTime()) revalidationFail('REVALIDATION_DENIED');
+      loaded = await context.wait(loadEntry(info, 'tenant_private', ref, flight.guard));
+      if (loaded.row.eligible !== 1 || stable(flight.payload.identity) !== stable(loaded.payload.identity)
+        || stable(flight.payload.pins) !== stable(loaded.payload.pins)) revalidationFail('REVALIDATION_DENIED');
+      const sourceRow = await context.wait(withDatabase((database) => database.prepare('SELECT * FROM reuse_refresh_sources WHERE entry_id = ? AND partition_hash = ?').get(ref, flight.keys.partitionHash)));
+      if (!sourceRow) revalidationFail('REVALIDATION_PROVENANCE');
+      sourceKey = await context.wait(resolveKey(info, 'payload', sourceRow.payload_key_id, flight.guard));
+      const binding = freeze(unseal(sourceKey.key, sourceRow.partition_hash, 'refresh_source', ref, sourceRow.payload, sourceRow.payload_key_id));
+      if (!sourceBindingMatches(binding, info, loaded)) revalidationFail('REVALIDATION_DENIED');
+      const retainedUntil = await context.retain(binding, 'prepare');
+      const permissionUntil = await refreshPermission(info, request, loaded, binding, context);
+      await flight.guard();
+      const local = {
+        localRefreshId: randomUUID(), state: 'dispatch_intent', profileRef: ref, profileVersion: loaded.row.version,
+        actorBinding: flight.actorBinding, bindingDigest: mac(flight.keys.keyInfo.key, stable(binding)),
+      };
+      const prepared = await context.wait(withBindingDatabase((commit) => commit(), (database, time) => {
+        context.check();
+        const currentFlight = database.prepare('SELECT * FROM reuse_flights WHERE admission_id = ? AND partition_hash = ?').get(input.admissionRef, flight.keys.partitionHash);
+        if (!currentFlight || currentFlight.payload_key_id !== flight.row.payload_key_id) fail('REUSE_BUSY');
+        if (!Buffer.from(currentFlight.payload).equals(Buffer.from(flight.row.payload))) {
+          const raced = unseal(flight.payloadKey.key, flight.keys.partitionHash, 'flight', input.admissionRef,
+            currentFlight.payload, currentFlight.payload_key_id).localRefresh;
+          if (!raced || raced.profileRef !== ref || raced.actorBinding !== flight.actorBinding
+            || raced.bindingDigest !== local.bindingDigest) fail('REUSE_BUSY');
+          return { replay: localRefreshResult(input.admissionRef, raced, true) };
+        }
+        if (currentFlight.state !== 'active' || currentFlight.lease_expires_at_ms <= time.now) fail('REUSE_DENIED');
+        const current = database.prepare('SELECT * FROM reuse_entries WHERE entry_id = ? AND partition_hash = ?').get(ref, flight.keys.partitionHash);
+        const currentSource = database.prepare('SELECT * FROM reuse_refresh_sources WHERE entry_id = ? AND partition_hash = ?').get(ref, flight.keys.partitionHash);
+        if (!sameStoredEntry(current, loaded.row) || !currentSource
+          || !Buffer.from(currentSource.payload).equals(Buffer.from(sourceRow.payload))) fail('REUSE_BUSY');
+        const last = database.prepare('SELECT * FROM reuse_observations WHERE entry_id = ? ORDER BY sequence DESC LIMIT 1').get(ref);
+        if (!last) fail('REUSE_INTEGRITY');
+        const payload = sealBounded(flight.payloadKey.key, flight.payloadKey.keyId, flight.keys.partitionHash, 'flight', input.admissionRef,
+          { ...flight.payload, localRefresh: local });
+        ensureStorageCapacity(database, payload.byteLength, currentFlight.payload.byteLength);
+        database.prepare('UPDATE reuse_flights SET payload = ? WHERE admission_id = ? AND partition_hash = ?')
+          .run(payload, input.admissionRef, flight.keys.partitionHash);
+        return { last };
+      }, context.signal, refreshBoundary(info, request, binding, context, Math.min(retainedUntil, permissionUntil, flight.row.lease_expires_at_ms))));
+      if (prepared.replay) return prepared.replay;
+      const token = opaque();
+      refreshIntents.set(token, { context, info, binding, sourceRow, entry: loaded.row, last: prepared.last,
+        admissionRef: input.admissionRef, local });
+      return Object.freeze({ status: 'dispatch', token, sourceUrl: binding.sourceUrl, validator: binding.validator });
+    } finally {
+      flight.keys.keyInfo.key.fill(0);
+      flight.payloadKey.key.fill(0);
+      loaded?.keys.keyInfo.key.fill(0);
+      loaded?.payloadKey.key.fill(0);
+      sourceKey?.key.fill(0);
+    }
+  }
+
+  async function withCurrentRefresh(scope, request, token, context, phase, operation) {
+    refreshContext(context);
+    const pending = refreshIntents.get(token);
+    const info = scopeInfo(scope);
+    if (!pending || pending.context !== context || pending.info.tenantId !== info.tenantId
+      || pending.info.actorId !== info.actorId) revalidationFail('REVALIDATION_DENIED');
+    const { binding } = pending;
+    const guard = refreshGuard(info, request, binding.profileRef, context);
+    await guard();
+    const loaded = await context.wait(loadEntry(info, 'tenant_private', binding.profileRef, guard));
+    let flight;
+    try {
+      if (!sourceBindingMatches(binding, info, loaded)) revalidationFail('REVALIDATION_DENIED');
+      const retainedUntil = await context.retain(binding, phase);
+      const permissionUntil = await refreshPermission(info, request, loaded, binding, context);
+      flight = await loadRefreshFlight(info, request, binding.profileRef, pending.admissionRef, context);
+      const local = flight.payload.localRefresh;
+      if (!local || local.localRefreshId !== pending.local.localRefreshId || local.bindingDigest !== pending.local.bindingDigest
+        || local.state !== 'dispatch_intent' || !['active', 'unknown'].includes(flight.row.state)) revalidationFail('REVALIDATION_DENIED');
+      const lastKey = pending.last.payload_key_id === loaded.payloadKey.keyId ? loaded.payloadKey
+        : await context.wait(resolveKey(info, 'payload', pending.last.payload_key_id, guard));
+      try {
+        const rawCurrent = unseal(lastKey.key, loaded.row.partition_hash, 'observation', pending.last.observation_id, pending.last.payload, pending.last.payload_key_id);
+        await guard();
+        return await context.wait(withBindingDatabase((commit) => commit(), (database, time) => {
+          context.check();
+          const current = database.prepare('SELECT * FROM reuse_entries WHERE entry_id = ? AND partition_hash = ?').get(binding.profileRef, loaded.row.partition_hash);
+          const source = database.prepare('SELECT * FROM reuse_refresh_sources WHERE entry_id = ? AND partition_hash = ?').get(binding.profileRef, loaded.row.partition_hash);
+          const last = database.prepare('SELECT * FROM reuse_observations WHERE entry_id = ? ORDER BY sequence DESC LIMIT 1').get(binding.profileRef);
+          const currentFlight = database.prepare('SELECT * FROM reuse_flights WHERE admission_id = ? AND partition_hash = ?').get(pending.admissionRef, loaded.row.partition_hash);
+          if (!sameStoredEntry(current, pending.entry) || !sameStoredEntry(current, loaded.row)
+            || !sameStoredObservation(last, pending.last) || !source
+            || source.payload_key_id !== pending.sourceRow.payload_key_id
+            || !Buffer.from(source.payload).equals(Buffer.from(pending.sourceRow.payload))
+            || !currentFlight || currentFlight.state !== flight.row.state || currentFlight.payload_key_id !== flight.row.payload_key_id
+            || !Buffer.from(currentFlight.payload).equals(Buffer.from(flight.row.payload))) fail('REUSE_BUSY');
+          if (phase === 'dispatch' && (currentFlight.state !== 'active' || currentFlight.lease_expires_at_ms <= time.now)) {
+            revalidationFail('REVALIDATION_DENIED');
+          }
+          const result = operation({ database, time, info, pending, loaded, flight, rawCurrent });
+          context.check();
+          return result;
+        }, context.signal, refreshBoundary(info, request, binding, context, Math.min(retainedUntil, permissionUntil))));
+      } finally { if (lastKey !== loaded.payloadKey) lastKey.key.fill(0); }
+    } finally {
+      loaded.keys.keyInfo.key.fill(0);
+      loaded.payloadKey.key.fill(0);
+      flight?.keys.keyInfo.key.fill(0);
+      flight?.payloadKey.key.fill(0);
+    }
+  }
+
+  async function completeRefresh(scope, request, token, response, context) {
+    const proof = conditionalResponseProvenance(response);
+    const pending = refreshIntents.get(token);
+    if (!proof || !pending || proof.intent !== token || proof.sourceUrl !== pending.binding.sourceUrl
+      || proof.redirects !== 0 || proof.bodyHashDomain !== bodyHashDomain
+      || stable(proof.sentValidator) !== stable(pending.binding.validator)
+      || (proof.kind === 'not_modified' && stable(proof.receivedValidator) !== stable(pending.binding.validator))
+      || (proof.kind === 'body' && (originalBodyHash(response.bytes) !== proof.bodyHash
+        || (proof.bodyHash === pending.binding.originalBodyHash && response.contentType !== pending.binding.contentType)))) {
+      revalidationFail('REVALIDATION_PROVENANCE');
+    }
+    const result = await withCurrentRefresh(scope, request, token, context, 'commit', ({ database, time, info, pending: exact, loaded, flight, rawCurrent }) => {
+      const verified = {
+        status: proof.kind === 'body' ? proof.bodyHash === exact.binding.originalBodyHash ? 'not_modified' : 'body_changed' : proof.kind,
+        contentHash: proof.kind === 'body' ? proof.bodyHash : exact.binding.originalBodyHash,
+        retrievedAtMs: proof.kind === 'body' ? timestamp(proof.retrievedAt) : null,
+        validatedAtMs: timestamp(proof.observedAt), sourceVersion: 'unknown', attemptLineage: validateLineage({ status: 'unknown' }),
+      };
+      if (!['not_modified', 'body_changed', 'removed', 'outage'].includes(verified.status)
+        || verified.validatedAtMs < rawCurrent.validatedAtMs || verified.validatedAtMs > time.now + 60_000) {
+        revalidationFail('REVALIDATION_PROVENANCE');
+      }
+      const transport = {
+        localRefreshId: exact.local.localRefreshId, bindingDigest: exact.local.bindingDigest,
+        responseKind: proof.kind === 'body' && verified.status === 'not_modified' ? 'body_unchanged' : proof.kind,
+        httpStatus: proof.statusCode, responseObservedAt: proof.observedAt, responseRetrievedAt: proof.retrievedAt,
+        responseBodyHash: proof.bodyHash, bodyHashDomain,
+      };
+      const next = {
+        status: verified.status, contentHash: verified.contentHash, retrievedAtMs: effectiveRetrievedAt(loaded.payload, rawCurrent),
+        bodyObservedAtMs: proof.kind === 'body' ? verified.retrievedAtMs : null,
+        validatedAtMs: verified.validatedAtMs, sourceVersion: verified.sourceVersion, attemptLineage: verified.attemptLineage,
+        previousObservationStatus: rawCurrent.status, revalidation: transport,
+      };
+      const observed = commitPreparedObservation(database, time, {
+        info, input: { scopeKind: 'tenant_private' }, ref: exact.binding.profileRef,
+        row: loaded.row, keys: loaded.keys, payloadKey: loaded.payloadKey, payload: loaded.payload,
+        last: exact.last, rawCurrent, verified, next,
+      });
+      if (observed.status === 'unavailable') fail('REUSE_BUSY');
+      // Legacy observation identity can coalesce equal-millisecond results.
+      // A new refresh attempt cannot borrow a different transport's durable join.
+      if (observed.duplicateObservation && (rawCurrent.revalidation?.localRefreshId !== exact.local.localRefreshId
+        || rawCurrent.revalidation?.bindingDigest !== exact.local.bindingDigest)) fail('REUSE_BUSY');
+      const observation = database.prepare('SELECT observation_id FROM reuse_observations WHERE entry_id = ? ORDER BY sequence DESC LIMIT 1').get(exact.binding.profileRef);
+      const receipt = {
+        observationRef: observation.observation_id, observationStatus: observed.status,
+        responseKind: transport.responseKind, httpStatus: proof.statusCode,
+        invalidated: observed.invalidated, duplicateObservation: observed.duplicateObservation === true,
+      };
+      const completed = { ...flight.payload.localRefresh, state: 'completed', receipt };
+      const payload = sealBounded(flight.payloadKey.key, flight.payloadKey.keyId, flight.keys.partitionHash, 'flight', exact.admissionRef,
+        { ...flight.payload, localRefresh: completed });
+      ensureStorageCapacity(database, payload.byteLength, flight.row.payload.byteLength);
+      // Only the local receipt changes: state, unknown usage and original expense lineage are retained.
+      database.prepare('UPDATE reuse_flights SET payload = ? WHERE admission_id = ? AND partition_hash = ?')
+        .run(payload, exact.admissionRef, flight.keys.partitionHash);
+      return localRefreshResult(exact.admissionRef, completed, false);
+    });
+    refreshIntents.delete(token);
+    return result;
+  }
+
   const api = Object.freeze({
     scopeForAuthenticatedRequest: publicBoundary(authenticatedScope),
     putPrivateProfile: publicBoundary(putPrivateProfile),
@@ -3764,6 +4130,13 @@ export function createScopedReuseStore(options) {
       invalidateBoundProfile(scope, request, binding, operation, gate, signal, capability),
     now: currentTime,
   }));
+  REVALIDATION_PORTS.set(api, Object.freeze({
+    bindSource: bindRefreshSource,
+    prepare: prepareRefresh,
+    beforeDispatch: (scope, request, token, context) => withCurrentRefresh(scope, request, token, context, 'dispatch', () => undefined),
+    complete: completeRefresh,
+    dispose: (token) => refreshIntents.delete(token),
+  }));
   return api;
 }
 
@@ -3771,5 +4144,13 @@ export function getScopedReuseBindingPort(store, capability) {
   if (!isCorrectionCacheBindingCapability(capability)) fail('REUSE_DENIED');
   const port = CACHE_BINDING_PORTS.get(store);
   if (!port || !port.hasBoundaryGuard) fail('REUSE_DENIED');
+  return port;
+}
+
+/** Private source import only. The opaque per-operation context is not host authority. */
+export function getPrivateRevalidationPort(store, context) {
+  if (!isRevalidationContext(context)) revalidationFail('REVALIDATION_DENIED');
+  const port = REVALIDATION_PORTS.get(store);
+  if (!port) revalidationFail('REVALIDATION_UNSUPPORTED');
   return port;
 }

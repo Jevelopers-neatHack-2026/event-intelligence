@@ -585,6 +585,11 @@ export interface EvidenceStoreOptions<Request = unknown> {
   readonly maxPositionCount?: number;
   readonly maxStoredPayloadBytes?: number;
   readonly maxRetentionMs?: number;
+  /**
+   * Original elapsed budget for each lock operation, including queue/open/retry
+   * and transaction work. Expired boundaries fail EVIDENCE_BUSY. It does not
+   * bound earlier key work or preempt synchronous host callbacks or SQLite.
+   */
   readonly lockTimeoutMs?: number;
 }
 
