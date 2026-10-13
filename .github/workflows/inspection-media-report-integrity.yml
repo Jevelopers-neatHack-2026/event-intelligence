@@ -1,0 +1,140 @@
+name: local inspection media report integrity
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  inspection-media-report-integrity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Check merge-relative whitespace
+        shell: bash
+        run: |
+          comparison_base="$(git merge-base HEAD origin/main)"
+          if [ "$comparison_base" = "$(git rev-parse HEAD)" ]; then
+            comparison_base="$(git rev-parse HEAD^)"
+          fi
+          printf 'Whitespace comparison: %s..%s\n' "$comparison_base" "$(git rev-parse HEAD)"
+          git diff --check "$comparison_base" HEAD
+      - name: Set runner-local inspection paths
+        shell: bash
+        run: |
+          : "${RUNNER_TEMP:?}" "${GITHUB_ENV:?}"
+          printf '%s\n' \
+            "EI_JPEG_WEBP_TEST_RUNTIME=$RUNNER_TEMP/ei-inspection-jpeg-runtime" \
+            "EI_JPEG_WEBP_TEST_WHEEL=$RUNNER_TEMP/ei-inspection-media-wheels/pillow-12.3.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl" \
+            "EI_INSPECTION_MEDIA_REPORT_CAPTURE=$RUNNER_TEMP/ei-inspection-media-evidence" >> "$GITHUB_ENV"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 22.23.3
+          cache: npm
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12.14'
+          architecture: x64
+      - run: npm ci
+      - name: Install the locked host TypeScript compiler
+        run: node tools/install-typescript-host.mjs
+      - name: Acquire the two existing hash-pinned development wheels
+        run: >-
+          python -I -m pip --isolated download --disable-pip-version-check
+          --only-binary=:all: --no-deps --require-hashes
+          --dest "$RUNNER_TEMP/ei-inspection-media-wheels"
+          -r tools/static-raster/requirements.txt -r tools/scanned-pdf/requirements.txt
+      - name: Install both declared runtimes offline
+        run: |
+          python -I -S -B tools/static-raster/install.py --wheel "$EI_JPEG_WEBP_TEST_WHEEL" --destination "$EI_JPEG_WEBP_TEST_RUNTIME"
+          python -I -S -B tools/scanned-pdf/install.py --wheel "$RUNNER_TEMP/ei-inspection-media-wheels/pypdfium2-5.14.0-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+      - name: Verify actual media bindings and retain all raw evidence
+        run: |
+          mkdir -p "$EI_INSPECTION_MEDIA_REPORT_CAPTURE"
+          if node tools/verify-inspection-media-report.mjs --mode mock > "$EI_INSPECTION_MEDIA_REPORT_CAPTURE/wrapper.stdout" 2> "$EI_INSPECTION_MEDIA_REPORT_CAPTURE/wrapper.stderr"; then result=0; else result=$?; fi
+          cat "$EI_INSPECTION_MEDIA_REPORT_CAPTURE/wrapper.stdout"
+          cat "$EI_INSPECTION_MEDIA_REPORT_CAPTURE/wrapper.stderr" >&2
+          exit "$result"
+      - name: Compile the report and actual component consumers
+        run: >-
+          node node_modules/typescript/bin/tsc --noEmit --strict --target ES2022
+          --module NodeNext --moduleResolution NodeNext --lib ES2022,DOM
+          --types node --skipLibCheck false --noErrorTruncation
+          tests/inspection-report/types-consumer.mts
+          tests/inspection-report/media/types-consumer.mts
+          tests/extraction/types-consumer.mts
+          tests/extraction/pdf/types-consumer.mts
+          tests/extraction/png/types-consumer.mts
+          tests/extraction/jpeg-webp/types-consumer.mts
+          tests/extraction/scanned-pdf/types-consumer.mts
+      - run: npm run typecheck
+      - name: Mirror bounded synthetic media evidence for API review
+        if: always()
+        shell: bash
+        run: |
+          python -I -S -B - <<'PY'
+          import base64, hashlib, json, os, stat
+          from pathlib import Path
+
+          temporary = Path(os.environ["RUNNER_TEMP"]).resolve(strict=True)
+          capture = Path(os.environ["EI_INSPECTION_MEDIA_REPORT_CAPTURE"])
+          if (not capture.is_absolute() or capture.is_symlink()
+                  or capture.resolve(strict=True) != capture or capture.parent != temporary
+                  or temporary == Path.cwd().resolve() or Path.cwd().resolve() in temporary.parents):
+              raise ValueError("capture must be an ordinary runner-temp child outside source")
+          names = [
+              "wrapper.stdout", "wrapper.stderr", "source-before.json", "source-after.json",
+              "static-png.stdout", "static-png.stderr", "static-png.command.json",
+              "static-jpeg-webp.stdout", "static-jpeg-webp.stderr", "static-jpeg-webp.command.json",
+              "scanned-pdf.stdout", "scanned-pdf.stderr", "scanned-pdf.command.json",
+              "scanned-pdf.stderr-recovery.json", "scanned-pdf.child-stderr",
+              "actual-fixture-origins.json", "composed-media-report.json",
+          ]
+          if sorted(path.name for path in capture.iterdir()) != sorted(names):
+              raise ValueError("missing or unexpected media capture member")
+          payloads, total = [], 0
+          for name in names:
+              descriptor = os.open(capture / name, os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC)
+              with os.fdopen(descriptor, "rb") as stream:
+                  before = os.fstat(stream.fileno())
+                  if not stat.S_ISREG(before.st_mode) or before.st_size > 4 * 1024 * 1024:
+                      raise ValueError("capture member is not an admitted bounded regular file")
+                  raw = stream.read(4 * 1024 * 1024 + 1)
+                  after = os.fstat(stream.fileno())
+              identity = lambda item: (item.st_dev, item.st_ino, item.st_size, item.st_mtime_ns)
+              if len(raw) != before.st_size or identity(before) != identity(after):
+                  raise ValueError("capture member changed during read")
+              total += len(raw)
+              if total > 16 * 1024 * 1024:
+                  raise ValueError("aggregate capture exceeds bound")
+              payloads.append((name, raw))
+          manifest = []
+          for name, raw in payloads:
+              manifest.append({"file": name, "bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()})
+              for offset in range(0, max(1, len(raw)), 16384):
+                  record = {"file": name, "encoding": "base64", "offset": offset,
+                            "total_bytes": len(raw),
+                            "data": base64.b64encode(raw[offset:offset + 16384]).decode("ascii")}
+                  print("MEDIA_REPORT_CAPTURE_BYTES " + json.dumps(record, sort_keys=True), flush=True)
+          print("MEDIA_REPORT_CAPTURE_MANIFEST_JSON=" + json.dumps({
+              "schemaVersion": "ei-inspection-media-capture-mirror/1",
+              "mode": "local-synthetic-native-evidence",
+              "members": manifest, "totalBytes": total, "acceptanceAuthority": "none",
+          }, sort_keys=True), flush=True)
+          PY
+      - name: Preserve local source, output and failure evidence without native libraries
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: inspection-media-report-evidence
+          path: ${{ runner.temp }}/ei-inspection-media-evidence/
+          if-no-files-found: error
+          retention-days: 90
