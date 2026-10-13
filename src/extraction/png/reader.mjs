@@ -39,7 +39,7 @@ function optionsFrom(options) {
         ![Object.prototype, null].includes(Object.getPrototypeOf(options))) return { error: "INVALID_OPTIONS" };
     const descriptors = Object.getOwnPropertyDescriptors(options);
     for (const key of Reflect.ownKeys(descriptors)) {
-      if (!["signal", "timeoutMs", "maxOutputBytes"].includes(key) ||
+      if (!["signal", "timeoutMs", "deadlineAtMs", "maxOutputBytes"].includes(key) ||
           !Object.hasOwn(descriptors[key], "value")) return { error: "INVALID_OPTIONS" };
     }
     const signal = descriptors.signal?.value;
@@ -49,12 +49,15 @@ function optionsFrom(options) {
     if (signal !== undefined) isAborted.call(signal); // Native brand, no caller getter.
     const timeoutMs = descriptors.timeoutMs?.value ?? PNG_LIMITS.defaultTimeoutMs;
     const maxOutputBytes = descriptors.maxOutputBytes?.value ?? PNG_LIMITS.maxOutputBytes;
+    const deadlineAtMs = descriptors.deadlineAtMs?.value;
+    if (deadlineAtMs !== undefined && (!Number.isFinite(deadlineAtMs) || deadlineAtMs < 0 ||
+        deadlineAtMs > Number.MAX_SAFE_INTEGER)) return { error: "INVALID_LIMIT" };
     if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > PNG_LIMITS.maxTimeoutMs ||
         !Number.isInteger(maxOutputBytes) || maxOutputBytes < 1 || maxOutputBytes > PNG_LIMITS.maxOutputBytes ||
         descriptors.timeoutMs?.value === null || descriptors.maxOutputBytes?.value === null) {
       return { error: "INVALID_LIMIT" };
     }
-    return { signal, timeoutMs, maxOutputBytes };
+    return { signal, timeoutMs, maxOutputBytes, deadlineAtMs };
   } catch {
     return { error: "INVALID_OPTIONS" };
   }
@@ -197,7 +200,7 @@ function frameResult(job, parts, size) {
     const header = JSON.parse(frame.toString("utf8", 4, 4 + headerLength));
     if (!header || typeof header !== "object" || Array.isArray(header)) return bad();
     const common = ["kind", "protocol", "configVersion", "nodeVersion", "zlibVersion",
-      "sourceSha256", "networkApiAttemptCount", "maxOutputBytes", "normalizedByteLength"];
+      "sourceSha256", "networkApiAttemptCount", "maxOutputBytes", "normalizedByteLength", "rgbaByteLength"];
     const specific = header.kind === "decoded"
       ? ["width", "height", "sourceColorType", "decodedRgbaBytes", "rgbaSha256", "normalizedSha256"] : ["code"];
     const keys = [...common, ...specific];
@@ -207,23 +210,32 @@ function frameResult(job, parts, size) {
         header.sourceSha256 !== job.sourceSha256 || header.maxOutputBytes !== job.options.maxOutputBytes ||
         !Number.isInteger(header.networkApiAttemptCount) || header.networkApiAttemptCount < 0) return bad();
     const payload = frame.subarray(4 + headerLength);
-    if (header.normalizedByteLength !== payload.length) return bad();
+    if (!Number.isInteger(header.normalizedByteLength) || header.normalizedByteLength < 0 ||
+        header.normalizedByteLength > job.options.maxOutputBytes ||
+        !Number.isInteger(header.rgbaByteLength) || header.rgbaByteLength < 0 ||
+        header.rgbaByteLength > PNG_LIMITS.maxRgbaBytes ||
+        header.normalizedByteLength + header.rgbaByteLength !== payload.length) return bad();
     if (header.kind === "rejected") {
       if (payload.length !== 0 || !PNG_ERROR_CODES.includes(header.code)) return bad();
       return rejected(header.networkApiAttemptCount === 0 ? header.code : "REMOTE_RESOURCE_ATTEMPT", job.sourceSha256);
     }
-    if (header.kind !== "decoded" || payload.length > job.options.maxOutputBytes ||
+    const derivative = payload.subarray(0, header.normalizedByteLength);
+    const pixels = payload.subarray(header.normalizedByteLength);
+    if (header.kind !== "decoded" ||
         !Number.isInteger(header.width) || header.width < 1 || header.width > PNG_LIMITS.maxDimension ||
         !Number.isInteger(header.height) || header.height < 1 || header.height > PNG_LIMITS.maxRows ||
         header.width * header.height > PNG_LIMITS.maxPixels || ![2, 6].includes(header.sourceColorType) ||
         header.decodedRgbaBytes !== header.width * header.height * 4 ||
+        header.rgbaByteLength !== header.decodedRgbaBytes ||
         typeof header.rgbaSha256 !== "string" || !/^[a-f0-9]{64}$/.test(header.rgbaSha256) ||
         typeof header.normalizedSha256 !== "string" || !/^[a-f0-9]{64}$/.test(header.normalizedSha256) ||
-        !validNormalizedPng(payload, header) ||
-        createHash("sha256").update(payload).digest("hex") !== header.normalizedSha256) return bad();
+        !validNormalizedPng(derivative, header) ||
+        createHash("sha256").update(derivative).digest("hex") !== header.normalizedSha256 ||
+        createHash("sha256").update(pixels).digest("hex") !== header.rgbaSha256) return bad();
     if (header.networkApiAttemptCount !== 0) return rejected("REMOTE_RESOURCE_ATTEMPT", job.sourceSha256);
     // Own bytes are never exposed; each consumer obtains a new mutable copy.
-    const normalized = Buffer.from(payload);
+    const normalized = Buffer.from(derivative);
+    const rgba = Buffer.from(pixels);
     return Object.freeze({
       kind: "decoded", completeness: "incomplete-pixels-only", requiresInspection: true,
       sourceSha256: job.sourceSha256, decoder: PNG_DECODER,
@@ -233,6 +245,7 @@ function frameResult(job, parts, size) {
       normalizedSha256: header.normalizedSha256, normalizedByteLength: normalized.length,
       networkApiAttemptCount: 0,
       copyNormalizedBytes() { return new Uint8Array(normalized); },
+      copyRgbaBytes() { return new Uint8Array(rgba); },
     });
   } catch {
     return bad();
@@ -269,7 +282,7 @@ function runIsolated(job) {
     child.stdout.on("data", (data) => {
       if (job.terminationCode) return;
       size += data.length;
-      if (size > job.options.maxOutputBytes + PNG_LIMITS.maxHeaderBytes + 4) {
+      if (size > job.options.maxOutputBytes + PNG_LIMITS.maxRgbaBytes + PNG_LIMITS.maxHeaderBytes + 4) {
         terminate(job, "OUTPUT_LIMIT");
       } else {
         parts.push(data);
@@ -294,9 +307,10 @@ export async function readStaticPng(input, options) {
   const normalized = optionsFrom(options);
   if (normalized.error) return rejected(normalized.error);
   if (normalized.signal && isAborted.call(normalized.signal)) return rejected("CANCELLED");
+  const deadline = Math.min(started + normalized.timeoutMs, normalized.deadlineAtMs ?? Infinity);
+  if (performance.now() >= deadline) return rejected("TIMEOUT");
   const snapshot = inputFrom(input);
   if (snapshot.error) return rejected(snapshot.error);
-  const deadline = started + normalized.timeoutMs;
   if (performance.now() >= deadline) return rejected("TIMEOUT", snapshot.sourceSha256);
   if (process.versions.node !== PNG_NODE_VERSION || process.versions.zlib !== PNG_ZLIB_VERSION) {
     return rejected("DECODER_UNAVAILABLE", snapshot.sourceSha256);

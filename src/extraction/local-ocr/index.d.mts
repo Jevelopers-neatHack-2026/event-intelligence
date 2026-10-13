@@ -13,6 +13,8 @@ export interface LocalOcrInput {
 export interface LocalOcrOptions {
   readonly signal?: AbortSignal;
   readonly timeoutMs?: number;
+  /** Lower-only absolute deadline in this Node process's performance.now() timebase. */
+  readonly deadlineAtMs?: number;
   readonly maxTextBytes?: number;
   readonly maxWords?: number;
 }

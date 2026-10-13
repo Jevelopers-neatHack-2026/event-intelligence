@@ -63,6 +63,8 @@ export interface StaticJpegWebpDecoded extends Base {
   readonly networkApiAttemptCount: 0;
   /** Fresh mutable copy; the retained deterministic PNG is never exposed. */
   readonly copyNormalizedBytes: () => Uint8Array;
+  /** Fresh contiguous RGBA8 samples, row-major without padding; alpha is preserved, not flattened. */
+  readonly copyRgbaBytes: () => Uint8Array;
 }
 export interface StaticJpegWebpRejected extends Base {
   readonly kind: "rejected";
@@ -73,6 +75,8 @@ export interface StaticJpegWebpOptions {
   readonly signal?: AbortSignal;
   /** Lower-only acceptance deadline, including source validation, queue and final result. */
   readonly timeoutMs?: number;
+  /** Lower-only absolute deadline in this Node process's performance.now() timebase. */
+  readonly deadlineAtMs?: number;
   /** Lower-only normalized PNG byte limit; not a provider or monetary allowance. */
   readonly maxOutputBytes?: number;
 }

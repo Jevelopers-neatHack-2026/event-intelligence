@@ -8,6 +8,8 @@ export type ScannedPdfError =
 export interface ScannedPdfOptions {
   readonly signal?: AbortSignal;
   readonly timeoutMs?: number;
+  /** Lower-only absolute deadline in this Node process's performance.now() timebase. */
+  readonly deadlineAtMs?: number;
   readonly maxOutputBytes?: number;
 }
 export interface RasterPageObservation {

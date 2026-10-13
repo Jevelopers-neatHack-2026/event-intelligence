@@ -30,6 +30,7 @@ for (const [filter, encoded] of firstRowVectors) {
     assert.equal(result.kind, "decoded");
     const expected = Buffer.from("050a0f1402040810", "hex");
     assert.deepEqual(readNormalized(result.normalized).rgba, expected);
+    assert.deepEqual(result.rgba, expected);
     assert.equal(result.rgbaSha256, hash(expected));
     assert.equal(result.normalizedSha256, hash(result.normalized));
   });
@@ -42,6 +43,7 @@ test("RGB Sub and Paeth rows use channel distance three, preserve tie ordering a
   assert.equal(result.sourceColorType, 2);
   assert.equal(result.decodedRgbaBytes, 16);
   assert.deepEqual(readNormalized(result.normalized).rgba, Buffer.from("0a141eff0519faff140afaffff0100ff", "hex"));
+  assert.deepEqual(result.rgba, Buffer.from("0a141eff0519faff140afaffff0100ff", "hex"));
 });
 
 test("Up and Average use the reconstructed preceding row, including first-column floor and byte wrap", () => {
@@ -50,6 +52,7 @@ test("Up and Average use the reconstructed preceding row, including first-column
   assert.equal(result.kind, "decoded");
   const expected = Buffer.from("0a141e28323c46500b13212437423d5a05110c02"+"19423236", "hex");
   assert.deepEqual(readNormalized(result.normalized).rgba, expected);
+  assert.deepEqual(result.rgba, expected);
 });
 
 test("contiguous empty/split IDAT chunks describe the same pixels and deterministic normalized bytes", () => {
@@ -59,6 +62,7 @@ test("contiguous empty/split IDAT chunks describe the same pixels and determinis
   assert.equal(a.kind, "decoded");
   assert.equal(b.kind, "decoded");
   assert.deepEqual(a.normalized, b.normalized);
+  assert.deepEqual(a.rgba, b.rgba);
   assert.deepEqual(decode(a.normalized).normalized, a.normalized);
 });
 

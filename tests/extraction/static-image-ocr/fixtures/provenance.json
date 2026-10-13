@@ -1,0 +1,75 @@
+{
+  "origin": "synthetic existing local OCR test raster; no customer or public source",
+  "pillowVersion": "12.3.0",
+  "source": "../../local-ocr/fixtures/english-gray8.raw.gz",
+  "sourceRawSha256": "50f86c14d6b77e84ffb70a933a80ab9a0cb0226d2301f1044b024414ee43d168",
+  "sourceCompressedSha256": "f51c49d110080ba2cdc00ff1f9eeb86b9ac025102bacf688494396e93b3107ad",
+  "fontNotice": "../../local-ocr/fixtures/font-notice.txt",
+  "fontNoticeSha256": "e81d9dced49fea2a7d576cbea283873de58563c5d488f954deb282843c3ea79c",
+  "pixelOracle": "separate local decode using this pinned Pillow library; not an independent codec or OCR accuracy evaluation",
+  "fixtures": [
+    {
+      "file": "english-baseline.jpeg",
+      "bytes": 29600,
+      "sha256": "d7f1bb150be61da63284d8e9427a4afb10769d508f1c381cbeef62190d665a2b",
+      "width": 1000,
+      "height": 220,
+      "rgbaSha256": "92fb64d385f015176f399263ac1de9d3b54f57cd88d2e7fd01f272fe6cf279bc",
+      "encoderOptions": {
+        "quality": 95,
+        "subsampling": 0,
+        "progressive": false
+      }
+    },
+    {
+      "file": "english-progressive.jpeg",
+      "bytes": 22053,
+      "sha256": "6aae273269114ea223d260ec2665eec2fbe72163dfaa0863675014b3efa9116a",
+      "width": 1000,
+      "height": 220,
+      "rgbaSha256": "92fb64d385f015176f399263ac1de9d3b54f57cd88d2e7fd01f272fe6cf279bc",
+      "encoderOptions": {
+        "quality": 95,
+        "subsampling": 0,
+        "progressive": true
+      }
+    },
+    {
+      "file": "english-lossless.webp",
+      "bytes": 5328,
+      "sha256": "a919eaf885dddeca35b6adb7137071eedcd20f8115248cb363951f44ce59ff51",
+      "width": 1000,
+      "height": 220,
+      "rgbaSha256": "7e83e22bde559dd5de6afd3764a223db475f4cbf2ae9e9e2e924cd25fef9e54c",
+      "encoderOptions": {
+        "lossless": true,
+        "method": 6
+      }
+    },
+    {
+      "file": "english-lossy.webp",
+      "bytes": 8282,
+      "sha256": "828b2c894fb2ae3f6e8648e4fc729b297452141e088467686b9d8fe552ee8f06",
+      "width": 1000,
+      "height": 220,
+      "rgbaSha256": "86e93f88bb7913813b91d928fa3618399fdfe69ea361c5b147445f6ad6733438",
+      "encoderOptions": {
+        "quality": 90,
+        "lossless": false,
+        "method": 6
+      }
+    },
+    {
+      "file": "transparent.webp",
+      "bytes": 52,
+      "sha256": "f7d08d456aa7656f299a9822fddcd2fb5eb32bd789059aae72364d23d40d21f4",
+      "width": 2,
+      "height": 2,
+      "rgbaSha256": "3d3885b240a72aaef31b19c476a6a786f411d36444511ac30a32838f2a96ecf7",
+      "encoderOptions": {
+        "lossless": true,
+        "exact": true
+      }
+    }
+  ]
+}
