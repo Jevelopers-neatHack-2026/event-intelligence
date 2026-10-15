@@ -1,0 +1,20 @@
+{
+  "status": "private_development_diagnostic_only",
+  "package": "@jevelopers/shared-contracts",
+  "version": "0.10.0-research-a.2",
+  "source_sha": "a6b3bee948aaf659617a2cec22ce6f3a1600976f",
+  "tree_sha": "a18aa1db05e264ea93a610c9a631e4f7a513c87a",
+  "archive_sha256": "5913d86580164400f6f869ff017fe4e3dea554e683f78bd918d0382f7ad60beb",
+  "archive_sri": "sha512-DYCemNezFjzGwyjrrrDXiFDbzjbIYX1hE8x6C17dYx7EofNMgPcmIWr8KhCVIkpq1I8WMR2BhA8CZGL5ibBApA==",
+  "content_digest": "sha256:533622806171501dfe23a34195a1ccd121ae087d74d8b35a1131a7bfd70c8011",
+  "fixture_digest": "sha256:05a1e0440e899e87d7e073e9e837c490fb66f5214cdf7dca453557b804a1dbd3",
+  "schema_manifest_sha256": "7892caf9e3e5b094df31b309e2bc878341e95177c6ea787f9a795f3e7f49d2e7",
+  "fixture_manifest_sha256": "3100e96764282d8e7e8cb762423038379973b504595ca80d75d9563ec319229d",
+  "node": "v22.23.3",
+  "diagnostic_scope_ref": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/3#issuecomment-6130044625",
+  "actual_caller_request_ref": "https://github.com/Jevelopers-neatHack-2026/event-intelligence/issues/3#issuecomment-6116331061",
+  "accepted_migration": false,
+  "acknowledgement": null,
+  "delivery_index_sha256": "58f00faf5b8db42857afb1c8cf010a5dc783164ca3e1e9b97d326d27d2088a3a",
+  "nine_pair_map_sha256": "977d5046d5e16dd3aabefc0abaaf6089d260863d764768d455257cfe78ab8e59"
+}

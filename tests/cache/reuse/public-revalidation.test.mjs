@@ -546,19 +546,32 @@ for (const defect of ['copied binding', 'partial bytes']) {
   });
 }
 
-test('the public absolute deadline bounds a stalled commit callback and rejects its late write', async (t) => {
+test('the public absolute deadline bounds a stalled commit callback and rejects its late write', { timeout: 15_000 }, async (t) => {
   const f = await publicRevalidationFixture(t);
   await f.bind();
   const admission = await f.env.admit();
   const blocked = gate();
   f.authority.phaseHook = async (phase) => { if (phase === 'commit') await blocked.wait(); };
-  const coordinator = f.makeCoordinator({ timeoutMs: 500 });
+  // Native encrypted evidence reads can consume the old 500ms allowance before
+  // commit on slower hosts. Keep one real entry deadline, but first prove that
+  // the intended callback was entered instead of waiting forever on its gate.
+  const coordinator = f.makeCoordinator({ timeoutMs: 5_000 });
   const running = coordinator.refresh(f.env.scope, f.env.authRequest, { scopeKind: 'public_profile',
     profileRef: f.published.profile.profileRef, admissionRef: admission.admissionRef });
-  const rejected = rejects(running, ['REVALIDATION_DEADLINE']);
-  await blocked.reached;
-  await rejected;
-  blocked.release();
+  const outcome = running.then(
+    () => ({ phase: 'completed_before_gate' }),
+    (error) => ({ phase: 'rejected_before_gate', error }),
+  );
+  try {
+    const entered = await Promise.race([
+      blocked.reached.then(() => ({ phase: 'commit_entered' })), outcome,
+    ]);
+    assert.equal(entered.phase, 'commit_entered',
+      `deadline probe never reached commit: ${entered.error?.code ?? entered.phase}`);
+    await rejects(running, ['REVALIDATION_DEADLINE']);
+  } finally {
+    blocked.release();
+  }
   await delay(25);
   assert.equal(f.snapshot().observations.length, 1);
   assert.equal(f.snapshot().responses.length, 0);

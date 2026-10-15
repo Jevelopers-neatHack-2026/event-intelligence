@@ -10,7 +10,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const exec = promisify(execFile);
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const fixtureRoot = new URL('../../tests/contracts/installed-research-consumer/', import.meta.url);
-const candidatePins = Object.freeze({ '0.9.7': 'pin.json', '0.10.2': 'pin-0.10.2.json' });
+const candidatePins = Object.freeze({ '0.9.7': 'pin.json', '0.10.2': 'pin-0.10.2.json',
+  '0.10.0-research-a.2': 'pin-research-a2.json' });
 const digest = (bytes, algorithm = 'sha256', encoding = 'hex') => createHash(algorithm).update(bytes).digest(encoding);
 const canonical = (value) => value === null || typeof value !== 'object' ? JSON.stringify(value)
   : Array.isArray(value) ? `[${value.map(canonical).join(',')}]`
@@ -27,7 +28,7 @@ function options(args) {
     parsed[args[i]] = args[i] === '--candidate' ? args[i + 1] : path.resolve(args[i + 1]);
   }
   assert.ok(parsed['--archive'] && parsed['--output'],
-    'usage: node tools/contracts/installed-research-consumer.mjs --archive exact.tgz --output new-directory [--candidate 0.9.7|0.10.2] [--tsc compiler-path]');
+    'usage: node tools/contracts/installed-research-consumer.mjs --archive exact.tgz --output new-directory [--candidate 0.9.7|0.10.2|0.10.0-research-a.2] [--tsc compiler-path]');
   const candidate = parsed['--candidate'] ?? '0.9.7';
   assert.ok(Object.hasOwn(candidatePins, candidate), 'UNSUPPORTED_CANDIDATE: choose an explicitly pinned diagnostic version');
   return { archive: parsed['--archive'], output: parsed['--output'],
@@ -147,6 +148,12 @@ async function main() {
       report.source_file_hashes[relative] = digest(await readFile(path.join(root, relative)));
     }
     report.source_file_hashes[pinRelative] = digest(pinBytes);
+    if (config.candidate === '0.10.0-research-a.2') {
+      for (const name of ['research-a2-caller.mjs', 'research-a2-consumer.mts']) {
+        report.source_file_hashes[`tests/contracts/installed-research-consumer/${name}`] =
+          digest(await readFile(new URL(name, fixtureRoot)));
+      }
+    }
     temporary = await mkdtemp(path.join(tmpdir(), 'ei-installed-research-'));
     // Install the exact bytes that were checked, avoiding a second read of the caller's archive.
     const verifiedArchive = path.join(temporary, 'verified-shared-contracts.tgz');
@@ -168,6 +175,11 @@ import { writeFile } from 'node:fs/promises';
 import { runInstalledResearchConsumer } from ${JSON.stringify(callerUrl)};
 const result = await runInstalledResearchConsumer({ contracts, research, operations,
   directory: ${JSON.stringify(path.join(temporary, 'synthetic-history'))}, consumerSha: ${JSON.stringify(report.consumer_sha)} });
+${config.candidate === '0.10.0-research-a.2' ? `
+const issuance = await import('@jevelopers/shared-contracts/research-issuance');
+const { probeResearchA2 } = await import(${JSON.stringify(new URL('research-a2-caller.mjs', fixtureRoot).href)});
+result.research_a2 = probeResearchA2({ contracts, issuance, observations: result.observations });
+` : ''}
 await writeFile(${JSON.stringify(observationFile)}, JSON.stringify(result, null, 2) + '\\n');
 console.log(JSON.stringify({ diagnostic_status: result.diagnostic_status, consumer_acceptance: result.consumer_acceptance, counts: result.counts }));
 process.exitCode = result.counts.failed ? 1 : 0;
@@ -183,7 +195,9 @@ process.exitCode = result.counts.failed ? 1 : 0;
         message: 'Caller command failed; preserve 05-actual-caller-and-controls stdout/stderr and observations if available.' });
     }
     report.observations = await readJson(observationFile);
-    const typeSource = (await readFile(new URL('consumer.mts', fixtureRoot), 'utf8'))
+    const extraTypes = config.candidate === '0.10.0-research-a.2'
+      ? await readFile(new URL('research-a2-consumer.mts', fixtureRoot), 'utf8') : '';
+    const typeSource = ((await readFile(new URL('consumer.mts', fixtureRoot), 'utf8')) + '\n' + extraTypes)
       .replaceAll('__EI_HISTORY_MODULE__', path.join(root, 'src/review/history/store.mjs'))
       .replaceAll('__EI_QUESTIONS_MODULE__', path.join(root, 'src/decisions/questions/index.mjs'));
     await writeFile(path.join(temporary, 'consumer.mts'), typeSource);
@@ -192,9 +206,11 @@ process.exitCode = result.counts.failed ? 1 : 0;
     await run('07-installed-types', process.execPath, [config.tsc, '--noEmit', '--strict', '--module', 'NodeNext',
       '--moduleResolution', 'NodeNext', path.join(temporary, 'consumer.mts')], temporary);
     report.required_checks.installed_types = 'passed';
+    const exercised = [...report.observations.contracts_exercised,
+      ...(config.candidate === '0.10.0-research-a.2' ? ['EventIntelligencePackage/2.0.0'] : [])];
     report.schema_pins = report.installed_verification.schemaManifest.schemas.filter((row) =>
-      report.observations.contracts_exercised.includes(`${row.contract}/${row.version}`));
-    assert.equal(report.schema_pins.length, report.observations.contracts_exercised.length, 'each exercised contract has an exact schema pin');
+      exercised.includes(`${row.contract}/${row.version}`));
+    assert.equal(report.schema_pins.length, exercised.length, 'each exercised contract has an exact schema pin');
     delete report.installed_verification.schemaManifest;
     assert.equal(callerFailed, false, 'actual caller diagnostics failed; retained observations name each failure');
     assert.equal(report.observations.counts.skipped, 0);
