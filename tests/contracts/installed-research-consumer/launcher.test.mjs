@@ -71,3 +71,24 @@ test('unlisted versions and file paths cannot supply a diagnostic pin', async (t
     await assert.rejects(lstat(output), (error) => error.code === 'ENOENT');
   }
 });
+
+test('Research-a.2 refuses substituted archives before install without changing the default', async (t) => {
+  const directory = await mkdtemp(path.join(tmpdir(), 'ei-research-a2-negative-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const archive = path.join(directory, 'wrong.tgz');
+  const output = path.join(directory, 'refused');
+  await writeFile(archive, 'not the exact Research-a.2 delivery');
+  const args = [launcher, '--archive', archive, '--output', output, '--candidate', '0.10.0-research-a.2'];
+  await assert.rejects(exec(process.execPath, args), (error) => error.code === 1);
+  const original = await readFile(path.join(output, 'receipt.json'), 'utf8');
+  const receipt = JSON.parse(original);
+  assert.equal(receipt.producer.source_sha, 'a6b3bee948aaf659617a2cec22ce6f3a1600976f');
+  assert.equal(receipt.producer.archive_sha256, '5913d86580164400f6f869ff017fe4e3dea554e683f78bd918d0382f7ad60beb');
+  assert.equal(receipt.producer.accepted_migration, false);
+  assert.equal(receipt.candidate_selection.pin_path, 'tests/contracts/installed-research-consumer/pin-research-a2.json');
+  assert.deepEqual(receipt.commands, []);
+  assert.match(receipt.failures[0].message, /ARCHIVE_DIGEST_MISMATCH/);
+  await assert.rejects(exec(process.execPath, args),
+    (error) => error.code === 1 && error.stderr.includes('OUTPUT_EXISTS'));
+  assert.equal(await readFile(path.join(output, 'receipt.json'), 'utf8'), original);
+});
