@@ -6,6 +6,7 @@ Use this map to choose a maintained guide. The package exports only controlled-r
 - [Components and command map](components.md) describes current source surfaces and checks.
 - [Controlled retrieval](security/controlled-retrieval.md) is the network security boundary. Follow its origin, DNS, redirect, response-size, timeout and content-type rules.
 - [Private retrieval](discovery/private-retrieval.md) and [content boundary](privacy/content-boundary.md) describe separate restrictions; neither trusts fetched page content.
+- [Blocked event-link support matrix](support-matrix.md) records the TicketStub application's manual-entry handoff and its evidence limits; it does not establish service acceptance.
 
 ## Processing and review
 - [Text and PDF extraction](extraction/text-pdf.md), [bounded frontier](discovery/bounded-frontier.md), [source identity](discovery/source-identity.md), and [occurrence identity](discovery/occurrence-identity.md) cover candidate processing.
