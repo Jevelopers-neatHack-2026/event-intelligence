@@ -7,6 +7,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
+import { runInNewContext } from "node:vm";
 
 import { decodePdfBytesForWorker } from "../../../src/extraction/pdf/core.mjs";
 import {
@@ -413,4 +414,128 @@ test("network guard measures and blocks Node resource attempts without dialing",
   assert.equal(result.status, 0, result.stderr);
   assert.equal(result.stdout, "4");
   assert.equal(result.stderr, "");
+});
+
+// These byte-boundary probes stop before decoder launch and preserve the
+// production isolation prerequisite. All payloads derive from a synthetic fixture.
+const INPUT_BOUNDARY_PDF = await fixture("text-multipage.pdf");
+
+test("rejects an oversized native PDF view before copy, hashing, or isolation checks", async () => {
+  const bytes = new Uint8Array(PDF_TEXT_READER_LIMITS.maxInputBytes + 1);
+  bytes.set(INPUT_BOUNDARY_PDF);
+  const calls = [];
+  Object.defineProperty(bytes, "byteLength", {
+    get() { calls.push("byteLength"); return 1; },
+  });
+  bytes.valueOf = () => { calls.push("valueOf"); return INPUT_BOUNDARY_PDF; };
+
+  const result = await readTextPdf(bytes);
+  assert.equal(result.kind, "rejected");
+  assert.equal(result.code, "INPUT_TOO_LARGE");
+  assert.equal(result.documentSha256, undefined);
+  assert.deepEqual(calls, []);
+});
+
+test("ignores a false oversized property on an eligible native PDF view", async () => {
+  const bytes = new Uint8Array(INPUT_BOUNDARY_PDF);
+  const calls = [];
+  Object.defineProperty(bytes, "byteLength", {
+    get() { calls.push("byteLength"); return PDF_TEXT_READER_LIMITS.maxInputBytes + 1; },
+  });
+  const result = await readTextPdf(bytes, { signal: AbortSignal.abort() });
+  assert.equal(result.kind, "rejected");
+  assert.equal(result.code, "CANCELLED");
+  assert.equal(result.documentSha256, expectedHash(INPUT_BOUNDARY_PDF));
+  assert.deepEqual(calls, []);
+});
+
+test("binds the canceled PDF snapshot to native view bytes without caller conversions", async () => {
+  const prefix = Buffer.from("ignored prefix:");
+  const backing = Buffer.concat([prefix, INPUT_BOUNDARY_PDF, Buffer.from(":ignored suffix")]);
+  const resizable = new ArrayBuffer(INPUT_BOUNDARY_PDF.length + 16, { maxByteLength: INPUT_BOUNDARY_PDF.length + 32 });
+  new Uint8Array(resizable, 8, INPUT_BOUNDARY_PDF.length).set(INPUT_BOUNDARY_PDF);
+  const views = [
+    new Uint8Array(backing.buffer, backing.byteOffset + prefix.length, INPUT_BOUNDARY_PDF.length),
+    backing.subarray(prefix.length, prefix.length + INPUT_BOUNDARY_PDF.length),
+    new (class RetrievedPdfBytes extends Uint8Array {})(INPUT_BOUNDARY_PDF),
+    runInNewContext("new Uint8Array(bytes)", { bytes: [...INPUT_BOUNDARY_PDF] }),
+    new Uint8Array(resizable, 8, INPUT_BOUNDARY_PDF.length),
+  ];
+  for (const [index, bytes] of views.entries()) {
+    const original = Array.from(bytes);
+    const calls = [];
+    for (const key of ["byteLength", "byteOffset", "buffer", "length", "constructor", Symbol.toStringTag]) {
+      Object.defineProperty(bytes, key, {
+        get() { calls.push(String(key)); throw new Error("byte property executed"); },
+      });
+    }
+    for (const key of ["valueOf", Symbol.toPrimitive, Symbol.iterator]) {
+      Object.defineProperty(bytes, key, {
+        value() { calls.push(String(key)); throw new Error("byte conversion executed"); },
+      });
+    }
+    const result = await readTextPdf(bytes, { signal: AbortSignal.abort() });
+    assert.equal(result.kind, "rejected", `view ${index}`);
+    assert.equal(result.code, "CANCELLED", `view ${index}`);
+    assert.equal(result.documentSha256, expectedHash(INPUT_BOUNDARY_PDF), `view ${index}`);
+    assert.deepEqual(calls, []);
+    assert.deepEqual(original.map((_, offset) => bytes[offset]), original);
+  }
+});
+
+test("does not let valueOf replace the PDF bytes or their source hash", async () => {
+  const bytes = new Uint8Array(INPUT_BOUNDARY_PDF);
+  let conversions = 0;
+  const replacement = Buffer.concat([INPUT_BOUNDARY_PDF, Buffer.from("\n% substituted document\n")]);
+  assert.notEqual(expectedHash(replacement), expectedHash(INPUT_BOUNDARY_PDF));
+  bytes.valueOf = () => { conversions++; return replacement; };
+
+  const pending = readTextPdf(bytes, { signal: AbortSignal.abort() });
+  bytes.fill(0);
+  const result = await pending;
+  assert.equal(result.code, "CANCELLED");
+  assert.equal(result.documentSha256, expectedHash(INPUT_BOUNDARY_PDF));
+  assert.equal(conversions, 0);
+});
+
+test("rejects detached, out-of-bounds, shared, and non-Uint8 PDF inputs without proxy traps", async () => {
+  const detached = new Uint8Array(INPUT_BOUNDARY_PDF);
+  structuredClone(detached.buffer, { transfer: [detached.buffer] });
+  const resizable = new ArrayBuffer(8, { maxByteLength: 16 });
+  const outOfBounds = new Uint8Array(resizable, 4, 4);
+  const trackingOutOfBounds = new Uint8Array(resizable, 4);
+  resizable.resize(2);
+  const shared = new Uint8Array(new SharedArrayBuffer(INPUT_BOUNDARY_PDF.length));
+  shared.set(INPUT_BOUNDARY_PDF);
+  const calls = [];
+  const proxied = new Proxy(new Uint8Array(INPUT_BOUNDARY_PDF), {
+    get() { calls.push("get"); throw new Error("proxy get executed"); },
+    getPrototypeOf() { calls.push("getPrototypeOf"); throw new Error("proxy prototype executed"); },
+  });
+  const revoked = Proxy.revocable(new Uint8Array(INPUT_BOUNDARY_PDF), {});
+  revoked.revoke();
+  const invalid = [
+    detached, outOfBounds, trackingOutOfBounds, shared, proxied, revoked.proxy,
+    new Uint8ClampedArray(INPUT_BOUNDARY_PDF), new Uint16Array([65]), new DataView(new ArrayBuffer(1)),
+    INPUT_BOUNDARY_PDF.buffer, Object.create(Uint8Array.prototype),
+  ];
+  for (const [index, bytes] of invalid.entries()) {
+    const result = await readTextPdf(bytes, { signal: AbortSignal.abort() });
+    assert.equal(result.kind, "rejected", `invalid input ${index}`);
+    assert.equal(result.code, "INVALID_INPUT", `invalid input ${index}`);
+    assert.equal(result.documentSha256, undefined);
+  }
+  assert.deepEqual(calls, []);
+});
+
+test("keeps empty byte views invalid and malformed PDF bytes bound to their exact hash", async () => {
+  for (const bytes of [Buffer.alloc(0), new Uint8Array(0), new Uint8Array(new ArrayBuffer(8), 8, 0)]) {
+    const result = await readTextPdf(bytes, { signal: AbortSignal.abort() });
+    assert.equal(result.code, "INVALID_INPUT");
+    assert.equal(result.documentSha256, undefined);
+  }
+  const bytes = Buffer.from("synthetic non-PDF data");
+  const result = await readTextPdf(bytes, { signal: AbortSignal.abort() });
+  assert.equal(result.code, "MALFORMED_PDF");
+  assert.equal(result.documentSha256, expectedHash(bytes));
 });

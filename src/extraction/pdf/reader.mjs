@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
 import { existsSync, realpathSync, statSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { types } from "node:util";
 import path from "node:path";
 
 import { PDF_DECODER_VERSION, PDF_LIMITS, PDF_READER_CONFIG_VERSION } from "./constants.mjs";
@@ -16,6 +17,12 @@ const MAX_OUTPUT_BYTES = PDF_LIMITS.maxOutputBytes;
 const MAX_TEXT_CODE_UNITS = PDF_LIMITS.maxTextCodeUnits;
 const MAX_CONCURRENCY = 1;
 const MAX_QUEUED = 4;
+const typedArrayPrototype = Object.getPrototypeOf(Uint8Array.prototype);
+const byteLength = Object.getOwnPropertyDescriptor(typedArrayPrototype, "byteLength").get;
+const byteOffset = Object.getOwnPropertyDescriptor(typedArrayPrototype, "byteOffset").get;
+const arrayBuffer = Object.getOwnPropertyDescriptor(typedArrayPrototype, "buffer").get;
+const bufferLength = Object.getOwnPropertyDescriptor(ArrayBuffer.prototype, "byteLength").get;
+const copyInto = Uint8Array.prototype.set;
 
 const queue = [];
 let activeWorkers = 0;
@@ -83,14 +90,19 @@ function isolationAvailable() {
 
 function snapshotInput(input) {
   try {
-    if (!(input instanceof Uint8Array)) {
+    if (!types.isUint8Array(input)) {
       return { error: "INVALID_INPUT" };
     }
-    if (input.byteLength === 0) return { error: "INVALID_INPUT" };
-    if (input.byteLength > PDF_LIMITS.maxInputBytes) {
+    const length = byteLength.call(input);
+    if (length === 0) return { error: "INVALID_INPUT" };
+    if (length > PDF_LIMITS.maxInputBytes) {
       return { error: "INPUT_TOO_LARGE" };
     }
-    const bytes = Buffer.from(input);
+    const backing = arrayBuffer.call(input);
+    bufferLength.call(backing); // Shared backing cannot supply stable input bytes.
+    const view = new Uint8Array(backing, byteOffset.call(input), length);
+    const bytes = Buffer.alloc(length);
+    copyInto.call(bytes, view);
     const documentSha256 = createHash("sha256").update(bytes).digest("hex");
     const header = bytes.subarray(0, Math.min(1024, bytes.length));
     const eofWindow = bytes.subarray(Math.max(0, bytes.length - 2048));
