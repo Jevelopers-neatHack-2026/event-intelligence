@@ -1,6 +1,12 @@
 import { createHash } from "node:crypto";
+import { types as utilTypes } from "node:util";
 
 const INVALID_OFFSET = 0xffff_ffff;
+const TYPED_ARRAY_PROTOTYPE = Object.getPrototypeOf(Uint8Array.prototype);
+const TYPED_ARRAY_BUFFER = Object.getOwnPropertyDescriptor(TYPED_ARRAY_PROTOTYPE, "buffer").get;
+const TYPED_ARRAY_BYTE_OFFSET = Object.getOwnPropertyDescriptor(TYPED_ARRAY_PROTOTYPE, "byteOffset").get;
+const TYPED_ARRAY_BYTE_LENGTH = Object.getOwnPropertyDescriptor(TYPED_ARRAY_PROTOTYPE, "byteLength").get;
+const TYPED_ARRAY_VALUES = Uint8Array.prototype.values;
 
 export function readRetrievedDocument(value) {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return null;
@@ -10,12 +16,22 @@ export function readRetrievedDocument(value) {
     const bytes = readOwnDataProperty(value, "bytes");
     const fetchedAt = readOwnDataProperty(value, "fetchedAt");
     if (typeof url !== "string" || typeof contentType !== "string"
-      || !(bytes instanceof Uint8Array) || typeof fetchedAt !== "string") return null;
+      || !utilTypes.isUint8Array(bytes) || typeof fetchedAt !== "string") return null;
+    // Native validation distinguishes an empty view from a detached or
+    // out-of-bounds view without reading any caller-defined properties.
+    Reflect.apply(TYPED_ARRAY_VALUES, bytes, []);
+    // Keep quota checks and the later owned copy on the same native byte view.
+    // Caller-owned properties such as byteLength or valueOf must not replace it.
+    const byteView = new Uint8Array(
+      Reflect.apply(TYPED_ARRAY_BUFFER, bytes, []),
+      Reflect.apply(TYPED_ARRAY_BYTE_OFFSET, bytes, []),
+      Reflect.apply(TYPED_ARRAY_BYTE_LENGTH, bytes, []),
+    );
     return Object.freeze({
       url,
       contentType,
       fetchedAt,
-      bytes,
+      bytes: byteView,
     });
   } catch {
     return null;

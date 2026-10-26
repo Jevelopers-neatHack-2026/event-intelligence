@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+import { runInNewContext } from "node:vm";
 import test from "node:test";
 import { extractDeterministically } from "../../src/extraction/index.mjs";
 
@@ -18,6 +19,143 @@ async function fixture(name, contentType = "text/html; charset=utf-8") {
 function document(bytes, contentType = "text/html; charset=utf-8") {
   return { url: SOURCE_URL, fetchedAt: FETCHED_AT, contentType, bytes: Buffer.from(bytes) };
 }
+
+function byteDocument(bytes) {
+  // Keep the actual caller object at this boundary; the ordinary fixture
+  // helper intentionally copies it and would remove hostile byte hooks.
+  return { url: SOURCE_URL, fetchedAt: FETCHED_AT, contentType: "text/plain", bytes };
+}
+
+test("uses native byte length before hashing or copying a caller-controlled byte view", async () => {
+  const bytes = new Uint8Array(Buffer.from("synthetic event text"));
+  const calls = [];
+  Object.defineProperty(bytes, "byteLength", { get() { calls.push("byteLength"); return 0; } });
+  bytes.valueOf = () => { calls.push("valueOf"); return Buffer.from("different source text"); };
+
+  const result = await extractDeterministically(byteDocument(bytes), { limits: { maxDocumentBytes: 1 } });
+  assert.equal(result.status, "RESOURCE_LIMIT");
+  assert.equal(result.termination, "RESOURCE_LIMIT");
+  assert.equal(result.sourceHash, null);
+  assert.equal(result.source.contentHash, null);
+  assert.deepEqual(result.visibleText, []);
+  assert.deepEqual(result.diagnostics, [{ code: "DOCUMENT_BYTE_LIMIT", limit: 1 }]);
+  assert.deepEqual(calls, []);
+});
+
+test("preserves native byte-view identity and offsets without invoking caller hooks", async () => {
+  const text = "Café event 😊";
+  const expected = Buffer.from(text);
+  const padded = Buffer.concat([Buffer.from("prefix:"), expected, Buffer.from(":suffix")]);
+  const views = [
+    new Uint8Array(padded.buffer, padded.byteOffset + 7, expected.length),
+    padded.subarray(7, 7 + expected.length),
+    new (class RetrievedBytes extends Uint8Array {})(expected),
+    runInNewContext("new Uint8Array(bytes)", { bytes: [...expected] }),
+  ];
+
+  for (const [index, bytes] of views.entries()) {
+    const calls = [];
+    const snapshot = Array.from(bytes);
+    for (const property of ["byteLength", "byteOffset", "buffer", "length", Symbol.toStringTag]) {
+      Object.defineProperty(bytes, property, { get() { calls.push(String(property)); throw new Error("byte hook executed"); } });
+    }
+    for (const property of ["valueOf", Symbol.iterator, Symbol.toPrimitive]) {
+      Object.defineProperty(bytes, property, { value() { calls.push(String(property)); throw new Error("byte conversion executed"); } });
+    }
+    const result = await extractDeterministically(byteDocument(bytes), {
+      limits: { maxDocumentBytes: expected.length },
+    });
+    assert.equal(result.status, "PARTIAL", `byte view ${index}`);
+    assert.equal(result.sourceHash, "sha256:" + createHash("sha256").update(expected).digest("hex"));
+    assert.equal(result.visibleText[0].rawValue, text);
+    assert.deepEqual(result.visibleText[0].source.locator, {
+      kind: "text-range", startByte: 0, endByte: expected.length,
+    });
+    assert.deepEqual(calls, []);
+    // Extraction may erase its owned copy, but must retain the caller's bytes.
+    assert.deepEqual(snapshot.map((_, offset) => bytes[offset]), snapshot);
+  }
+});
+
+test("rejects detached and non-Uint8 byte inputs without executing proxy traps", async () => {
+  const detached = new Uint8Array([65]);
+  structuredClone(detached.buffer, { transfer: [detached.buffer] });
+  const resizable = new ArrayBuffer(8, { maxByteLength: 16 });
+  const fixedOutOfBounds = new Uint8Array(resizable, 4, 4);
+  const trackingOutOfBounds = new Uint8Array(resizable, 4);
+  resizable.resize(2);
+  const calls = [];
+  const proxied = new Proxy(new Uint8Array([65]), {
+    get() { calls.push("get"); throw new Error("proxy get executed"); },
+    getPrototypeOf() { calls.push("getPrototypeOf"); throw new Error("proxy prototype executed"); },
+  });
+  const revoked = Proxy.revocable(new Uint8Array([65]), {});
+  revoked.revoke();
+  const invalid = [
+    detached,
+    fixedOutOfBounds,
+    trackingOutOfBounds,
+    proxied,
+    revoked.proxy,
+    new Uint8ClampedArray([65]),
+    new Uint16Array([65]),
+    new DataView(new ArrayBuffer(1)),
+    new ArrayBuffer(1),
+    Object.create(Uint8Array.prototype),
+  ];
+  for (const [index, bytes] of invalid.entries()) {
+    const result = await extractDeterministically(byteDocument(bytes));
+    assert.equal(result.status, "INVALID_INPUT", `invalid byte view ${index}`);
+    assert.equal(result.sourceHash, null);
+    assert.equal(result.source, null);
+    assert.deepEqual(result.diagnostics, [{ code: "INVALID_RETRIEVED_DOCUMENT" }]);
+  }
+  assert.deepEqual(calls, []);
+});
+
+test("retains genuine empty native byte views as empty documents", async () => {
+  const resizable = new ArrayBuffer(8, { maxByteLength: 16 });
+  const emptyFixed = new Uint8Array(resizable, 0, 0);
+  const emptyTracking = new Uint8Array(resizable);
+  resizable.resize(0);
+  const views = [
+    Buffer.alloc(0),
+    new Uint8Array(0),
+    new Uint8Array(new ArrayBuffer(8), 8, 0),
+    emptyFixed,
+    emptyTracking,
+  ];
+  for (const [index, bytes] of views.entries()) {
+    const result = await extractDeterministically(byteDocument(bytes));
+    assert.equal(result.status, "NO_ANSWER", `empty byte view ${index}`);
+    assert.equal(result.sourceHash, "sha256:" + createHash("sha256").update(Buffer.alloc(0)).digest("hex"));
+    assert.deepEqual(result.visibleText, []);
+  }
+});
+
+test("applies native byte limits and source hashes to canceled extraction", async () => {
+  const expected = Buffer.from("synthetic event text");
+  const bytes = new Uint8Array(expected);
+  const calls = [];
+  Object.defineProperty(bytes, "byteLength", { get() { calls.push("byteLength"); return 0; } });
+  bytes.valueOf = () => { calls.push("valueOf"); return Buffer.from("different source text"); };
+  const signal = AbortSignal.abort();
+
+  const overLimit = await extractDeterministically(byteDocument(bytes), {
+    signal, limits: { maxDocumentBytes: 1 },
+  });
+  assert.equal(overLimit.status, "CANCELED");
+  assert.equal(overLimit.sourceHash, null);
+  assert.equal(overLimit.source.contentHash, null);
+
+  const withinLimit = await extractDeterministically(byteDocument(bytes), {
+    signal, limits: { maxDocumentBytes: expected.length },
+  });
+  assert.equal(withinLimit.status, "CANCELED");
+  assert.equal(withinLimit.sourceHash, "sha256:" + createHash("sha256").update(expected).digest("hex"));
+  assert.deepEqual(withinLimit.visibleText, []);
+  assert.deepEqual(calls, []);
+});
 
 function assertExactRanges(result, sourceBytes) {
   const candidates = [
