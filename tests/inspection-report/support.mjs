@@ -47,10 +47,10 @@ export async function actualFixture() {
   const deterministicStdout = command(["tools/verify.mjs", "--case", "deterministic-extraction", "--mode", "mock"]);
   const summaryLine = deterministicStdout.toString().split("\n").find((x) => x.startsWith("VERIFY_SUMMARY_JSON="));
   const summary = JSON.parse(summaryLine.slice("VERIFY_SUMMARY_JSON=".length));
-  assert.equal(summary.expected_cases, 50, "the existing full deterministic route must retain its expected case inventory");
+  assert.equal(summary.expected_cases, 56, "the existing full deterministic route must retain its expected case inventory");
   const pdfStdout = command(["--test", "--test-reporter=tap", "tests/extraction/pdf/reader.test.mjs"]);
   const pdfCount = Number(/^# tests (\d+)$/m.exec(pdfStdout.toString())[1]);
-  assert.equal(pdfCount, 14, "the existing full native PDF route must retain its expected case inventory");
+  assert.equal(pdfCount, 20, "the existing full native PDF route must retain its expected case inventory");
   return {
     expectedPins: pins,
     artifacts: { package: packageBytes, evidenceSchema: schemaBytes, supportMatrix: matrixBytes },

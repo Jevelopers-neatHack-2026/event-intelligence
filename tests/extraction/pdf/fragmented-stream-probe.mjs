@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { types } from "node:util";
 import { PassThrough } from "node:stream";
 import vm from "node:vm";
 
@@ -66,6 +67,7 @@ await readerModule.link(async (specifier) => {
     };
   }
   if (specifier === "node:url") exports = { fileURLToPath };
+  if (specifier === "node:util") exports = { types };
   if (specifier === "node:path") exports = { default: path };
   assert.ok(exports, `unexpected reader import ${specifier}`);
   return new vm.SyntheticModule(
